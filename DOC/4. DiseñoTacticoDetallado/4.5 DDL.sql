@@ -134,6 +134,53 @@ CREATE TABLE semestre (
 );
 
 -- ============================================================
+-- Novedad (antes de Llave/DetallePrestamo por el FK que reciben)
+-- ============================================================
+
+CREATE TABLE novedad (
+    id                  UUID PRIMARY KEY,
+    categoria           categoria_novedad NOT NULL,
+    descripcion         TEXT,
+    estado              estado_novedad NOT NULL DEFAULT 'abierta',
+    solucion            TEXT,
+    registrado_por_id   UUID NOT NULL REFERENCES usuario(id)
+);
+
+-- ============================================================
+-- Llaves
+-- (antes de Disponibilidad porque reserva_individual referencia
+-- llave — entrega de llave con check-in NFC ligado a una reserva)
+-- ============================================================
+
+CREATE TABLE llave (
+    id                        UUID PRIMARY KEY,
+    salon_id                  UUID NOT NULL REFERENCES salon(id),
+    docente_titular_id        UUID NOT NULL REFERENCES comunidad(id),
+    reclamado_por_id          UUID NOT NULL REFERENCES comunidad(id),
+    origen                    origen_llave NOT NULL,
+    tipo_entrega               tipo_entrega_llave NOT NULL,
+    tipo_devolucion            tipo_entrega_llave,
+    usuario_entrega_id        UUID NOT NULL REFERENCES usuario(id),
+    usuario_recibe_id         UUID REFERENCES usuario(id),
+    ubicacion_entrega_id      UUID NOT NULL REFERENCES ubicacion(id),
+    ubicacion_devolucion_id   UUID REFERENCES ubicacion(id),
+    novedad_id                UUID REFERENCES novedad(id),
+    fecha_hora_entrega        TIMESTAMPTZ NOT NULL DEFAULT now(),
+    fecha_hora_devolucion     TIMESTAMPTZ,
+    estado                    estado_llave NOT NULL DEFAULT 'en_prestamo',
+    CHECK (fecha_hora_devolucion IS NULL OR fecha_hora_devolucion > fecha_hora_entrega)
+);
+
+CREATE INDEX idx_llave_docente_titular ON llave(docente_titular_id);
+CREATE INDEX idx_llave_estado ON llave(estado);
+
+-- Regla de negocio real (RNF02): no puede haber dos llaves activas
+-- del mismo salón al mismo tiempo — esto es lo que evita el doble
+-- préstamo concurrente que motivó parte de esta migración.
+CREATE UNIQUE INDEX idx_llave_activa_unica_por_salon
+    ON llave(salon_id) WHERE estado != 'entregado';
+
+-- ============================================================
 -- Disponibilidad
 -- ============================================================
 
@@ -174,54 +221,10 @@ CREATE TABLE reserva_individual (
     hora_fin         TIME NOT NULL,
     motivo           VARCHAR(255),
     estado           estado_reserva_individual NOT NULL DEFAULT 'aprobada',
+    llave_id         UUID REFERENCES llave(id),
     CHECK (hora_inicio < hora_fin)
 );
 CREATE INDEX idx_reserva_individual_salon_fecha ON reserva_individual(salon_id, fecha);
-
--- ============================================================
--- Novedad (antes de Llave/DetallePrestamo por el FK que reciben)
--- ============================================================
-
-CREATE TABLE novedad (
-    id                  UUID PRIMARY KEY,
-    categoria           categoria_novedad NOT NULL,
-    descripcion         TEXT,
-    estado              estado_novedad NOT NULL DEFAULT 'abierta',
-    solucion            TEXT,
-    registrado_por_id   UUID NOT NULL REFERENCES usuario(id)
-);
-
--- ============================================================
--- Llaves
--- ============================================================
-
-CREATE TABLE llave (
-    id                        UUID PRIMARY KEY,
-    salon_id                  UUID NOT NULL REFERENCES salon(id),
-    docente_titular_id        UUID NOT NULL REFERENCES comunidad(id),
-    reclamado_por_id          UUID NOT NULL REFERENCES comunidad(id),
-    origen                    origen_llave NOT NULL,
-    tipo_entrega               tipo_entrega_llave NOT NULL,
-    tipo_devolucion            tipo_entrega_llave,
-    usuario_entrega_id        UUID NOT NULL REFERENCES usuario(id),
-    usuario_recibe_id         UUID REFERENCES usuario(id),
-    ubicacion_entrega_id      UUID NOT NULL REFERENCES ubicacion(id),
-    ubicacion_devolucion_id   UUID REFERENCES ubicacion(id),
-    novedad_id                UUID REFERENCES novedad(id),
-    fecha_hora_entrega        TIMESTAMPTZ NOT NULL DEFAULT now(),
-    fecha_hora_devolucion     TIMESTAMPTZ,
-    estado                    estado_llave NOT NULL DEFAULT 'en_prestamo',
-    CHECK (fecha_hora_devolucion IS NULL OR fecha_hora_devolucion > fecha_hora_entrega)
-);
-
-CREATE INDEX idx_llave_docente_titular ON llave(docente_titular_id);
-CREATE INDEX idx_llave_estado ON llave(estado);
-
--- Regla de negocio real (RNF02): no puede haber dos llaves activas
--- del mismo salón al mismo tiempo — esto es lo que evita el doble
--- préstamo concurrente que motivó parte de esta migración.
-CREATE UNIQUE INDEX idx_llave_activa_unica_por_salon
-    ON llave(salon_id) WHERE estado != 'entregado';
 
 -- ============================================================
 -- Equipos

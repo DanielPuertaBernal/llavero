@@ -9,6 +9,7 @@ de cada módulo (Django app). Cada módulo expone su router en
 from django.urls import path
 from ninja import NinjaAPI
 
+from auth.controller import router as auth_router
 from catalogos.controller import router as catalogos_router
 from comunidad.controller import router as comunidad_router
 from configuracion.controller import router as configuracion_router
@@ -17,6 +18,7 @@ from usuarios.controller import router as usuarios_router
 
 api = NinjaAPI(title="Llavero API", version="1.0.0")
 
+api.add_router("/auth", auth_router, tags=["auth"])
 api.add_router("/catalogos", catalogos_router, tags=["catalogos"])
 # El legacy monta esto en /api/inventario (ver equipos/controller.py);
 # acá se usa /api/equipos, consistente con el nombre del módulo.

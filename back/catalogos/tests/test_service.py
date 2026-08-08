@@ -41,6 +41,8 @@ def test_obtener_rol_inexistente_devuelve_none():
 
 
 def test_obtener_rol_existente_lo_devuelve():
-    creado = repository.crear_rol("admin")
+    # "admin" ya existe por el seed (0002_seed_catalogos_iniciales);
+    # se usa un nombre propio del test para no depender de esa fila.
+    creado = repository.crear_rol("coordinador")
 
     assert service.obtener_rol(creado.id).id == creado.id

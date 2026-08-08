@@ -5,7 +5,7 @@ TDD del proyecto.
 """
 
 import pytest
-from django.db import IntegrityError
+from django.db import IntegrityError, connection
 
 from catalogos import repository
 
@@ -18,25 +18,28 @@ pytestmark = pytest.mark.django_db
 
 
 def test_crear_rol_lo_persiste_y_lo_hace_listable():
-    rol = repository.crear_rol("admin")
+    # No usar nombres de los 3 roles que ya trae la migración de seed
+    # (admin/auxiliar/portero, ver 0002_seed_catalogos_iniciales) —
+    # correrían contra la BD real de test, donde ya existen.
+    rol = repository.crear_rol("coordinador")
 
     assert rol.id is not None
-    assert rol.nombre == "admin"
-    assert [r.nombre for r in repository.listar_roles()] == ["admin"]
+    assert rol.nombre == "coordinador"
+    assert "coordinador" in [r.nombre for r in repository.listar_roles()]
 
 
 def test_crear_rol_con_nombre_duplicado_falla_por_unicidad():
-    repository.crear_rol("admin")
+    repository.crear_rol("coordinador")
 
     with pytest.raises(IntegrityError):
-        repository.crear_rol("admin")
+        repository.crear_rol("coordinador")
 
 
 def test_obtener_rol_por_id_y_por_nombre():
-    creado = repository.crear_rol("auxiliar")
+    creado = repository.crear_rol("vigilante")
 
-    assert repository.obtener_rol_por_id(creado.id).nombre == "auxiliar"
-    assert repository.obtener_rol_por_nombre("auxiliar").id == creado.id
+    assert repository.obtener_rol_por_id(creado.id).nombre == "vigilante"
+    assert repository.obtener_rol_por_nombre("vigilante").id == creado.id
 
 
 def test_obtener_rol_por_id_inexistente_devuelve_none():
@@ -49,22 +52,23 @@ def test_obtener_rol_por_id_inexistente_devuelve_none():
 
 
 def test_crear_tipo_persona_lo_persiste_y_lo_hace_listable():
-    repository.crear_tipo_persona("docente")
+    # Evita los 3 tipos que ya trae el seed (docente/estudiante/empleado).
+    repository.crear_tipo_persona("contratista")
 
-    assert [t.nombre for t in repository.listar_tipos_persona()] == ["docente"]
+    assert "contratista" in [t.nombre for t in repository.listar_tipos_persona()]
 
 
 def test_crear_tipo_persona_con_nombre_duplicado_falla_por_unicidad():
-    repository.crear_tipo_persona("docente")
+    repository.crear_tipo_persona("contratista")
 
     with pytest.raises(IntegrityError):
-        repository.crear_tipo_persona("docente")
+        repository.crear_tipo_persona("contratista")
 
 
 def test_obtener_tipo_persona_por_nombre():
-    creado = repository.crear_tipo_persona("estudiante")
+    creado = repository.crear_tipo_persona("pasante")
 
-    assert repository.obtener_tipo_persona_por_nombre("estudiante").id == creado.id
+    assert repository.obtener_tipo_persona_por_nombre("pasante").id == creado.id
 
 
 # ------------------------------------------------------------------
@@ -82,15 +86,18 @@ def test_crear_ubicacion_usa_los_defaults_del_ddl():
 
 def test_crear_ubicacion_permite_nombres_repetidos_no_es_unico():
     # A diferencia de rol/tipo_persona/bloque/tipo_silleteria, el DDL no
-    # marca ubicacion.nombre como UNIQUE.
-    repository.crear_ubicacion("Oficina principal")
-    repository.crear_ubicacion("Oficina principal")
+    # marca ubicacion.nombre como UNIQUE. Nombre distinto a las 3 que ya
+    # trae el seed (Oficina principal / Portería superior / Portería
+    # inferior) para no mezclar conteos con esas filas.
+    repository.crear_ubicacion("Sala de pruebas")
+    repository.crear_ubicacion("Sala de pruebas")
 
-    assert len(repository.listar_ubicaciones()) == 2
+    coincidencias = [u for u in repository.listar_ubicaciones() if u.nombre == "Sala de pruebas"]
+    assert len(coincidencias) == 2
 
 
 def test_listar_ubicaciones_que_permiten_prestamo_llaves():
-    repository.crear_ubicacion("Oficina principal", permite_prestamo_llaves=True)
+    repository.crear_ubicacion("Sala de pruebas", permite_prestamo_llaves=True)
     repository.crear_ubicacion(
         "Bodega",
         permite_prestamo_llaves=False,
@@ -98,9 +105,10 @@ def test_listar_ubicaciones_que_permiten_prestamo_llaves():
         permite_prestamo_equipos=False,
     )
 
-    resultado = repository.listar_ubicaciones_que_permiten_prestamo_llaves()
+    resultado = [u.nombre for u in repository.listar_ubicaciones_que_permiten_prestamo_llaves()]
 
-    assert [u.nombre for u in resultado] == ["Oficina principal"]
+    assert "Sala de pruebas" in resultado
+    assert "Bodega" not in resultado
 
 
 # ------------------------------------------------------------------
@@ -196,9 +204,14 @@ def test_listar_salones_por_bloque():
 
 
 def test_crear_salon_con_bloque_inexistente_falla_por_fk():
+    # Postgres declara los FK de Django DEFERRABLE INITIALLY DEFERRED, así
+    # que el INSERT en sí no falla — el chequeo real ocurre en
+    # check_constraints() (Django lo llama recién al hacer rollback del
+    # test). Se fuerza aquí para no depender del orden de teardown.
     tipo_silleteria = repository.crear_tipo_silleteria("Individual")
 
     with pytest.raises(IntegrityError):
         repository.crear_salon(
             "101", "00000000-0000-0000-0000-000000000000", tipo_silleteria.id
         )
+        connection.check_constraints()

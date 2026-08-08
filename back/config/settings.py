@@ -32,6 +32,7 @@ INSTALLED_APPS = [
     "equipos",
     "usuarios",
     "comunidad",
+    "configuracion",
 ]
 
 MIDDLEWARE = [

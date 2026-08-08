@@ -1,0 +1,6 @@
+Django==5.0.14
+django-ninja==1.1.0
+psycopg[binary]==3.1.20
+django-environ==0.11.2
+pytest==8.4.2
+pytest-django==4.8.0

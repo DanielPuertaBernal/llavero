@@ -269,3 +269,17 @@ def test_listar_programaciones_por_salon_y_dia_delega_al_repository():
     resultado = service.listar_programaciones_por_salon_y_dia(salon.id, DiaSemana.LUNES)
 
     assert [p.materia for p in resultado] == ["Cálculo I"]
+
+
+def test_listar_programaciones_por_docente_delega_al_repository():
+    salon = _salon()
+    docente = _docente()
+    semestre = _semestre()
+    service.crear_programacion(
+        salon.id, docente.id, semestre.id, DiaSemana.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+    )
+
+    resultado = service.listar_programaciones_por_docente(docente.id)
+
+    assert [p.materia for p in resultado] == ["Cálculo I"]

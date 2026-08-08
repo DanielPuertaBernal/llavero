@@ -23,3 +23,8 @@ Documentación base del proyecto Llavero (sistema de gestión de salones, llaves
 - [4.2 Diagrama de clases](<./4. DiseñoTacticoDetallado/4.2 Diagrama de clases.md>)
 - [4.3 Diagrama de Paquetes](<./4. DiseñoTacticoDetallado/4.3 Diagrama de Paquetes.md>)
 - [4.4 Diagrama de Componentes](<./4. DiseñoTacticoDetallado/4.4 Diagrama de Componentes.md>)
+- [4.5 DDL](<./4. DiseñoTacticoDetallado/4.5 DDL.sql>)
+
+## 5. Identidad Visual
+
+- [5.1 Manual de Marca UCO](<./5. Identidad Visual/5.1 Manual de Marca UCO.md>)

@@ -10,6 +10,7 @@ from django.urls import path
 from ninja import NinjaAPI
 
 from catalogos.controller import router as catalogos_router
+from comunidad.controller import router as comunidad_router
 from equipos.controller import router as equipos_router
 from usuarios.controller import router as usuarios_router
 
@@ -20,6 +21,7 @@ api.add_router("/catalogos", catalogos_router, tags=["catalogos"])
 # acá se usa /api/equipos, consistente con el nombre del módulo.
 api.add_router("/equipos", equipos_router, tags=["equipos"])
 api.add_router("/usuarios", usuarios_router, tags=["usuarios"])
+api.add_router("/comunidad", comunidad_router, tags=["comunidad"])
 
 urlpatterns = [
     path("api/", api.urls),

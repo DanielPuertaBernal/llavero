@@ -30,6 +30,7 @@ INSTALLED_APPS = [
     "django.contrib.contenttypes",
     "catalogos",
     "equipos",
+    "usuarios",
 ]
 
 MIDDLEWARE = [

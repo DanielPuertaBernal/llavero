@@ -11,6 +11,7 @@ from ninja import NinjaAPI
 
 from catalogos.controller import router as catalogos_router
 from equipos.controller import router as equipos_router
+from usuarios.controller import router as usuarios_router
 
 api = NinjaAPI(title="Llavero API", version="1.0.0")
 
@@ -18,6 +19,7 @@ api.add_router("/catalogos", catalogos_router, tags=["catalogos"])
 # El legacy monta esto en /api/inventario (ver equipos/controller.py);
 # acá se usa /api/equipos, consistente con el nombre del módulo.
 api.add_router("/equipos", equipos_router, tags=["equipos"])
+api.add_router("/usuarios", usuarios_router, tags=["usuarios"])
 
 urlpatterns = [
     path("api/", api.urls),

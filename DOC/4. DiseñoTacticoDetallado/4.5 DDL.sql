@@ -333,7 +333,10 @@ CREATE TABLE notificacion (
     asunto            VARCHAR(200),
     mensaje           TEXT,
     estado_envio      estado_envio_notificacion NOT NULL DEFAULT 'enviado',
-    enviado_por_id    UUID REFERENCES usuario(id)
+    enviado_por_id    UUID REFERENCES usuario(id),
+    prestamo_id       UUID REFERENCES prestamo(id),
+    numero_intento    INT,
+    fecha_hora        TIMESTAMPTZ
 );
 
 CREATE TABLE configuracion (

@@ -57,13 +57,71 @@ tiene soporte nativo para `CREATE TYPE ... AS ENUM`; se traduce a
 `varchar` + `CHECK` con la misma garantía de integridad observable que el
 ENUM nativo del DDL.
 
-Nota de diseño — sin timestamp: a diferencia de otras tablas del sistema
-(p. ej. `llave.fecha_hora_entrega`), el DDL de `notificacion` no declara
-ninguna columna de fecha/hora. No se agrega una acá por conveniencia: es
-fiel al DDL, que es la fuente de verdad de este módulo — mismo criterio
-ya aplicado en `novedades.model.Novedad` (ver esa misma nota de diseño
-ahí). Si en el futuro hace falta auditar cuándo se envió una
-notificación, es una decisión de negocio explícita a tomar después.
+Nota de diseño — `prestamo`/`numero_intento`/`fecha_hora` (agregadas
+después de la primera versión de esta tabla): la versión original de
+`notificacion` no tenía forma de correlacionar un recordatorio con un
+préstamo/llave concreto, ni de saber cuándo se envió — ver la sección
+"FUERA DE ALCANCE" de `service.py` (versión anterior de ese docstring)
+para el gap completo que esto bloqueaba: sin esa correlación,
+`notificaciones` no podía aplicar `configuracion.
+max_reintentos_recordatorio` (ese límite es "por préstamo/llave", pero la
+tabla no sabía POR QUÉ préstamo se mandó cada recordatorio). Se resuelve
+extendiendo esta misma tabla (no una tabla satélite nueva): un
+recordatorio ya es una fila de `notificacion`, y estas 3 columnas son
+metadata de esa misma fila, no una entidad aparte con su propio ciclo de
+vida.
+
+Las 3 son NULLABLE porque no aplican a los 3 tipos por igual:
+`prestamo`/`numero_intento` solo tienen sentido para `tipo='recordatorio'`
+(la correlación que motivó el cambio) — `'manual'`/`'vencimiento'` no
+cuentan contra `max_reintentos_recordatorio` y pueden no estar atados a
+un préstamo específico (un vencimiento sí podría estarlo en el futuro,
+pero eso es una decisión de negocio no tomada acá; un manual, por
+definición, es un mensaje libre de un usuario de staff). `fecha_hora`, en
+cambio, es auditoría general de "cuándo se envió esta notificación" y en
+principio aplicaría a los 3 tipos, pero se declara nullable igual que las
+otras dos por consistencia de la columna (ver `service.py` para cuáles
+tipos la pueblan hoy) y porque no hay backfill posible para las filas ya
+existentes antes de esta migración (quedan con `NULL` en las 3 columnas
+nuevas, no con un valor inventado).
+
+Nota de diseño — tipo de `fecha_hora`: se usa `TIMESTAMPTZ` en el DDL (no
+`TIMESTAMP` a secas), igual que el resto de columnas de fecha/hora de
+este esquema (`llave.fecha_hora_entrega`, `prestamo.fecha_creacion`,
+`detalle_prestamo.fecha_entrega`, etc.) y coherente con `USE_TZ = True`
+en `settings.py`: un `DateTimeField` de Django con `USE_TZ=True` sobre
+`django.db.backends.postgresql` siempre genera `timestamp with time
+zone` en la migración, nunca `timestamp` sin zona horaria — declarar
+`TIMESTAMP` a secas en el DDL maestro habría quedado desincronizado del
+esquema real que Django efectivamente crea.
+
+Nota de diseño — `prestamo` como `ForeignKey` a `prestamos.model.
+Prestamo`, `on_delete=PROTECT`: mismo criterio que el resto de FKs de
+este archivo (ver nota de diseño de `on_delete=PROTECT` más arriba) — el
+DDL no declara `ON DELETE` explícito para `prestamo_id`, así que se
+traduce a `PROTECT`, nunca a `CASCADE`. Igual regla dura que
+`destinatario`/`enviado_por`: `notificaciones.repository`/`service`
+importan esta FK solo para declarar la columna, nunca para tocar
+`prestamos.model`/`prestamos.repository` directamente — la validación de
+que el préstamo exista pasa por `prestamos.service.obtener_prestamo`
+(ver `service.py`), mismo patrón que `comunidad.service.obtener_persona`/
+`usuarios.service.obtener_usuario` ya usan en este módulo.
+
+Es la única FK de `Notificacion` hacia `Prestamo` (no hay una segunda
+referencia a esa tabla en este modelo), así que tampoco necesita
+`related_name` explícito: el accessor inverso implícito de Django
+(`notificacion_set` en `Prestamo`) no tiene ambigüedad — mismo
+razonamiento que la nota de diseño de `destinatario`/`enviado_por` de
+arriba.
+
+Nota de diseño — `numero_intento` sin `CheckConstraint` de rango: a
+diferencia de `tipo`/`estado_envio` (dominio cerrado, por eso sí llevan
+`CheckConstraint`), un número de intento es un contador sin límite
+superior fijo en el DDL — el tope de negocio (`configuracion.
+max_reintentos_recordatorio`) es un valor configurable en otra tabla, no
+una constante que Postgres pueda validar con un `CHECK` en esta columna;
+aplicar ese tope sigue siendo responsabilidad de quien invoca
+`enviar_recordatorio` (ver `service.py`), no de esta capa de modelo.
 """
 
 import uuid
@@ -71,6 +129,7 @@ import uuid
 from django.db import models
 
 from comunidad.model import Comunidad
+from prestamos.model import Prestamo
 from usuarios.model import Usuario
 
 
@@ -105,6 +164,15 @@ class Notificacion(models.Model):
         null=True,
         blank=True,
     )
+    prestamo = models.ForeignKey(
+        Prestamo,
+        on_delete=models.PROTECT,
+        db_column="prestamo_id",
+        null=True,
+        blank=True,
+    )
+    numero_intento = models.IntegerField(null=True, blank=True)
+    fecha_hora = models.DateTimeField(null=True, blank=True)
 
     class Meta:
         db_table = "notificacion"

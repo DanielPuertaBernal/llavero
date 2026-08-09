@@ -4,9 +4,9 @@ service.py — API pública del módulo notificaciones.
 Es el ÚNICO punto de entrada que otros módulos deben usar para consumir
 notificaciones — nunca importan `model.py`/`repository.py` de este
 módulo directamente. Simétricamente, este módulo consume `comunidad`,
-`usuarios` y `configuracion` exclusivamente vía sus respectivos
-`.service` (nunca `.model`/`.repository` ajenos), la misma regla dura ya
-aplicada en `llaves.service`/`monitores.service`.
+`usuarios`, `configuracion` y `prestamos` exclusivamente vía sus
+respectivos `.service` (nunca `.model`/`.repository` ajenos), la misma
+regla dura ya aplicada en `llaves.service`/`monitores.service`.
 
 Convención de esta API, igual que el resto de módulos:
 - `listar_*`/`obtener_notificacion` no lanzan excepción ante "no existe"/
@@ -89,22 +89,29 @@ ningún cron/scheduler/celery-beat en este backend que las dispare
 automáticamente cuando corresponde (al vencer `limite_antes_mora_minutos`
 o similar) — ver la nota de `configuracion.service.obtener_configuracion`
 ("probablemente un cron/celery beat"), que menciona ese mismo componente
-como todavía inexistente. Construirlo es responsabilidad de un futuro
-componente fuera de este módulo.
+como todavía inexistente. Construirlo sigue siendo responsabilidad de un
+futuro componente fuera de este módulo.
 
-Gap relacionado, deliberadamente NO resuelto acá: `configuracion.
-max_reintentos_recordatorio` expresa un límite de reintentos "por algo"
-(en espíritu, por llave/préstamo vencido), pero el DDL de `notificacion`
-NO tiene ninguna FK hacia `llave`/`prestamo` — esta tabla solo sabe a
-QUIÉN se le mandó un mensaje y de qué tipo, nunca POR QUÉ llave/préstamo.
-Sin esa columna, `notificaciones` no tiene forma de contar "cuántos
-recordatorios van para esta llave específica" para aplicar el tope de
-`max_reintentos_recordatorio`. Esa correlación y ese conteo quedan fuera
-de alcance de este módulo por falta de soporte de datos en el DDL: el
-futuro scheduler que dispare `enviar_recordatorio` es quien tendría que
-llevar esa cuenta con su propio estado (o el DDL tendría que crecer una
-columna/tabla nueva, decisión de negocio no tomada acá). No se inventa
-ninguna de las dos cosas en este módulo.
+Gap ya RESUELTO (ver `model.py` para el detalle de columnas): el DDL de
+`notificacion` ahora tiene `prestamo_id`/`numero_intento`/`fecha_hora`,
+así que `enviar_recordatorio` sí puede correlacionar cada recordatorio
+con el préstamo/llave que lo motivó y con qué número de intento es. Antes
+de esta versión, la tabla no sabía POR QUÉ préstamo se mandaba cada
+recordatorio, lo que bloqueaba aplicar `configuracion.
+max_reintentos_recordatorio` (un límite "por préstamo/llave vencido").
+Eso ya no aplica: el dato de correlación existe y se persiste.
+
+Gap que SIGUE fuera de alcance, deliberadamente NO resuelto acá: tener
+las columnas no significa que exista el motor que las use. Esta función
+sigue sin decidir CUÁNDO disparar un recordatorio ni CUÁL `numero_intento`
+pasar — sigue recibiendo ambos datos (`prestamo_id`, `numero_intento`) de
+quien la invoca, y sigue sin comparar `numero_intento` contra
+`max_reintentos_recordatorio` para decidir si debe enviarse o no. Esa
+decisión (contar intentos previos para este préstamo, compararlos contra
+el tope de `configuracion`, y decidir si vale la pena seguir
+reintentando) es responsabilidad del futuro scheduler que orqueste estas
+llamadas, no de `enviar_recordatorio` — este método es un primitivo de
+"enviar y registrar", no el motor de política de reintentos.
 
 No se usa `transaction.atomic()` en este módulo: cada operación de
 escritura es un único INSERT de una sola tabla, ya atómico de por sí en
@@ -112,17 +119,35 @@ Django (autocommit por sentencia). El intento de envío por SMTP ocurre
 ANTES del INSERT (no dentro de una transacción que lo envuelva), así que
 no hay ningún escenario de "notificación persistida pero rollback del
 envío" o viceversa que coordinar.
+
+===========================================================================
+`fecha_hora` — auditoría de envío en las 3 funciones `enviar_*`
+===========================================================================
+
+Las 3 funciones `enviar_notificacion_manual`/`enviar_recordatorio`/
+`enviar_vencimiento` setean `fecha_hora=timezone.now()` al persistir,
+no solo `enviar_recordatorio` (que es la que motivó agregar la columna).
+Razón: `fecha_hora` es información general de auditoría ("cuándo se
+envió/intentó enviar esta notificación"), no un dato específico de la
+correlación préstamo/recordatorio — no hay ninguna razón de negocio para
+que una notificación `'manual'`/`'vencimiento'` no tenga ese mismo dato
+de auditoría solo por no llevar `prestamo_id`/`numero_intento`. Mismo
+timestamp único por operación que ya usa `prestamos.repository.
+marcar_detalle_devuelto` (un solo `timezone.now()` calculado en la capa
+de negocio, nunca dentro del repository).
 """
 
 import smtplib
 
 from django.conf import settings
 from django.core.mail import send_mail
+from django.utils import timezone
 
 from comunidad import service as comunidad_service
 from configuracion import service as configuracion_service
 from notificaciones import repository
 from notificaciones.model import EstadoEnvioNotificacion, TipoNotificacion
+from prestamos import service as prestamos_service
 from usuarios import service as usuarios_service
 
 
@@ -156,6 +181,10 @@ def enviar_notificacion_manual(destinatario_id, asunto: str, mensaje: str, envia
     `enviado_por_id` siempre queda registrado en la Notificacion
     resultante: es la marca de que esta notificación, a diferencia de
     'recordatorio'/'vencimiento', la disparó una persona concreta.
+
+    `fecha_hora` queda siempre en `timezone.now()` (ver docstring del
+    módulo, sección "`fecha_hora` — auditoría de envío"): es auditoría
+    general, no un dato exclusivo de `enviar_recordatorio`.
     """
     destinatario = comunidad_service.obtener_persona(destinatario_id)
     if destinatario is None:
@@ -171,26 +200,39 @@ def enviar_notificacion_manual(destinatario_id, asunto: str, mensaje: str, envia
         asunto=asunto,
         mensaje=mensaje,
         enviado_por_id=enviado_por_id,
+        fecha_hora=timezone.now(),
     )
 
 
-def enviar_recordatorio(destinatario_id, mensaje: str | None = None):
+def enviar_recordatorio(
+    destinatario_id, mensaje: str | None = None, prestamo_id=None, numero_intento=None
+):
     """Envía (o intenta) un recordatorio automático, validando primero que
-    `destinatario_id` exista en comunidad.
+    `destinatario_id` exista en comunidad y, si se pasa `prestamo_id`,
+    que ese préstamo también exista (vía `prestamos.service.
+    obtener_prestamo`, la única forma permitida de tocar `prestamos`
+    desde este módulo — ver docstring del módulo).
+
+    `prestamo_id`/`numero_intento` son opcionales (default `None`):
+    correlacionan este recordatorio con el préstamo/llave que lo motivó
+    y con qué intento es, pero esta función NO decide cuándo debe
+    dispararse un recordatorio ni compara `numero_intento` contra
+    `configuracion.max_reintentos_recordatorio` — ver docstring del
+    módulo, sección "FUERA DE ALCANCE", para el detalle de qué sigue
+    pendiente y por qué.
 
     Si no se pasa `mensaje` explícito, usa `configuracion.service.
-    obtener_configuracion().plantilla_recordatorio` como base (ver
-    docstring del módulo, sección "FUERA DE ALCANCE", para qué NO cubre
-    esta función: no decide CUÁNDO disparar el recordatorio ni cuenta
-    reintentos contra `max_reintentos_recordatorio`, eso es
-    responsabilidad de quien la invoque).
+    obtener_configuracion().plantilla_recordatorio` como base.
 
     `enviado_por_id` queda siempre `None`: no hay un usuario de staff
-    detrás de un recordatorio automático.
+    detrás de un recordatorio automático. `fecha_hora` queda siempre en
+    `timezone.now()`.
     """
     destinatario = comunidad_service.obtener_persona(destinatario_id)
     if destinatario is None:
         raise ValueError(f"No existe un destinatario en comunidad con id {destinatario_id}")
+    if prestamo_id is not None and prestamos_service.obtener_prestamo(prestamo_id) is None:
+        raise ValueError(f"No existe un préstamo con id {prestamo_id}")
 
     if mensaje is None:
         mensaje = configuracion_service.obtener_configuracion().plantilla_recordatorio
@@ -203,6 +245,9 @@ def enviar_recordatorio(destinatario_id, mensaje: str | None = None):
         asunto=None,
         mensaje=mensaje,
         enviado_por_id=None,
+        prestamo_id=prestamo_id,
+        numero_intento=numero_intento,
+        fecha_hora=timezone.now(),
     )
 
 
@@ -213,7 +258,12 @@ def enviar_vencimiento(destinatario_id, mensaje: str):
     Análoga a `enviar_recordatorio`, sin plantilla de configuracion (el
     DDL no la prevé para este tipo): `mensaje` siempre lo arma quien
     invoca. `enviado_por_id` queda siempre `None`, mismo motivo que
-    `enviar_recordatorio`.
+    `enviar_recordatorio`. No recibe `prestamo_id`/`numero_intento`: esos
+    dos son específicos de la correlación de reintentos de
+    `enviar_recordatorio` (ver docstring del módulo); un vencimiento no
+    cuenta contra `max_reintentos_recordatorio`. `fecha_hora` sí queda
+    siempre en `timezone.now()`, igual que en las otras dos funciones
+    `enviar_*` (es auditoría general, no exclusiva del recordatorio).
     """
     destinatario = comunidad_service.obtener_persona(destinatario_id)
     if destinatario is None:
@@ -227,6 +277,7 @@ def enviar_vencimiento(destinatario_id, mensaje: str):
         asunto=None,
         mensaje=mensaje,
         enviado_por_id=None,
+        fecha_hora=timezone.now(),
     )
 
 

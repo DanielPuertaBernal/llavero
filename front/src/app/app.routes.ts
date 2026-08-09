@@ -4,12 +4,29 @@ import { AuthCallbackComponent } from './core/auth/auth-callback.component';
 import { authGuard } from './core/auth/auth.guard';
 import { DashboardPlaceholderComponent } from './dashboard-placeholder/dashboard-placeholder.component';
 
-// Scaffold mínimo: solo la ruta de aterrizaje del login federado y una
-// ruta protegida vacía para probar el flujo de auth de punta a punta. Sin
-// rutas de feature todavía (ver `src/app/features/`, vacío a propósito) —
-// esas se agregan una por una en sesiones futuras.
+// Primera feature real (`catalogos`, ver `src/app/features/catalogos/`):
+// dos rutas hermanas (Salones/Ubicaciones son vistas independientes, no
+// una jerarquía padre-hijo) cargadas de forma perezosa con `loadComponent`
+// (estilo actual de Angular para standalone components), protegidas por el
+// mismo `authGuard` que la ruta placeholder.
 export const routes: Routes = [
   { path: 'auth/callback', component: AuthCallbackComponent },
   { path: 'dashboard', component: DashboardPlaceholderComponent, canActivate: [authGuard] },
+  {
+    path: 'catalogos/salones',
+    loadComponent: () =>
+      import('./features/catalogos/salones/salones-list.component').then(
+        (m) => m.SalonesListComponent,
+      ),
+    canActivate: [authGuard],
+  },
+  {
+    path: 'catalogos/ubicaciones',
+    loadComponent: () =>
+      import('./features/catalogos/ubicaciones/ubicaciones-list.component').then(
+        (m) => m.UbicacionesListComponent,
+      ),
+    canActivate: [authGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

@@ -5,7 +5,7 @@ Sistema de gestión de llaves, equipos y salones para la UCO. Reemplaza al siste
 ## Estructura del repositorio
 
 - [`DOC/`](./DOC/README.md) — documentación completa del proyecto: descubrimiento del problema, diseño estratégico (modelo de dominio, requerimientos) y diseño táctico (arquitectura de referencia, modelo de datos, diagramas de clases/paquetes/componentes).
-- [`back/`](./back/README.md) — backend (PostgreSQL + Django Ninja). Aún no construido.
+- [`back/`](./back/README.md) — backend (PostgreSQL + Django Ninja). Los 16 módulos están construidos (TDD contra Postgres real) y mergeados en `develop`.
 - [`front/`](./front/README.md) — frontend (Angular + TypeScript + PrimeNG). Aún no construido.
 
 ## Stack

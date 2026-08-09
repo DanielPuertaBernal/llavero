@@ -28,7 +28,7 @@ cp env.example .env
 
 > Nota: el archivo de ejemplo se llama `env.example` (sin el punto inicial) porque el entorno de desarrollo con el que se generó este scaffold bloquea la creación de archivos `.env*` como medida de seguridad. Renómbralo tú a `.env.example` si quieres seguir la convención habitual — el contenido es el mismo, y `.gitignore` ya ignora cualquiera de las dos variantes de nombre real (`.env`).
 
-Claves esperadas: `DEBUG`, `SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `ALLOWED_HOSTS`.
+Claves esperadas: `DEBUG`, `SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `ALLOWED_HOSTS`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, `FRONTEND_POST_LOGIN_REDIRECT_URL` (login federado Office 365, ver `auth/service.py`), `EMAIL_HOST`, `EMAIL_HOST_FALLBACK`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_TIMEOUT`, `DEFAULT_FROM_EMAIL` (relay SMTP institucional, ver `notificaciones/service.py`). Ver `env.example` para la lista completa con comentarios.
 
 ## Base de datos y migraciones
 
@@ -54,7 +54,7 @@ pytest -v
 python manage.py runserver
 ```
 
-La API queda montada en `http://localhost:8000/api/` (una única instancia de `NinjaAPI`, con el router de cada módulo agregado ahí — por ahora solo `catalogos`, bajo `/api/catalogos/...`). Documentación interactiva autogenerada en `http://localhost:8000/api/docs`.
+La API queda montada en `http://localhost:8000/api/` (una única instancia de `NinjaAPI`, con el router de cada uno de los 16 módulos agregado ahí — `auth`, `catalogos`, `equipos`, `usuarios`, `comunidad`, `programacion`, `monitores`, `novedades`, `reservas`, `reservas-semestrales`, `llaves`, `configuracion`, `notificaciones`, `prestamos`, `nfc`; ver `config/urls.py` para la lista completa y actualizada de routers montados). Documentación interactiva autogenerada en `http://localhost:8000/api/docs`.
 
 ## Convención de módulos (monolito modular)
 

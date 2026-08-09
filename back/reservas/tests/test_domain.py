@@ -11,7 +11,9 @@ comportamiento, reimplementada acá deliberadamente (ver docstring de
 
 import datetime
 
-from reservas.domain import hay_solapamiento
+from django.utils import timezone
+
+from reservas.domain import es_no_reclamada, hay_solapamiento
 
 
 def _hora(h: int, m: int = 0) -> datetime.time:
@@ -47,3 +49,32 @@ def test_solapamiento_es_simetrico():
     assert hay_solapamiento(a_inicio, a_fin, b_inicio, b_fin) == hay_solapamiento(
         b_inicio, b_fin, a_inicio, a_fin
     )
+
+
+# ------------------------------------------------------------------
+# es_no_reclamada
+# ------------------------------------------------------------------
+
+
+def test_es_no_reclamada_exactamente_en_el_limite_es_false():
+    fecha = datetime.date(2026, 3, 10)
+    hora_inicio = _hora(8)
+    ahora = timezone.make_aware(datetime.datetime(2026, 3, 10, 8, 30))
+
+    assert es_no_reclamada(fecha, hora_inicio, 30, ahora) is False
+
+
+def test_es_no_reclamada_un_segundo_despues_del_limite_es_true():
+    fecha = datetime.date(2026, 3, 10)
+    hora_inicio = _hora(8)
+    ahora = timezone.make_aware(datetime.datetime(2026, 3, 10, 8, 30, 1))
+
+    assert es_no_reclamada(fecha, hora_inicio, 30, ahora) is True
+
+
+def test_es_no_reclamada_antes_del_limite_es_false():
+    fecha = datetime.date(2026, 3, 10)
+    hora_inicio = _hora(8)
+    ahora = timezone.make_aware(datetime.datetime(2026, 3, 10, 8, 15))
+
+    assert es_no_reclamada(fecha, hora_inicio, 30, ahora) is False

@@ -317,3 +317,94 @@ def test_completar_reserva_ya_completada_da_value_error_claro():
 
     with pytest.raises(ValueError, match="aprobada"):
         service.completar_reserva(creada.id)
+
+
+# ------------------------------------------------------------------
+# marcar_no_reclamada
+# ------------------------------------------------------------------
+
+
+def test_marcar_no_reclamada_transiciona_de_aprobada_a_no_reclamada():
+    salon = _salon()
+    solicitante = _solicitante()
+    creada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    assert creada.estado == EstadoReservaIndividual.APROBADA
+
+    resultado = service.marcar_no_reclamada(creada.id)
+
+    assert resultado.estado == EstadoReservaIndividual.NO_RECLAMADA
+    assert repository.obtener_por_id(creada.id).estado == EstadoReservaIndividual.NO_RECLAMADA
+
+
+def test_marcar_no_reclamada_ya_no_reclamada_es_no_op():
+    salon = _salon()
+    solicitante = _solicitante()
+    creada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    service.marcar_no_reclamada(creada.id)
+
+    resultado = service.marcar_no_reclamada(creada.id)
+
+    assert resultado.estado == EstadoReservaIndividual.NO_RECLAMADA
+
+
+def test_marcar_no_reclamada_completada_es_no_op():
+    salon = _salon()
+    solicitante = _solicitante()
+    creada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    service.completar_reserva(creada.id)
+
+    resultado = service.marcar_no_reclamada(creada.id)
+
+    assert resultado.estado == EstadoReservaIndividual.COMPLETADA
+
+
+def test_marcar_no_reclamada_cancelada_es_no_op():
+    salon = _salon()
+    solicitante = _solicitante()
+    creada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    service.cancelar_reserva(creada.id)
+
+    resultado = service.marcar_no_reclamada(creada.id)
+
+    assert resultado.estado == EstadoReservaIndividual.CANCELADA
+
+
+def test_marcar_no_reclamada_inexistente_da_value_error_claro():
+    with pytest.raises(ValueError, match="No existe"):
+        service.marcar_no_reclamada("00000000-0000-0000-0000-000000000000")
+
+
+# ------------------------------------------------------------------
+# listar_reservas_aprobadas_hasta
+# ------------------------------------------------------------------
+
+
+def test_listar_reservas_aprobadas_hasta_delega_al_repository():
+    salon = _salon()
+    solicitante = _solicitante()
+    aprobada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    despues = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 12),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    resultado = service.listar_reservas_aprobadas_hasta(datetime.date(2026, 3, 10))
+
+    ids = {r.id for r in resultado}
+    assert ids == {aprobada.id}
+    assert despues.id not in ids

@@ -243,3 +243,61 @@ def test_cambiar_estado_inexistente_devuelve_none():
         )
         is None
     )
+
+
+def test_cambiar_estado_a_no_reclamada_actualiza_solo_el_campo_estado():
+    # marcar_no_reclamada (ver service.py) reusa cambiar_estado, sin
+    # función de repository dedicada — este test cubre explícitamente el
+    # nuevo estado del enum (ver sdd/scheduler-transiciones).
+    creada = _reserva()
+
+    actualizada = repository.cambiar_estado(
+        creada.id, EstadoReservaIndividual.NO_RECLAMADA
+    )
+
+    assert actualizada.estado == EstadoReservaIndividual.NO_RECLAMADA
+    assert repository.obtener_por_id(creada.id).estado == EstadoReservaIndividual.NO_RECLAMADA
+    assert actualizada.fecha == creada.fecha
+    assert actualizada.hora_inicio == creada.hora_inicio
+
+
+# ------------------------------------------------------------------
+# listar_aprobadas_hasta
+# ------------------------------------------------------------------
+
+
+def test_listar_aprobadas_hasta_solo_devuelve_aprobadas_con_fecha_lte():
+    salon = _salon()
+    solicitante = _persona()
+    aprobada_antes = _reserva(
+        salon=salon, solicitante=solicitante, fecha=datetime.date(2026, 3, 9)
+    )
+    aprobada_en_la_fecha = _reserva(
+        salon=salon,
+        solicitante=solicitante,
+        fecha=datetime.date(2026, 3, 10),
+        hora_inicio=datetime.time(11, 0),
+        hora_fin=datetime.time(12, 0),
+    )
+    aprobada_despues = _reserva(
+        salon=salon, solicitante=solicitante, fecha=datetime.date(2026, 3, 11)
+    )
+    cancelada = _reserva(
+        salon=salon,
+        solicitante=solicitante,
+        fecha=datetime.date(2026, 3, 9),
+        hora_inicio=datetime.time(13, 0),
+        hora_fin=datetime.time(14, 0),
+    )
+    repository.cambiar_estado(cancelada.id, EstadoReservaIndividual.CANCELADA)
+
+    resultado = repository.listar_aprobadas_hasta(datetime.date(2026, 3, 10))
+
+    ids = {r.id for r in resultado}
+    assert ids == {aprobada_antes.id, aprobada_en_la_fecha.id}
+    assert aprobada_despues.id not in ids
+    assert cancelada.id not in ids
+
+
+def test_listar_aprobadas_hasta_sin_candidatas_devuelve_lista_vacia():
+    assert repository.listar_aprobadas_hasta(datetime.date(2026, 3, 10)) == []

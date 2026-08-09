@@ -509,6 +509,50 @@ def test_crear_llave_con_reserva_no_aprobada_da_value_error_claro():
     assert reservas_service.obtener_reserva(reserva.id).estado == "cancelada"
 
 
+# ------------------------------------------------------------------
+# marcar_demora
+# ------------------------------------------------------------------
+
+
+def test_marcar_demora_transiciona_de_en_prestamo_a_demora_entrega():
+    creada, _ = _crear_llave_valida()
+    assert creada.estado == EstadoLlave.EN_PRESTAMO
+
+    en_demora = service.marcar_demora(creada.id)
+
+    assert en_demora.estado == EstadoLlave.DEMORA_ENTREGA
+    assert repository.obtener_por_id(creada.id).estado == EstadoLlave.DEMORA_ENTREGA
+
+
+def test_marcar_demora_ya_en_demora_entrega_es_no_op():
+    creada, _ = _crear_llave_valida()
+    service.marcar_demora(creada.id)
+
+    resultado = service.marcar_demora(creada.id)
+
+    assert resultado.estado == EstadoLlave.DEMORA_ENTREGA
+
+
+def test_marcar_demora_ya_entregada_es_no_op():
+    creada, f = _crear_llave_valida()
+    ubicacion_devolucion = _ubicacion("ubicacion-devolucion")
+    service.devolver_llave(
+        creada.id,
+        f["usuario_entrega"].id,
+        ubicacion_devolucion.id,
+        TipoEntregaLlave.CREDENCIAL,
+    )
+
+    resultado = service.marcar_demora(creada.id)
+
+    assert resultado.estado == EstadoLlave.ENTREGADO
+
+
+def test_marcar_demora_inexistente_da_value_error_claro():
+    with pytest.raises(ValueError, match="No existe"):
+        service.marcar_demora("00000000-0000-0000-0000-000000000000")
+
+
 def test_crear_llave_con_reserva_id_y_origen_distinto_da_value_error_claro():
     f = _fixtures()
     reserva = _reserva_aprobada(f["salon"], f["docente_titular"])

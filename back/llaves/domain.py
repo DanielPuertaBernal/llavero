@@ -27,27 +27,25 @@ en `novedades.domain` (no bloquea "re-cerrar" una novedad ya cerrada). Si
 en el futuro hace falta, es una decisión de negocio explícita a tomar
 después.
 
-Nota de diseño — transición automática a 'demora_entrega' fuera de
-alcance: el DDL declara `estado_llave` con tres valores
-(`'en_prestamo'`/`'demora_entrega'`/`'entregado'`), y
+Nota de diseño — transición automática a 'demora_entrega' (`es_mora` +
+`service.marcar_demora`, ver ese módulo): el DDL declara `estado_llave`
+con tres valores (`'en_prestamo'`/`'demora_entrega'`/`'entregado'`), y
 `configuracion.model.Configuracion.limite_antes_mora_minutos` (ver DOC/2.
 Diseño estratégico/2.1 Modelo Dominio Anémico.md, entidad Configuración:
 "Minutos desde la entrega antes de pasar a demora_entrega") confirma que
 `demora_entrega` es una transición automática por tiempo transcurrido,
-no una acción explícita de un usuario. Pero ningún documento de
-análisis disponible para este módulo especifica el mecanismo (cron/job
-periódico, workers, un endpoint de "barrido" invocado externamente,
-etc.) ni el módulo dueño de dispararla — no existe todavía ningún módulo
-`notificaciones`/scheduler en este backend. Implementar esa transición
-acá sería inventar un mecanismo no especificado. Este módulo solo modela
-las dos transiciones con especificación completa y verificable contra el
-DDL: `crear_llave` (nace en `'en_prestamo'`, default del DDL) y
-`devolver_llave` (`-> 'entregado'`, explícita, iniciada por un
-usuario/porteria). Cuando el mecanismo de mora se especifique, es una
-extensión aditiva a este módulo (probablemente un
-`service.marcar_demora(llave_id)` invocado por el futuro scheduler), no
-un cambio a lo ya construido.
+no una acción explícita de un usuario. El mecanismo que dispara la
+transición (el futuro `scheduler`, ver `sdd/scheduler-transiciones`) vive
+fuera de este módulo — acá solo se modela la decisión pura ("¿ya pasó el
+límite?", `es_mora`) y la transición de estado en sí
+(`service.marcar_demora`), ambas con especificación completa y
+verificable contra el DDL. `es_mora` recibe `fecha_hora_entrega` y
+`ahora` ya como datetimes aware (`USE_TZ=True`) — no calcula ningún
+"ahora" internamente, mismo criterio que el resto del proyecto (ver
+`repository.py`).
 """
+
+import datetime
 
 
 def validar_permite_prestamo(permite_prestamo_llaves: bool) -> None:
@@ -72,3 +70,20 @@ def validar_permite_devolucion(permite_devolucion_llaves: bool) -> None:
         raise ValueError(
             "La ubicación de devolución no permite devolución de llaves"
         )
+
+
+def es_mora(
+    fecha_hora_entrega: datetime.datetime,
+    limite_minutos: int,
+    ahora: datetime.datetime,
+) -> bool:
+    """True si ya pasó `limite_minutos` desde `fecha_hora_entrega` respecto
+    de `ahora` — la decisión pura detrás de la transición
+    `service.marcar_demora` (ver nota de diseño del módulo).
+
+    `fecha_hora_entrega` y `ahora` son datetimes aware (`USE_TZ=True`).
+    Exactamente en el límite (`ahora == fecha_hora_entrega + límite`) NO es
+    mora todavía — el límite es el instante en que empieza a serlo, no
+    antes.
+    """
+    return ahora > fecha_hora_entrega + datetime.timedelta(minutes=limite_minutos)

@@ -215,3 +215,202 @@ def test_crear_salon_con_bloque_inexistente_falla_por_fk():
             "101", "00000000-0000-0000-0000-000000000000", tipo_silleteria.id
         )
         connection.check_constraints()
+
+
+def test_actualizar_salon_cambia_solo_los_campos_provistos():
+    bloque_1 = repository.crear_bloque("Bloque actualizar salon 1")
+    bloque_2 = repository.crear_bloque("Bloque actualizar salon 2")
+    tipo_silleteria = repository.crear_tipo_silleteria("Individual actualizar salon")
+    salon = repository.crear_salon("101", bloque_1.id, tipo_silleteria.id)
+
+    actualizado = repository.actualizar_salon(
+        salon.id, bloque_id=bloque_2.id, cantidad_sillas=30
+    )
+
+    assert actualizado.bloque_id == bloque_2.id
+    assert actualizado.cantidad_sillas == 30
+    # No provisto: se conserva.
+    assert actualizado.nombre == "101"
+    assert actualizado.tipo_silleteria_id == tipo_silleteria.id
+
+
+def test_actualizar_salon_con_id_inexistente_devuelve_none():
+    assert repository.actualizar_salon("00000000-0000-0000-0000-000000000000", nombre="x") is None
+
+
+def test_eliminar_salon_lo_remueve():
+    bloque = repository.crear_bloque("Bloque eliminar salon")
+    tipo_silleteria = repository.crear_tipo_silleteria("Individual eliminar salon")
+    salon = repository.crear_salon("101", bloque.id, tipo_silleteria.id)
+
+    eliminado = repository.eliminar_salon(salon.id)
+
+    assert eliminado is True
+    assert repository.obtener_salon_por_id(salon.id) is None
+
+
+def test_eliminar_salon_con_id_inexistente_devuelve_false():
+    assert repository.eliminar_salon("00000000-0000-0000-0000-000000000000") is False
+
+
+# ------------------------------------------------------------------
+# actualizar_*/eliminar_* — Rol, TipoPersona, Ubicacion, Bloque,
+# TipoSilleteria (mismo patrón simple de un solo campo "nombre",
+# excepto Ubicacion que además tiene sus 3 banderas de permiso).
+# ------------------------------------------------------------------
+
+
+def test_actualizar_rol_persiste_el_nuevo_nombre():
+    rol = repository.crear_rol("rol-temporal")
+
+    actualizado = repository.actualizar_rol(rol.id, nombre="rol-permanente")
+
+    assert actualizado.nombre == "rol-permanente"
+    assert repository.obtener_rol_por_id(rol.id).nombre == "rol-permanente"
+
+
+def test_actualizar_rol_sin_campos_no_cambia_nada():
+    rol = repository.crear_rol("rol-sin-cambios")
+
+    actualizado = repository.actualizar_rol(rol.id)
+
+    assert actualizado.nombre == "rol-sin-cambios"
+
+
+def test_actualizar_rol_con_id_inexistente_devuelve_none():
+    assert repository.actualizar_rol("00000000-0000-0000-0000-000000000000", nombre="x") is None
+
+
+def test_eliminar_rol_lo_remueve():
+    rol = repository.crear_rol("rol-desechable")
+
+    eliminado = repository.eliminar_rol(rol.id)
+
+    assert eliminado is True
+    assert repository.obtener_rol_por_id(rol.id) is None
+
+
+def test_eliminar_rol_con_id_inexistente_devuelve_false():
+    assert repository.eliminar_rol("00000000-0000-0000-0000-000000000000") is False
+
+
+def test_actualizar_tipo_persona_persiste_el_nuevo_nombre():
+    tipo_persona = repository.crear_tipo_persona("tipo-temporal")
+
+    actualizado = repository.actualizar_tipo_persona(tipo_persona.id, nombre="tipo-permanente")
+
+    assert actualizado.nombre == "tipo-permanente"
+
+
+def test_actualizar_tipo_persona_con_id_inexistente_devuelve_none():
+    assert (
+        repository.actualizar_tipo_persona("00000000-0000-0000-0000-000000000000", nombre="x")
+        is None
+    )
+
+
+def test_eliminar_tipo_persona_lo_remueve():
+    tipo_persona = repository.crear_tipo_persona("tipo-desechable")
+
+    eliminado = repository.eliminar_tipo_persona(tipo_persona.id)
+
+    assert eliminado is True
+    assert repository.obtener_tipo_persona_por_id(tipo_persona.id) is None
+
+
+def test_eliminar_tipo_persona_con_id_inexistente_devuelve_false():
+    assert repository.eliminar_tipo_persona("00000000-0000-0000-0000-000000000000") is False
+
+
+def test_actualizar_ubicacion_solo_cambia_los_campos_provistos():
+    ubicacion = repository.crear_ubicacion(
+        "Sala actualizar ubicacion",
+        permite_prestamo_llaves=True,
+        permite_devolucion_llaves=True,
+        permite_prestamo_equipos=False,
+    )
+
+    actualizada = repository.actualizar_ubicacion(ubicacion.id, permite_prestamo_equipos=True)
+
+    assert actualizada.permite_prestamo_equipos is True
+    # No provistos: se conservan.
+    assert actualizada.permite_prestamo_llaves is True
+    assert actualizada.permite_devolucion_llaves is True
+    assert actualizada.nombre == "Sala actualizar ubicacion"
+
+
+def test_actualizar_ubicacion_con_id_inexistente_devuelve_none():
+    assert (
+        repository.actualizar_ubicacion("00000000-0000-0000-0000-000000000000", nombre="x")
+        is None
+    )
+
+
+def test_eliminar_ubicacion_lo_remueve():
+    ubicacion = repository.crear_ubicacion("Sala eliminar ubicacion")
+
+    eliminado = repository.eliminar_ubicacion(ubicacion.id)
+
+    assert eliminado is True
+    assert repository.obtener_ubicacion_por_id(ubicacion.id) is None
+
+
+def test_eliminar_ubicacion_con_id_inexistente_devuelve_false():
+    assert repository.eliminar_ubicacion("00000000-0000-0000-0000-000000000000") is False
+
+
+def test_actualizar_bloque_persiste_el_nuevo_nombre():
+    bloque = repository.crear_bloque("bloque-temporal")
+
+    actualizado = repository.actualizar_bloque(bloque.id, nombre="bloque-permanente")
+
+    assert actualizado.nombre == "bloque-permanente"
+
+
+def test_actualizar_bloque_con_id_inexistente_devuelve_none():
+    assert (
+        repository.actualizar_bloque("00000000-0000-0000-0000-000000000000", nombre="x") is None
+    )
+
+
+def test_eliminar_bloque_lo_remueve():
+    bloque = repository.crear_bloque("bloque-desechable")
+
+    eliminado = repository.eliminar_bloque(bloque.id)
+
+    assert eliminado is True
+    assert repository.obtener_bloque_por_id(bloque.id) is None
+
+
+def test_eliminar_bloque_con_id_inexistente_devuelve_false():
+    assert repository.eliminar_bloque("00000000-0000-0000-0000-000000000000") is False
+
+
+def test_actualizar_tipo_silleteria_persiste_el_nuevo_nombre():
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-temporal")
+
+    actualizado = repository.actualizar_tipo_silleteria(
+        tipo_silleteria.id, nombre="silleteria-permanente"
+    )
+
+    assert actualizado.nombre == "silleteria-permanente"
+
+
+def test_actualizar_tipo_silleteria_con_id_inexistente_devuelve_none():
+    assert (
+        repository.actualizar_tipo_silleteria("00000000-0000-0000-0000-000000000000", nombre="x")
+        is None
+    )
+
+
+def test_eliminar_tipo_silleteria_lo_remueve():
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-desechable")
+
+    eliminado = repository.eliminar_tipo_silleteria(tipo_silleteria.id)
+
+    assert eliminado is True
+    assert repository.obtener_tipo_silleteria_por_id(tipo_silleteria.id) is None
+
+
+def test_eliminar_tipo_silleteria_con_id_inexistente_devuelve_false():
+    assert repository.eliminar_tipo_silleteria("00000000-0000-0000-0000-000000000000") is False

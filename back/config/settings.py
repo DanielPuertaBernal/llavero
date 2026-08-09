@@ -61,6 +61,7 @@ INSTALLED_APPS = [
     "llaves",
     "configuracion",
     "notificaciones",
+    "prestamos",
     # No se agrega "ninja_jwt" (ni "ninja_jwt.token_blacklist"): solo se usan
     # sus primitivos de bajo nivel (ninja_jwt.tokens.RefreshToken/AccessToken),
     # que no requieren registro como Django app (ver nota de diseño en

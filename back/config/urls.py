@@ -19,6 +19,7 @@ from monitores.controller import router as monitores_router
 from novedades.controller import router as novedades_router
 from programacion.controller import router as programacion_router
 from reservas.controller import router as reservas_router
+from reservas_semestrales.controller import router as reservas_semestrales_router
 from usuarios.controller import router as usuarios_router
 
 api = NinjaAPI(title="Llavero API", version="1.0.0")
@@ -34,6 +35,7 @@ api.add_router("/programacion", programacion_router, tags=["programacion"])
 api.add_router("/monitores", monitores_router, tags=["monitores"])
 api.add_router("/novedades", novedades_router, tags=["novedades"])
 api.add_router("/reservas", reservas_router, tags=["reservas"])
+api.add_router("/reservas-semestrales", reservas_semestrales_router, tags=["reservas_semestrales"])
 api.add_router("/llaves", llaves_router, tags=["llaves"])
 api.add_router("/configuracion", configuracion_router, tags=["configuracion"])
 

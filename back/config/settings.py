@@ -57,6 +57,7 @@ INSTALLED_APPS = [
     "monitores",
     "novedades",
     "reservas",
+    "reservas_semestrales",
     "llaves",
     "configuracion",
     # No se agrega "ninja_jwt" (ni "ninja_jwt.token_blacklist"): solo se usan

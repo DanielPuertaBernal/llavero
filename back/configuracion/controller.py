@@ -29,6 +29,7 @@ class ConfiguracionOut(Schema):
     max_reintentos_recordatorio: int
     plantilla_recordatorio: str | None
     ubicacion_defecto_id: uuid.UUID
+    limite_no_reclamada_minutos: int
 
 
 class ConfiguracionIn(Schema):
@@ -36,6 +37,7 @@ class ConfiguracionIn(Schema):
     limite_antes_mora_minutos: int = 120
     max_reintentos_recordatorio: int = 3
     plantilla_recordatorio: str | None = None
+    limite_no_reclamada_minutos: int = 30
 
 
 # ------------------------------------------------------------------
@@ -56,6 +58,7 @@ def crear_configuracion(request, payload: ConfiguracionIn):
             limite_antes_mora_minutos=payload.limite_antes_mora_minutos,
             max_reintentos_recordatorio=payload.max_reintentos_recordatorio,
             plantilla_recordatorio=payload.plantilla_recordatorio,
+            limite_no_reclamada_minutos=payload.limite_no_reclamada_minutos,
         )
     except ValueError as exc:
         return 400, {"detail": str(exc)}
@@ -70,6 +73,7 @@ def actualizar_configuracion(request, payload: ConfiguracionIn):
             payload.limite_antes_mora_minutos,
             payload.max_reintentos_recordatorio,
             payload.plantilla_recordatorio,
+            limite_no_reclamada_minutos=payload.limite_no_reclamada_minutos,
         )
     except ValueError as exc:
         return 400, {"detail": str(exc)}

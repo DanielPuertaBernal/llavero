@@ -349,7 +349,8 @@ CREATE TABLE configuracion (
     limite_antes_mora_minutos      INT NOT NULL DEFAULT 120,
     max_reintentos_recordatorio    INT NOT NULL DEFAULT 3,
     plantilla_recordatorio         TEXT,
-    ubicacion_defecto_id           UUID NOT NULL REFERENCES ubicacion(id)
+    ubicacion_defecto_id           UUID NOT NULL REFERENCES ubicacion(id),
+    limite_no_reclamada_minutos    INT NOT NULL DEFAULT 30
 );
 
 -- ============================================================

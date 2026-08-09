@@ -33,6 +33,15 @@ datos —así que ese modelo NO lo agrega tampoco (sería inventar una
 restricción que el DDL no pide)—; la invariante de "una sola fila" se
 refuerza en `service.py`, la capa que sí tiene contexto de negocio para
 decidir qué hacer cuando ya existe una.
+
+Nota de diseño — `limite_no_reclamada_minutos` (agregado junto con
+`sdd/scheduler-transiciones`): mismo criterio exacto que
+`limite_antes_mora_minutos` — un `IntegerField` con default de negocio
+(30, ver DDL), leído por el futuro scheduler para decidir cuándo una
+`reserva_individual` `'aprobada'` pasa a `'no_reclamada'` (ver
+`reservas.domain.es_no_reclamada`), simétrico a cómo
+`limite_antes_mora_minutos` decide cuándo una `llave` pasa a
+`'demora_entrega'`.
 """
 
 import uuid
@@ -50,6 +59,7 @@ class Configuracion(models.Model):
     ubicacion_defecto = models.ForeignKey(
         Ubicacion, on_delete=models.PROTECT, db_column="ubicacion_defecto_id"
     )
+    limite_no_reclamada_minutos = models.IntegerField(default=30)
 
     class Meta:
         db_table = "configuracion"

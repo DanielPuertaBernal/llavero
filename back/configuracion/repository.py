@@ -31,12 +31,14 @@ def crear_configuracion(
     limite_antes_mora_minutos: int = 120,
     max_reintentos_recordatorio: int = 3,
     plantilla_recordatorio: str | None = None,
+    limite_no_reclamada_minutos: int = 30,
 ) -> Configuracion:
     return Configuracion.objects.create(
         ubicacion_defecto_id=ubicacion_defecto_id,
         limite_antes_mora_minutos=limite_antes_mora_minutos,
         max_reintentos_recordatorio=max_reintentos_recordatorio,
         plantilla_recordatorio=plantilla_recordatorio,
+        limite_no_reclamada_minutos=limite_no_reclamada_minutos,
     )
 
 
@@ -46,6 +48,7 @@ def actualizar_configuracion(
     limite_antes_mora_minutos: int,
     max_reintentos_recordatorio: int,
     plantilla_recordatorio: str | None,
+    limite_no_reclamada_minutos: int = 30,
 ):
     """Reemplaza todos los campos editables de la fila con ese id, o
     devuelve None si no existe. Mismo patrón que
@@ -58,12 +61,14 @@ def actualizar_configuracion(
     configuracion.limite_antes_mora_minutos = limite_antes_mora_minutos
     configuracion.max_reintentos_recordatorio = max_reintentos_recordatorio
     configuracion.plantilla_recordatorio = plantilla_recordatorio
+    configuracion.limite_no_reclamada_minutos = limite_no_reclamada_minutos
     configuracion.save(
         update_fields=[
             "ubicacion_defecto_id",
             "limite_antes_mora_minutos",
             "max_reintentos_recordatorio",
             "plantilla_recordatorio",
+            "limite_no_reclamada_minutos",
         ]
     )
     return configuracion

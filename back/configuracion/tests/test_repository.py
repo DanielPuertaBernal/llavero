@@ -54,6 +54,7 @@ def test_crear_configuracion_usa_los_defaults_del_ddl():
     assert configuracion.max_reintentos_recordatorio == 3
     assert configuracion.plantilla_recordatorio is None
     assert configuracion.ubicacion_defecto_id == ubicacion.id
+    assert configuracion.limite_no_reclamada_minutos == 30
 
 
 def test_crear_configuracion_acepta_valores_explicitos():
@@ -64,11 +65,13 @@ def test_crear_configuracion_acepta_valores_explicitos():
         limite_antes_mora_minutos=60,
         max_reintentos_recordatorio=5,
         plantilla_recordatorio="Recuerda devolver la llave",
+        limite_no_reclamada_minutos=45,
     )
 
     assert configuracion.limite_antes_mora_minutos == 60
     assert configuracion.max_reintentos_recordatorio == 5
     assert configuracion.plantilla_recordatorio == "Recuerda devolver la llave"
+    assert configuracion.limite_no_reclamada_minutos == 45
 
 
 def test_crear_configuracion_con_ubicacion_inexistente_falla_por_fk():
@@ -98,15 +101,18 @@ def test_actualizar_configuracion_reemplaza_los_campos():
         limite_antes_mora_minutos=90,
         max_reintentos_recordatorio=1,
         plantilla_recordatorio="Nueva plantilla",
+        limite_no_reclamada_minutos=45,
     )
 
     assert actualizada.ubicacion_defecto_id == otra_ubicacion.id
     assert actualizada.limite_antes_mora_minutos == 90
     assert actualizada.max_reintentos_recordatorio == 1
     assert actualizada.plantilla_recordatorio == "Nueva plantilla"
+    assert actualizada.limite_no_reclamada_minutos == 45
 
     persistida = repository.obtener_configuracion()
     assert persistida.limite_antes_mora_minutos == 90
+    assert persistida.limite_no_reclamada_minutos == 45
 
 
 def test_actualizar_configuracion_inexistente_devuelve_none():

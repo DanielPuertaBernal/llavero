@@ -1,11 +1,16 @@
 """
 Tests de llaves/service.py — la lógica que agrega valor sobre el
 repository: validación de las 5 referencias cross-módulo de
-`crear_llave`, de las referencias/permiso de `devolver_llave`, y las
+`crear_llave`, de las referencias/permiso de `devolver_llave`, las
 reglas de negocio de domain.py (`ubicacion` debe permitir préstamo/
-devolución de llaves). Los passthrough directos ya están cubiertos
-transitivamente por test_repository.py.
+devolución de llaves), y la integración con `reservas` (ver Nota de
+diseño en `llaves/service.py`: `crear_llave` con
+`origen='reserva_individual'` + `reserva_id` completa la reserva
+asociada). Los passthrough directos ya están cubiertos transitivamente
+por test_repository.py.
 """
+
+import datetime
 
 import pytest
 
@@ -14,6 +19,8 @@ from comunidad import service as comunidad_service
 from llaves import repository, service
 from llaves.model import EstadoLlave, OrigenLlave, TipoEntregaLlave
 from novedades import service as novedades_service
+from reservas import service as reservas_service
+from reservas.model import EstadoReservaIndividual
 from usuarios import service as usuarios_service
 
 pytestmark = pytest.mark.django_db
@@ -384,4 +391,117 @@ def test_devolver_llave_inexistente_devuelve_none():
             TipoEntregaLlave.CREDENCIAL,
         )
         is None
+    )
+
+
+# ------------------------------------------------------------------
+# crear_llave — integración con reservas (origen='reserva_individual')
+# ------------------------------------------------------------------
+
+
+def _reserva_aprobada(salon, solicitante):
+    return reservas_service.crear_reserva(
+        salon.id,
+        solicitante.id,
+        datetime.date(2026, 3, 10),
+        datetime.time(8, 0),
+        datetime.time(10, 0),
+    )
+
+
+def test_crear_llave_con_origen_reserva_individual_y_reserva_valida_la_completa():
+    f = _fixtures()
+    reserva = _reserva_aprobada(f["salon"], f["docente_titular"])
+
+    llave = service.crear_llave(
+        f["salon"].id,
+        f["docente_titular"].id,
+        f["reclamado_por"].id,
+        OrigenLlave.RESERVA_INDIVIDUAL,
+        TipoEntregaLlave.CREDENCIAL,
+        f["usuario_entrega"].id,
+        f["ubicacion_entrega"].id,
+        reserva_id=reserva.id,
+    )
+
+    assert llave.origen == OrigenLlave.RESERVA_INDIVIDUAL
+    assert (
+        reservas_service.obtener_reserva(reserva.id).estado
+        == EstadoReservaIndividual.COMPLETADA
+    )
+
+
+def test_crear_llave_con_origen_reserva_individual_sin_reserva_id_no_falla():
+    f = _fixtures()
+
+    llave = service.crear_llave(
+        f["salon"].id,
+        f["docente_titular"].id,
+        f["reclamado_por"].id,
+        OrigenLlave.RESERVA_INDIVIDUAL,
+        TipoEntregaLlave.CREDENCIAL,
+        f["usuario_entrega"].id,
+        f["ubicacion_entrega"].id,
+    )
+
+    assert llave.origen == OrigenLlave.RESERVA_INDIVIDUAL
+
+
+def test_crear_llave_con_reserva_id_inexistente_da_value_error_claro():
+    f = _fixtures()
+
+    with pytest.raises(ValueError, match="reserva_individual"):
+        service.crear_llave(
+            f["salon"].id,
+            f["docente_titular"].id,
+            f["reclamado_por"].id,
+            OrigenLlave.RESERVA_INDIVIDUAL,
+            TipoEntregaLlave.CREDENCIAL,
+            f["usuario_entrega"].id,
+            f["ubicacion_entrega"].id,
+            reserva_id="00000000-0000-0000-0000-000000000000",
+        )
+
+
+def test_crear_llave_con_reserva_no_aprobada_da_value_error_claro():
+    f = _fixtures()
+    reserva = _reserva_aprobada(f["salon"], f["docente_titular"])
+    reservas_service.cancelar_reserva(reserva.id)
+
+    with pytest.raises(ValueError, match="aprobada"):
+        service.crear_llave(
+            f["salon"].id,
+            f["docente_titular"].id,
+            f["reclamado_por"].id,
+            OrigenLlave.RESERVA_INDIVIDUAL,
+            TipoEntregaLlave.CREDENCIAL,
+            f["usuario_entrega"].id,
+            f["ubicacion_entrega"].id,
+            reserva_id=reserva.id,
+        )
+
+    # No debe haber creado la llave ni mutado el estado de la reserva.
+    assert reservas_service.obtener_reserva(reserva.id).estado == "cancelada"
+
+
+def test_crear_llave_con_reserva_id_y_origen_distinto_da_value_error_claro():
+    f = _fixtures()
+    reserva = _reserva_aprobada(f["salon"], f["docente_titular"])
+
+    with pytest.raises(ValueError, match="reserva_id"):
+        service.crear_llave(
+            f["salon"].id,
+            f["docente_titular"].id,
+            f["reclamado_por"].id,
+            OrigenLlave.MANUAL,
+            TipoEntregaLlave.CREDENCIAL,
+            f["usuario_entrega"].id,
+            f["ubicacion_entrega"].id,
+            reserva_id=reserva.id,
+        )
+
+    # La reserva no debe haberse tocado.
+    assert (
+        reservas_service.obtener_reserva(reserva.id).estado
+        == EstadoReservaIndividual.APROBADA
     )

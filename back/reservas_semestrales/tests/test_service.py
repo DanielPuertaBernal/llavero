@@ -434,6 +434,30 @@ def test_listar_por_salon_y_dia_delega_al_repository():
 
 
 # ------------------------------------------------------------------
+# listar_por_solicitante
+# ------------------------------------------------------------------
+
+
+def test_listar_por_solicitante_delega_al_repository():
+    salon = _salon()
+    semestre = _semestre()
+    solicitante_1 = _persona("1000000001", "Solicitante Uno")
+    solicitante_2 = _persona("1000000002", "Solicitante Dos")
+    creada = service.crear_reserva_semestral(
+        salon.id, solicitante_1.id, semestre.id, DiaSemana.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    service.crear_reserva_semestral(
+        salon.id, solicitante_2.id, semestre.id, DiaSemana.MARTES,
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    resultado = service.listar_por_solicitante(solicitante_1.id)
+
+    assert [r.id for r in resultado] == [creada.id]
+
+
+# ------------------------------------------------------------------
 # cancelar_grupo
 # ------------------------------------------------------------------
 

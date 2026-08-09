@@ -25,6 +25,15 @@ Convención de esta API, igual que el resto de módulos:
   valida `domain.validar_permite_devolucion` sobre la ubicación de
   devolución antes de devolver.
 
+Nota de diseño — `listar_llaves_activas_por_reclamado_por` (agregada para
+el módulo `nfc`, ver su propio docstring): extensión aditiva simétrica a
+`listar_llaves_por_estado`/`listar_llaves_por_docente_titular`, ambas ya
+existentes con la misma forma (un filtro simple expuesto para que otro
+módulo resuelva una pregunta de negocio sin tocar `llaves.model`/
+`repository`). Resuelve "¿qué llave(s) tiene esta persona actualmente en
+su poder?" — cualquier estado distinto de `'entregado'` cuenta (no solo
+`'en_prestamo'`: una llave en `'demora_entrega'` sigue sin devolverse).
+
 `novedad_id` solo se expone como parámetro de `devolver_llave` (no de
 `crear_llave`): el caso de uso real de esta FK es reportar un daño/
 pérdida detectado AL recibir la llave de vuelta (ver
@@ -181,6 +190,16 @@ def listar_llaves_por_estado(estado: str):
 
 def listar_llaves_por_docente_titular(docente_titular_id):
     return repository.listar_por_docente_titular(docente_titular_id)
+
+
+def listar_llaves_activas_por_reclamado_por(reclamado_por_id):
+    """Llaves que esa persona tiene actualmente en su poder (estado
+    distinto de 'entregado') — agregado a este módulo para el consumo del
+    futuro `nfc` (resolución automática de devolución al leer una
+    credencial: "¿esta persona tiene una llave pendiente?"), sin que ese
+    módulo importe `llaves.model`/`repository` (ver docstring del
+    módulo)."""
+    return repository.listar_activas_por_reclamado_por(reclamado_por_id)
 
 
 def devolver_llave(

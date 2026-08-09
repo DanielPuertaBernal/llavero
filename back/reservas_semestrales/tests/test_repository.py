@@ -291,6 +291,35 @@ def test_listar_por_salon_y_dia_solo_devuelve_ese_salon_y_dia():
 
 
 # ------------------------------------------------------------------
+# listar_por_solicitante
+# ------------------------------------------------------------------
+
+
+def test_listar_por_solicitante_solo_devuelve_las_de_ese_solicitante():
+    salon = _salon()
+    semestre = _semestre()
+    solicitante_1 = _persona("1000000001", "Solicitante Uno")
+    solicitante_2 = _persona("1000000002", "Solicitante Dos")
+    del_solicitante_1 = _reserva(
+        salon=salon, solicitante=solicitante_1, semestre=semestre, dia=DiaSemana.LUNES
+    )
+    del_solicitante_2 = _reserva(
+        salon=salon, solicitante=solicitante_2, semestre=semestre, dia=DiaSemana.MARTES
+    )
+
+    resultado = repository.listar_por_solicitante(solicitante_1.id)
+
+    assert {r.id for r in resultado} == {del_solicitante_1.id}
+    assert del_solicitante_2.id not in {r.id for r in resultado}
+
+
+def test_listar_por_solicitante_sin_reservas_devuelve_lista_vacia():
+    solicitante = _persona()
+
+    assert repository.listar_por_solicitante(solicitante.id) == []
+
+
+# ------------------------------------------------------------------
 # eliminar_por_grupo
 # ------------------------------------------------------------------
 

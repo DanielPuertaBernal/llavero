@@ -1,8 +1,9 @@
 """
 Tests de notificaciones/service.py — validación de FKs cross-módulo
 (destinatario_id vía comunidad.service, enviado_por_id vía usuarios.
-service), la plantilla de configuracion para `enviar_recordatorio` y,
-sobre todo, el envío real por SMTP (camino feliz y camino de fallo).
+service, prestamo_id vía prestamos.service), la plantilla de
+configuracion para `enviar_recordatorio` y, sobre todo, el envío real
+por SMTP (camino feliz y camino de fallo).
 
 Camino feliz: se activa el backend de pruebas de Django
 (`locmem.EmailBackend`, vía `@override_settings`) y se inspecciona
@@ -21,12 +22,15 @@ from unittest.mock import patch
 import pytest
 from django.core import mail
 from django.test import override_settings
+from django.utils import timezone
 
 from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
 from configuracion import service as configuracion_service
+from equipos import service as equipos_service
 from notificaciones import repository, service
 from notificaciones.model import EstadoEnvioNotificacion, TipoNotificacion
+from prestamos import service as prestamos_service
 from usuarios import service as usuarios_service
 
 
@@ -46,6 +50,18 @@ def _usuario(email="usuario-1@uco.edu.co", nombre="Usuario Prueba"):
     rol = catalogos_service.crear_rol(f"rol-{email}")
     ubicacion = catalogos_service.crear_ubicacion(f"ubicacion-{email}")
     return usuarios_service.crear_usuario(nombre, email, rol.id, ubicacion.id)
+
+
+def _prestamo(suffix="1"):
+    solicitante = _persona(f"200000000{suffix}", f"Solicitante {suffix}", correo=None)
+    prestamista = _usuario(f"prestamista-{suffix}@uco.edu.co", f"Prestamista {suffix}")
+    ubicacion = catalogos_service.crear_ubicacion(
+        f"ubicacion-prestamo-{suffix}", permite_prestamo_equipos=True
+    )
+    equipo = equipos_service.crear_equipo(f"Equipo {suffix}", f"EQ-{suffix}")
+    return prestamos_service.crear_prestamo(
+        solicitante.id, prestamista.id, ubicacion.id, [equipo.id]
+    )
 
 
 # ------------------------------------------------------------------
@@ -179,6 +195,82 @@ def test_enviar_recordatorio_con_mensaje_explicito_ignora_la_plantilla():
     notificacion = service.enviar_recordatorio(persona.id, mensaje="Mensaje a medida")
 
     assert notificacion.mensaje == "Mensaje a medida"
+
+
+# ------------------------------------------------------------------
+# enviar_recordatorio — correlación con prestamo_id/numero_intento
+# ------------------------------------------------------------------
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_enviar_recordatorio_con_prestamo_id_valido_persiste_la_fk():
+    persona = _persona()
+    prestamo = _prestamo()
+
+    notificacion = service.enviar_recordatorio(
+        persona.id, mensaje="Recordatorio", prestamo_id=prestamo.id, numero_intento=2
+    )
+
+    assert notificacion.prestamo_id == prestamo.id
+    assert notificacion.numero_intento == 2
+
+
+def test_enviar_recordatorio_con_prestamo_id_inexistente_da_value_error_claro():
+    persona = _persona()
+
+    with pytest.raises(ValueError, match="préstamo"):
+        service.enviar_recordatorio(
+            persona.id,
+            mensaje="Recordatorio",
+            prestamo_id="00000000-0000-0000-0000-000000000000",
+        )
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_enviar_recordatorio_sin_prestamo_id_sigue_funcionando_como_antes():
+    persona = _persona()
+
+    notificacion = service.enviar_recordatorio(persona.id, mensaje="Recordatorio")
+
+    assert notificacion.prestamo_id is None
+    assert notificacion.numero_intento is None
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_enviar_recordatorio_deja_fecha_hora_seteada():
+    persona = _persona()
+    antes = timezone.now()
+
+    notificacion = service.enviar_recordatorio(persona.id, mensaje="Recordatorio")
+
+    assert notificacion.fecha_hora is not None
+    assert notificacion.fecha_hora >= antes
+
+
+# ------------------------------------------------------------------
+# enviar_notificacion_manual / enviar_vencimiento — fecha_hora
+# ------------------------------------------------------------------
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_enviar_notificacion_manual_deja_fecha_hora_seteada():
+    persona = _persona()
+    usuario = _usuario()
+
+    notificacion = service.enviar_notificacion_manual(
+        persona.id, "Aviso", "Mensaje", usuario.id
+    )
+
+    assert notificacion.fecha_hora is not None
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_enviar_vencimiento_deja_fecha_hora_seteada():
+    persona = _persona()
+
+    notificacion = service.enviar_vencimiento(persona.id, "Mensaje")
+
+    assert notificacion.fecha_hora is not None
 
 
 # ------------------------------------------------------------------

@@ -10,6 +10,13 @@ capa con acceso a `django.core.mail`), que decide 'enviado'/'fallido'
 según el resultado observado y pasa ese valor ya cerrado a este método —
 igual separación de responsabilidades que `novedades.repository.
 crear_novedad` recibe `categoria` ya validada por quien llama.
+
+`prestamo_id`/`numero_intento`/`fecha_hora` son kwargs opcionales
+(default `None`) igual que `enviado_por_id`: este método no valida nada
+de negocio (que el préstamo exista, etc.) — esa validación vive en
+`service.py` (ver `service.enviar_recordatorio`). Este método solo los
+pasa tal cual a `Notificacion.objects.create`, mismo criterio que ya
+aplicaba a `enviado_por_id`.
 """
 
 from notificaciones.model import Notificacion
@@ -22,6 +29,9 @@ def crear_notificacion(
     asunto: str | None = None,
     mensaje: str | None = None,
     enviado_por_id=None,
+    prestamo_id=None,
+    numero_intento=None,
+    fecha_hora=None,
 ) -> Notificacion:
     return Notificacion.objects.create(
         destinatario_id=destinatario_id,
@@ -30,13 +40,19 @@ def crear_notificacion(
         mensaje=mensaje,
         estado_envio=estado_envio,
         enviado_por_id=enviado_por_id,
+        prestamo_id=prestamo_id,
+        numero_intento=numero_intento,
+        fecha_hora=fecha_hora,
     )
 
 
 def listar_notificaciones():
-    # Sin campo de fecha en el DDL (ver model.py, nota de diseño), se
-    # ordena por tipo/estado_envio para agrupar notificaciones del mismo
-    # tipo — mismo criterio que `novedades.repository.listar_novedades`.
+    # Se sigue ordenando por tipo/estado_envio, no por `fecha_hora`: esa
+    # columna es nullable (ver model.py, nota de diseño) y no todas las
+    # notificaciones existentes antes de esa migración la tienen poblada,
+    # así que ordenar por ella dejaría los `NULL` mezclados de forma poco
+    # predecible. Mismo criterio que `novedades.repository.
+    # listar_novedades`.
     return list(Notificacion.objects.order_by("tipo", "estado_envio"))
 
 

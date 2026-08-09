@@ -12,11 +12,14 @@ test_repository.py`).
 
 import pytest
 from django.db import IntegrityError, connection
+from django.utils import timezone
 
 from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
+from equipos import service as equipos_service
 from notificaciones import repository
 from notificaciones.model import EstadoEnvioNotificacion, TipoNotificacion
+from prestamos import service as prestamos_service
 from usuarios import service as usuarios_service
 
 
@@ -34,6 +37,18 @@ def _usuario(email="usuario-1@uco.edu.co", nombre="Usuario Prueba"):
     rol = catalogos_service.crear_rol(f"rol-{email}")
     ubicacion = catalogos_service.crear_ubicacion(f"ubicacion-{email}")
     return usuarios_service.crear_usuario(nombre, email, rol.id, ubicacion.id)
+
+
+def _prestamo(suffix="1"):
+    solicitante = _persona(f"200000000{suffix}", f"Solicitante {suffix}", correo=None)
+    prestamista = _usuario(f"prestamista-{suffix}@uco.edu.co", f"Prestamista {suffix}")
+    ubicacion = catalogos_service.crear_ubicacion(
+        f"ubicacion-prestamo-{suffix}", permite_prestamo_equipos=True
+    )
+    equipo = equipos_service.crear_equipo(f"Equipo {suffix}", f"EQ-{suffix}")
+    return prestamos_service.crear_prestamo(
+        solicitante.id, prestamista.id, ubicacion.id, [equipo.id]
+    )
 
 
 # ------------------------------------------------------------------
@@ -112,6 +127,38 @@ def test_crear_notificacion_con_enviado_por_inexistente_falla_por_fk():
             enviado_por_id="00000000-0000-0000-0000-000000000000",
         )
         connection.check_constraints()
+
+
+def test_crear_notificacion_con_prestamo_id_numero_intento_y_fecha_hora_los_persiste():
+    persona = _persona()
+    prestamo = _prestamo()
+    ahora = timezone.now()
+
+    notificacion = repository.crear_notificacion(
+        persona.id,
+        TipoNotificacion.RECORDATORIO,
+        EstadoEnvioNotificacion.ENVIADO,
+        mensaje="Recuerda devolver la llave",
+        prestamo_id=prestamo.id,
+        numero_intento=1,
+        fecha_hora=ahora,
+    )
+
+    assert notificacion.prestamo_id == prestamo.id
+    assert notificacion.numero_intento == 1
+    assert notificacion.fecha_hora == ahora
+
+
+def test_crear_notificacion_sin_prestamo_id_numero_intento_ni_fecha_hora_los_deja_none():
+    persona = _persona()
+
+    notificacion = repository.crear_notificacion(
+        persona.id, TipoNotificacion.MANUAL, EstadoEnvioNotificacion.ENVIADO
+    )
+
+    assert notificacion.prestamo_id is None
+    assert notificacion.numero_intento is None
+    assert notificacion.fecha_hora is None
 
 
 # ------------------------------------------------------------------

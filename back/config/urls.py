@@ -14,6 +14,7 @@ from catalogos.controller import router as catalogos_router
 from comunidad.controller import router as comunidad_router
 from configuracion.controller import router as configuracion_router
 from equipos.controller import router as equipos_router
+from llaves.controller import router as llaves_router
 from monitores.controller import router as monitores_router
 from novedades.controller import router as novedades_router
 from programacion.controller import router as programacion_router
@@ -31,6 +32,7 @@ api.add_router("/comunidad", comunidad_router, tags=["comunidad"])
 api.add_router("/programacion", programacion_router, tags=["programacion"])
 api.add_router("/monitores", monitores_router, tags=["monitores"])
 api.add_router("/novedades", novedades_router, tags=["novedades"])
+api.add_router("/llaves", llaves_router, tags=["llaves"])
 api.add_router("/configuracion", configuracion_router, tags=["configuracion"])
 
 urlpatterns = [

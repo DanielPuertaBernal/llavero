@@ -16,6 +16,7 @@ from configuracion.controller import router as configuracion_router
 from equipos.controller import router as equipos_router
 from llaves.controller import router as llaves_router
 from monitores.controller import router as monitores_router
+from notificaciones.controller import router as notificaciones_router
 from novedades.controller import router as novedades_router
 from programacion.controller import router as programacion_router
 from reservas.controller import router as reservas_router
@@ -38,6 +39,7 @@ api.add_router("/reservas", reservas_router, tags=["reservas"])
 api.add_router("/reservas-semestrales", reservas_semestrales_router, tags=["reservas_semestrales"])
 api.add_router("/llaves", llaves_router, tags=["llaves"])
 api.add_router("/configuracion", configuracion_router, tags=["configuracion"])
+api.add_router("/notificaciones", notificaciones_router, tags=["notificaciones"])
 
 urlpatterns = [
     path("api/", api.urls),

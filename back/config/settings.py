@@ -60,6 +60,7 @@ INSTALLED_APPS = [
     "reservas_semestrales",
     "llaves",
     "configuracion",
+    "notificaciones",
     # No se agrega "ninja_jwt" (ni "ninja_jwt.token_blacklist"): solo se usan
     # sus primitivos de bajo nivel (ninja_jwt.tokens.RefreshToken/AccessToken),
     # que no requieren registro como Django app (ver nota de diseño en
@@ -112,6 +113,27 @@ DATABASES = {
         "PORT": env("DB_PORT", default="5432"),
     }
 }
+
+# Relay SMTP institucional para el módulo notificaciones (ver env.example
+# para el detalle completo de cada variable y notificaciones/service.py
+# para cómo se usan). Backend estándar de Django (django.core.mail,
+# smtp.EmailBackend) — sin cliente SMTP hecho a mano.
+#
+# Nota de diseño — EMAIL_HOST_FALLBACK NO se lee acá ni en ningún otro
+# lado del código: es la IP del mismo relay (mail.uco.edu.co), documentada
+# en env.example como referencia operativa para quien administre el
+# servidor. No se implementa failover automático hacia esa IP (decisión
+# de negocio no pedida) — ver la nota de diseño completa en
+# notificaciones/service.py.
+EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
+EMAIL_HOST = env("EMAIL_HOST")
+EMAIL_PORT = env.int("EMAIL_PORT")
+EMAIL_USE_TLS = env.bool("EMAIL_USE_TLS")
+EMAIL_USE_SSL = env.bool("EMAIL_USE_SSL")
+EMAIL_HOST_USER = env("EMAIL_HOST_USER", default="")
+EMAIL_HOST_PASSWORD = env("EMAIL_HOST_PASSWORD", default="")
+EMAIL_TIMEOUT = env.int("EMAIL_TIMEOUT")
+DEFAULT_FROM_EMAIL = env("DEFAULT_FROM_EMAIL")
 
 AUTH_PASSWORD_VALIDATORS = []
 

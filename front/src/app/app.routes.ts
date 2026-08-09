@@ -28,5 +28,15 @@ export const routes: Routes = [
       ),
     canActivate: [authGuard],
   },
+  // Segunda feature real (`llaves`, ver `src/app/features/llaves/`): una
+  // sola vista (el tablero de préstamos), porque el módulo no es un CRUD
+  // sino un ciclo de vida entrega -> devolución (el backend no expone PATCH
+  // ni DELETE sobre llaves, ver back/llaves/controller.py).
+  {
+    path: 'llaves',
+    loadComponent: () =>
+      import('./features/llaves/llaves-list.component').then((m) => m.LlavesListComponent),
+    canActivate: [authGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

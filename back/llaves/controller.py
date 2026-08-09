@@ -47,6 +47,9 @@ class LlaveIn(Schema):
     tipo_entrega: TipoEntregaLlave
     usuario_entrega_id: uuid.UUID
     ubicacion_entrega_id: uuid.UUID
+    # Opcional: solo aplica junto con origen='reserva_individual' (ver
+    # Nota de diseño en llaves/service.py, crear_llave).
+    reserva_id: uuid.UUID | None = None
 
 
 class DevolverLlaveIn(Schema):
@@ -85,6 +88,7 @@ def crear_llave(request, payload: LlaveIn):
             payload.tipo_entrega,
             payload.usuario_entrega_id,
             payload.ubicacion_entrega_id,
+            reserva_id=payload.reserva_id,
         )
     except ValueError as exc:
         return 400, {"detail": str(exc)}

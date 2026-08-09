@@ -4,9 +4,18 @@ service.py — API pública del módulo notificaciones.
 Es el ÚNICO punto de entrada que otros módulos deben usar para consumir
 notificaciones — nunca importan `model.py`/`repository.py` de este
 módulo directamente. Simétricamente, este módulo consume `comunidad`,
-`usuarios`, `configuracion` y `prestamos` exclusivamente vía sus
+`usuarios`, `configuracion`, `prestamos` y `llaves` exclusivamente vía sus
 respectivos `.service` (nunca `.model`/`.repository` ajenos), la misma
 regla dura ya aplicada en `llaves.service`/`monitores.service`.
+
+Regla dura de dirección de import (agregada junto con `llave_id`, ver
+`sdd/scheduler-transiciones`): `notificaciones.service` importa
+`llaves.service`, así que `llaves.service` JAMÁS debe importar
+`notificaciones.service` de vuelta — eso crearía un ciclo real. El
+`enviar_recordatorio`/`enviar_vencimiento` de este módulo son primitivos
+de "enviar y registrar"; quien decide CUÁNDO llamarlos (el futuro
+scheduler, ver ese cambio) es el único orquestador que conoce ambos
+módulos.
 
 Convención de esta API, igual que el resto de módulos:
 - `listar_*`/`obtener_notificacion` no lanzan excepción ante "no existe"/
@@ -93,25 +102,30 @@ como todavía inexistente. Construirlo sigue siendo responsabilidad de un
 futuro componente fuera de este módulo.
 
 Gap ya RESUELTO (ver `model.py` para el detalle de columnas): el DDL de
-`notificacion` ahora tiene `prestamo_id`/`numero_intento`/`fecha_hora`,
-así que `enviar_recordatorio` sí puede correlacionar cada recordatorio
-con el préstamo/llave que lo motivó y con qué número de intento es. Antes
-de esta versión, la tabla no sabía POR QUÉ préstamo se mandaba cada
-recordatorio, lo que bloqueaba aplicar `configuracion.
-max_reintentos_recordatorio` (un límite "por préstamo/llave vencido").
-Eso ya no aplica: el dato de correlación existe y se persiste.
+`notificacion` ahora tiene `prestamo_id`/`numero_intento`/`fecha_hora`/
+`llave_id`, así que `enviar_recordatorio` sí puede correlacionar cada
+recordatorio con el préstamo o la llave que lo motivó y con qué número
+de intento es. Antes de esta versión, la tabla no sabía POR QUÉ préstamo/
+llave se mandaba cada recordatorio, lo que bloqueaba aplicar
+`configuracion.max_reintentos_recordatorio` (un límite "por préstamo/
+llave vencido"). Eso ya no aplica: ambos datos de correlación existen y
+se persisten (`contar_recordatorios_por_llave` ya permite consultar
+cuántos van para una llave dada).
 
 Gap que SIGUE fuera de alcance, deliberadamente NO resuelto acá: tener
-las columnas no significa que exista el motor que las use. Esta función
-sigue sin decidir CUÁNDO disparar un recordatorio ni CUÁL `numero_intento`
-pasar — sigue recibiendo ambos datos (`prestamo_id`, `numero_intento`) de
-quien la invoca, y sigue sin comparar `numero_intento` contra
+las columnas y el contador no significa que exista el motor que las use.
+Esta función sigue sin decidir CUÁNDO disparar un recordatorio ni CUÁL
+`numero_intento` pasar — sigue recibiendo esos datos (`prestamo_id`/
+`llave_id`, `numero_intento`) de quien la invoca, y sigue sin comparar
+`numero_intento`/`contar_recordatorios_por_llave` contra
 `max_reintentos_recordatorio` para decidir si debe enviarse o no. Esa
-decisión (contar intentos previos para este préstamo, compararlos contra
-el tope de `configuracion`, y decidir si vale la pena seguir
-reintentando) es responsabilidad del futuro scheduler que orqueste estas
-llamadas, no de `enviar_recordatorio` — este método es un primitivo de
-"enviar y registrar", no el motor de política de reintentos.
+decisión (contar intentos previos, compararlos contra el tope de
+`configuracion`, y decidir si vale la pena seguir reintentando) es
+responsabilidad del futuro scheduler que orqueste estas llamadas (ver
+`sdd/scheduler-transiciones`, todavía no construido — es un cambio
+posterior, separado de éste), no de `enviar_recordatorio`: este método
+sigue siendo un primitivo de "enviar y registrar", no el motor de
+política de reintentos.
 
 No se usa `transaction.atomic()` en este módulo: cada operación de
 escritura es un único INSERT de una sola tabla, ya atómico de por sí en
@@ -145,6 +159,7 @@ from django.utils import timezone
 
 from comunidad import service as comunidad_service
 from configuracion import service as configuracion_service
+from llaves import service as llaves_service
 from notificaciones import repository
 from notificaciones.model import EstadoEnvioNotificacion, TipoNotificacion
 from prestamos import service as prestamos_service
@@ -205,17 +220,29 @@ def enviar_notificacion_manual(destinatario_id, asunto: str, mensaje: str, envia
 
 
 def enviar_recordatorio(
-    destinatario_id, mensaje: str | None = None, prestamo_id=None, numero_intento=None
+    destinatario_id,
+    mensaje: str | None = None,
+    prestamo_id=None,
+    numero_intento=None,
+    llave_id=None,
 ):
     """Envía (o intenta) un recordatorio automático, validando primero que
-    `destinatario_id` exista en comunidad y, si se pasa `prestamo_id`,
-    que ese préstamo también exista (vía `prestamos.service.
-    obtener_prestamo`, la única forma permitida de tocar `prestamos`
-    desde este módulo — ver docstring del módulo).
+    `destinatario_id` exista en comunidad y, si se pasa `prestamo_id`/
+    `llave_id`, que esa referencia también exista (vía `prestamos.service.
+    obtener_prestamo`/`llaves.service.obtener_llave`, la única forma
+    permitida de tocar `prestamos`/`llaves` desde este módulo — ver
+    docstring del módulo).
 
-    `prestamo_id`/`numero_intento` son opcionales (default `None`):
-    correlacionan este recordatorio con el préstamo/llave que lo motivó
-    y con qué intento es, pero esta función NO decide cuándo debe
+    `prestamo_id`/`llave_id` son dos correlaciones ALTERNATIVAS, nunca
+    simultáneas (ver `model.py`, `ck_notificacion_correlacion_unica`):
+    pasar ambos a la vez lanza `ValueError` antes de tocar la base de
+    datos, en vez de dejar propagar el `IntegrityError` crudo de Postgres
+    — mismo criterio de "error claro" que el resto de validaciones de
+    este método.
+
+    `prestamo_id`/`llave_id`/`numero_intento` son opcionales (default
+    `None`): correlacionan este recordatorio con el préstamo/llave que lo
+    motivó y con qué intento es, pero esta función NO decide cuándo debe
     dispararse un recordatorio ni compara `numero_intento` contra
     `configuracion.max_reintentos_recordatorio` — ver docstring del
     módulo, sección "FUERA DE ALCANCE", para el detalle de qué sigue
@@ -231,8 +258,15 @@ def enviar_recordatorio(
     destinatario = comunidad_service.obtener_persona(destinatario_id)
     if destinatario is None:
         raise ValueError(f"No existe un destinatario en comunidad con id {destinatario_id}")
+    if prestamo_id is not None and llave_id is not None:
+        raise ValueError(
+            "No se puede pasar prestamo_id y llave_id a la vez: son dos "
+            "correlaciones alternativas, nunca simultáneas"
+        )
     if prestamo_id is not None and prestamos_service.obtener_prestamo(prestamo_id) is None:
         raise ValueError(f"No existe un préstamo con id {prestamo_id}")
+    if llave_id is not None and llaves_service.obtener_llave(llave_id) is None:
+        raise ValueError(f"No existe una llave con id {llave_id}")
 
     if mensaje is None:
         mensaje = configuracion_service.obtener_configuracion().plantilla_recordatorio
@@ -248,6 +282,7 @@ def enviar_recordatorio(
         prestamo_id=prestamo_id,
         numero_intento=numero_intento,
         fecha_hora=timezone.now(),
+        llave_id=llave_id,
     )
 
 
@@ -300,3 +335,7 @@ def listar_por_tipo(tipo: str):
 
 def listar_por_estado_envio(estado_envio: str):
     return repository.listar_por_estado_envio(estado_envio)
+
+
+def contar_recordatorios_por_llave(llave_id) -> int:
+    return repository.contar_recordatorios_por_llave(llave_id)

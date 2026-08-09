@@ -336,7 +336,12 @@ CREATE TABLE notificacion (
     enviado_por_id    UUID REFERENCES usuario(id),
     prestamo_id       UUID REFERENCES prestamo(id),
     numero_intento    INT,
-    fecha_hora        TIMESTAMPTZ
+    fecha_hora        TIMESTAMPTZ,
+    llave_id          UUID REFERENCES llave(id),
+    -- A lo sumo una de las dos correlaciones puede estar poblada; ambas
+    -- en NULL sigue siendo legal ('manual'/'vencimiento' sin correlación
+    -- específica). Ver notificaciones/model.py para el detalle.
+    CHECK (NOT (llave_id IS NOT NULL AND prestamo_id IS NOT NULL))
 );
 
 CREATE TABLE configuracion (

@@ -23,6 +23,7 @@ from prestamos.controller import router as prestamos_router
 from programacion.controller import router as programacion_router
 from reservas.controller import router as reservas_router
 from reservas_semestrales.controller import router as reservas_semestrales_router
+from scheduler.controller import router as scheduler_router
 from usuarios.controller import router as usuarios_router
 
 api = NinjaAPI(title="Llavero API", version="1.0.0")
@@ -44,6 +45,7 @@ api.add_router("/configuracion", configuracion_router, tags=["configuracion"])
 api.add_router("/notificaciones", notificaciones_router, tags=["notificaciones"])
 api.add_router("/prestamos", prestamos_router, tags=["prestamos"])
 api.add_router("/nfc", nfc_router, tags=["nfc"])
+api.add_router("/scheduler", scheduler_router, tags=["scheduler"])
 
 urlpatterns = [
     path("api/", api.urls),

@@ -46,6 +46,15 @@ AZURE_CLIENT_SECRET = env("AZURE_CLIENT_SECRET")
 AZURE_REDIRECT_URI = env("AZURE_REDIRECT_URI")
 FRONTEND_POST_LOGIN_REDIRECT_URL = env("FRONTEND_POST_LOGIN_REDIRECT_URL")
 
+# Clave compartida del endpoint protegido `POST /api/scheduler/
+# ejecutar-transiciones` (ver scheduler/security.py y sdd/
+# scheduler-transiciones/design, decisión 1b). Default vacío (mismo patrón
+# que EMAIL_HOST_USER/EMAIL_HOST_PASSWORD) para no romper ningún .env/CI
+# existente al hacer pull de este cambio — un valor vacío hace que el
+# endpoint falle SIEMPRE en 401 (fail-closed, ver SchedulerApiKey), nunca
+# que quede abierto sin autenticación.
+SCHEDULER_API_KEY = env("SCHEDULER_API_KEY", default="")
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
@@ -71,6 +80,10 @@ INSTALLED_APPS = [
     # que no requieren registro como Django app (ver nota de diseño en
     # auth/service.py sobre por qué no se usa el blacklist app).
     "auth",
+    # scheduler: sin tabla propia, orquestador cross-módulo de transiciones
+    # automáticas por tiempo (ver sdd/scheduler-transiciones/design) — se
+    # registra igual por consistencia estructural, mismo criterio que "nfc".
+    "scheduler",
 ]
 
 # Config de django-ninja-jwt para los JWT propios (access+refresh) emitidos

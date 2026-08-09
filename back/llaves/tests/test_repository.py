@@ -404,6 +404,71 @@ def test_listar_por_docente_titular():
 
 
 # ------------------------------------------------------------------
+# listar_activas_por_reclamado_por
+# ------------------------------------------------------------------
+
+
+def test_listar_activas_por_reclamado_por_excluye_entregadas():
+    docente_titular = _persona("1000000001", "Docente Titular")
+    reclamado_por = _persona("1000000002", "Reclamado Por")
+    usuario_entrega = _usuario("entrega@uco.edu.co", "Portero")
+    ubicacion_devolucion = _ubicacion("ubicacion-devolucion")
+    activa = _llave(
+        salon=_salon("101"),
+        docente_titular=docente_titular,
+        reclamado_por=reclamado_por,
+        usuario_entrega=usuario_entrega,
+    )
+    entregada = _llave(
+        salon=_salon("102"),
+        docente_titular=docente_titular,
+        reclamado_por=reclamado_por,
+        usuario_entrega=usuario_entrega,
+    )
+    repository.devolver_llave(
+        entregada.id,
+        usuario_entrega.id,
+        ubicacion_devolucion.id,
+        TipoEntregaLlave.CREDENCIAL,
+        timezone.now(),
+    )
+
+    resultado = repository.listar_activas_por_reclamado_por(reclamado_por.id)
+
+    assert {ll.id for ll in resultado} == {activa.id}
+    assert entregada.id not in {ll.id for ll in resultado}
+
+
+def test_listar_activas_por_reclamado_por_solo_devuelve_las_de_esa_persona():
+    docente_titular = _persona("1000000001", "Docente Titular")
+    reclamado_1 = _persona("1000000002", "Reclamado Uno")
+    reclamado_2 = _persona("1000000003", "Reclamado Dos")
+    usuario_entrega = _usuario("entrega@uco.edu.co", "Portero")
+    de_reclamado_1 = _llave(
+        salon=_salon("101"),
+        docente_titular=docente_titular,
+        reclamado_por=reclamado_1,
+        usuario_entrega=usuario_entrega,
+    )
+    _llave(
+        salon=_salon("102"),
+        docente_titular=docente_titular,
+        reclamado_por=reclamado_2,
+        usuario_entrega=usuario_entrega,
+    )
+
+    resultado = repository.listar_activas_por_reclamado_por(reclamado_1.id)
+
+    assert {ll.id for ll in resultado} == {de_reclamado_1.id}
+
+
+def test_listar_activas_por_reclamado_por_sin_llaves_devuelve_lista_vacia():
+    reclamado_por = _persona()
+
+    assert repository.listar_activas_por_reclamado_por(reclamado_por.id) == []
+
+
+# ------------------------------------------------------------------
 # devolver_llave
 # ------------------------------------------------------------------
 

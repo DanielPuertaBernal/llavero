@@ -64,6 +64,23 @@ def listar_por_docente_titular(docente_titular_id):
     )
 
 
+def listar_activas_por_reclamado_por(reclamado_por_id):
+    """Llaves que esa persona tiene actualmente en su poder (estado
+    distinto de 'entregado'), sin importar el salón — consulta agregada
+    para el futuro `nfc` (ver docstring de `service.py`): resolver "¿esta
+    persona tiene una llave pendiente de devolver?" al leer una
+    credencial, sin importar `llaves.model`/`repository`. Misma intención
+    que `listar_por_estado(EstadoLlave.EN_PRESTAMO)`, pero también incluye
+    'demora_entrega' (cualquier estado "todavía no devuelto" cuenta como
+    candidato de devolución).
+    """
+    return list(
+        Llave.objects.filter(reclamado_por_id=reclamado_por_id)
+        .exclude(estado=EstadoLlave.ENTREGADO)
+        .order_by("-fecha_hora_entrega")
+    )
+
+
 def devolver_llave(
     llave_id,
     usuario_recibe_id,

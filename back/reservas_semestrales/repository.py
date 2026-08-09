@@ -63,6 +63,14 @@ def listar_por_salon_y_dia(salon_id, dia: str):
     )
 
 
+def listar_por_solicitante(solicitante_id):
+    return list(
+        ReservaSemestral.objects.filter(solicitante_id=solicitante_id).order_by(
+            "dia", "hora_inicio"
+        )
+    )
+
+
 def eliminar_por_grupo(grupo_id) -> int:
     """DELETE real de todas las filas con ese `grupo_id`. Devuelve la
     cantidad de filas borradas (0 si el grupo no existía).

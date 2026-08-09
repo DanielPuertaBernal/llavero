@@ -67,12 +67,19 @@ razonable. A diferencia de `reservas` (`reserva_individual`, que sí tiene
 transición de estado real que completar al entregar la llave —
 'aprobada' -> 'completada'), acá no hay nada que "completar": la reserva
 semestral no se consume/agota al usarse una vez, es recurrente semana a
-semana durante todo el semestre. Cuando el futuro `nfc` exista, consumirá
-este módulo exclusivamente vía `reservas_semestrales.service` (p. ej.
-`listar_por_salon_y_dia`), nunca vía `.model`/`.repository` — no se
-inventa esa función ahora si no hay un consumidor real todavía; las ya
-expuestas (`listar_por_salon_y_dia`) alcanzan para ese futuro consumo sin
-necesidad de agregar nada más.
+semana durante todo el semestre.
+
+Actualización — el módulo `nfc` ya existe (ver `nfc/service.py`): consume
+este módulo exclusivamente vía `reservas_semestrales.service`, nunca vía
+`.model`/`.repository`. Necesitó una función que no estaba expuesta
+todavía (`listar_por_salon_y_dia` filtra por salón/día, pero `nfc`
+primero necesita resolver "¿esta persona tiene una reserva semestral
+propia vigente ahora mismo?" a partir de la persona, no del salón) —
+se agregó `listar_por_solicitante(solicitante_id)` como extensión
+aditiva, mismo criterio que `programacion.service.
+listar_programaciones_por_docente` para el caso simétrico en
+`programacion`. No se inventó nada más allá de lo que `nfc` consume
+realmente.
 
 Convención de esta API, igual que el resto de módulos:
 - `obtener_por_id`/`listar_*` no lanzan excepción ante "no existe"/"sin
@@ -118,6 +125,18 @@ def listar_por_grupo(grupo_id):
 
 def listar_por_salon_y_dia(salon_id, dia: str):
     return repository.listar_por_salon_y_dia(salon_id, dia)
+
+
+def listar_por_solicitante(solicitante_id):
+    """Todas las franjas de `reserva_semestral` de ese solicitante, sin
+    filtrar por día/semestre — agregado a este módulo para el consumo del
+    futuro `nfc` (resolución automática de entrega al leer una credencial:
+    "¿esta persona tiene una reserva semestral propia vigente ahora
+    mismo?"), sin que ese módulo importe `reservas_semestrales.model`/
+    `repository`. Misma intención que
+    `programacion.service.listar_programaciones_por_docente` para el
+    equivalente en `programacion` (ver docstring de ese módulo)."""
+    return repository.listar_por_solicitante(solicitante_id)
 
 
 def existe_solapamiento_en_salon_semestral(salon_id, dia: str, hora_inicio, hora_fin) -> bool:

@@ -16,6 +16,7 @@ from configuracion.controller import router as configuracion_router
 from equipos.controller import router as equipos_router
 from llaves.controller import router as llaves_router
 from monitores.controller import router as monitores_router
+from nfc.controller import router as nfc_router
 from notificaciones.controller import router as notificaciones_router
 from novedades.controller import router as novedades_router
 from prestamos.controller import router as prestamos_router
@@ -42,6 +43,7 @@ api.add_router("/llaves", llaves_router, tags=["llaves"])
 api.add_router("/configuracion", configuracion_router, tags=["configuracion"])
 api.add_router("/notificaciones", notificaciones_router, tags=["notificaciones"])
 api.add_router("/prestamos", prestamos_router, tags=["prestamos"])
+api.add_router("/nfc", nfc_router, tags=["nfc"])
 
 urlpatterns = [
     path("api/", api.urls),

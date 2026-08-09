@@ -1,0 +1,26 @@
+Django==5.0.14
+django-ninja==1.6.2
+psycopg[binary]==3.1.20
+django-environ==0.11.2
+pytest==8.4.2
+pytest-django==4.8.0
+# django-ninja-jwt (import: ninja_jwt) arrastra django-ninja-extra, que exige
+# django-ninja>=1.6.0 — por eso el bump de django-ninja de 1.1.0 a 1.6.2
+# arriba (verificado sin regresiones: los 125 tests previos del proyecto
+# siguen pasando con esta versión). Solo se usan los primitivos de bajo
+# nivel ninja_jwt.tokens.RefreshToken/AccessToken (ver auth/service.py), no
+# el TokenObtainPairController ni el blacklist app.
+django-ninja-jwt==5.4.5
+# Valida la firma RS256 del id_token de Microsoft (Office 365/Entra ID)
+# contra su JWKS público — ver auth/service.py, validar_id_token_microsoft.
+pyjwt==2.13.0
+# Backend criptográfico que pyjwt necesita para RS256 (JWKS de Microsoft son
+# claves RSA, no HMAC).
+cryptography==50.0.0
+# Cliente HTTP para el intercambio server-to-server code -> tokens contra el
+# endpoint /oauth2/v2.0/token de Microsoft (ver auth/service.py,
+# _intercambiar_code_por_id_token). Se elige httpx sobre requests: API
+# moderna con timeouts explícitos por defecto, tipado, y mantenimiento activo
+# — es la opción recomendada para un proyecto nuevo sin ya tener requests
+# como dependencia existente.
+httpx==0.28.1

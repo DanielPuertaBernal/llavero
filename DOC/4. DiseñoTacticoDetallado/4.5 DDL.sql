@@ -97,6 +97,44 @@ CREATE TABLE usuario (
     activo                BOOLEAN NOT NULL DEFAULT true
 );
 
+-- Sesiones de refresh token (módulo auth). No hay tabla de usuarios con
+-- password/username local (login vía Office 365) — este es el propio
+-- mecanismo de rotación/revocación/detección de reuso de refresh tokens
+-- del backend, portado del sistema legacy (JWT access+refresh propios,
+-- ver AulaSync/analisis/backend/auth.md). No se usa el AUTH_USER_MODEL
+-- de Django ni el blacklist app acoplado a él, porque eso exigiría
+-- convertir `usuario` en un modelo Django de auth (AbstractBaseUser),
+-- algo que el DDL de `usuario` no necesita ni debe cargar.
+CREATE TABLE sesion_refresh (
+    id            UUID PRIMARY KEY,
+    usuario_id    UUID NOT NULL REFERENCES usuario(id),
+    jti           VARCHAR(64) NOT NULL UNIQUE,
+    fecha_emision   TIMESTAMPTZ NOT NULL DEFAULT now(),
+    fecha_expiracion   TIMESTAMPTZ NOT NULL,
+    fecha_revocacion   TIMESTAMPTZ,
+    CHECK (fecha_revocacion IS NULL OR fecha_revocacion >= fecha_emision)
+);
+CREATE INDEX idx_sesion_refresh_usuario ON sesion_refresh(usuario_id);
+
+-- Código de intercambio de un solo uso (módulo auth), para el flujo
+-- Authorization Code con callback en el backend: Microsoft redirige el
+-- navegador a /api/auth/callback (no una llamada API que el frontend pueda
+-- leer directo), así que el backend no puede devolver los JWT en esa
+-- respuesta sin exponerlos en la URL del siguiente redirect (historial del
+-- navegador, logs, header Referer). En su lugar, /callback resuelve la
+-- identidad y deja un código opaco de un solo uso acá; el frontend, ya en
+-- FRONTEND_POST_LOGIN_REDIRECT_URL, lo canjea vía POST /api/auth/exchange
+-- para recién ahí recibir el par de JWT en el body de una respuesta JSON.
+CREATE TABLE codigo_login_temporal (
+    id                 UUID PRIMARY KEY,
+    codigo             VARCHAR(64) NOT NULL UNIQUE,
+    usuario_id         UUID NOT NULL REFERENCES usuario(id),
+    fecha_emision      TIMESTAMPTZ NOT NULL DEFAULT now(),
+    fecha_expiracion   TIMESTAMPTZ NOT NULL,
+    usado              BOOLEAN NOT NULL DEFAULT false
+);
+CREATE INDEX idx_codigo_login_temporal_usuario ON codigo_login_temporal(usuario_id);
+
 CREATE TABLE comunidad (
     id                UUID PRIMARY KEY,
     numero_documento  VARCHAR(20) NOT NULL UNIQUE,

@@ -285,6 +285,31 @@ def test_listar_llaves_por_docente_titular_solo_devuelve_las_de_ese_docente():
 
 
 # ------------------------------------------------------------------
+# listar_llaves_activas_por_reclamado_por
+# ------------------------------------------------------------------
+
+
+def test_listar_llaves_activas_por_reclamado_por_delega_al_repository():
+    docente_titular = _persona("1000000001", "Docente Titular")
+    reclamado_por = _persona("1000000002", "Reclamado Por")
+    usuario_entrega = _usuario("entrega@uco.edu.co", "Portero")
+    ubicacion_entrega = _ubicacion("ubicacion-entrega")
+    activa = service.crear_llave(
+        _salon("101").id,
+        docente_titular.id,
+        reclamado_por.id,
+        OrigenLlave.MANUAL,
+        TipoEntregaLlave.CREDENCIAL,
+        usuario_entrega.id,
+        ubicacion_entrega.id,
+    )
+
+    resultado = service.listar_llaves_activas_por_reclamado_por(reclamado_por.id)
+
+    assert {ll.id for ll in resultado} == {activa.id}
+
+
+# ------------------------------------------------------------------
 # devolver_llave
 # ------------------------------------------------------------------
 

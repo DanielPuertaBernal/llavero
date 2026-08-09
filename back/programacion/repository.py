@@ -73,3 +73,9 @@ def listar_programaciones_por_salon_y_dia(salon_id, dia: str):
     return list(
         Programacion.objects.filter(salon_id=salon_id, dia=dia).order_by("hora_inicio")
     )
+
+
+def listar_programaciones_por_docente(docente_id):
+    return list(
+        Programacion.objects.filter(docente_id=docente_id).order_by("dia", "hora_inicio")
+    )

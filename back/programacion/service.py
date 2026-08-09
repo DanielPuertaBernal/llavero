@@ -17,6 +17,11 @@ consumo futuro):
   (ver docstring de `domain.hay_solapamiento`).
 - `reservas_semestrales` necesita `obtener_semestre`/`crear_semestre`
   para validar `semestre_id` al crear una reserva.
+- `monitores` necesita `listar_programaciones_por_docente` para
+  `clases_del_docente_titular` (portado de `MonitorService.
+  clasesDocente()` del legacy, ver AulaSync/analisis/backend/
+  monitores.md, diagrama de dependencias: `MonitorService -->
+  ProgramacionRepository : findByDocumento`).
 
 Validación de `crear_programacion`: además del patrón ya establecido
 (`catalogos.service.crear_salon`, `comunidad.service.crear_persona`) de
@@ -147,3 +152,13 @@ def crear_programacion(
 def obtener_programacion(programacion_id):
     """Devuelve la Programacion con ese id, o None si no existe."""
     return repository.obtener_programacion_por_id(programacion_id)
+
+
+def listar_programaciones_por_docente(docente_id):
+    """Todas las clases programadas de ese docente, sin filtrar por
+    semestre/día. Pensada para que el futuro `monitores` la consulte vía
+    este service (nunca vía `programacion.repository`) al resolver las
+    clases del docente titular de una monitoría (ver docstring del
+    módulo).
+    """
+    return repository.listar_programaciones_por_docente(docente_id)

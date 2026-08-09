@@ -242,3 +242,32 @@ def test_listar_programaciones_por_salon_y_dia():
     resultado = repository.listar_programaciones_por_salon_y_dia(salon_1.id, DiaSemana.LUNES)
 
     assert [p.materia for p in resultado] == ["Cálculo I"]
+
+
+def test_listar_programaciones_por_docente():
+    salon = _salon()
+    docente_1 = _docente("1000000001")
+    docente_2 = _docente("1000000002")
+    semestre = _semestre()
+    repository.crear_programacion(
+        salon.id, docente_1.id, semestre.id, DiaSemana.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+    )
+    repository.crear_programacion(
+        salon.id, docente_1.id, semestre.id, DiaSemana.MARTES,
+        datetime.time(8, 0), datetime.time(10, 0), "Álgebra",
+    )
+    repository.crear_programacion(
+        salon.id, docente_2.id, semestre.id, DiaSemana.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0), "Física",
+    )
+
+    resultado = repository.listar_programaciones_por_docente(docente_1.id)
+
+    assert {p.materia for p in resultado} == {"Cálculo I", "Álgebra"}
+
+
+def test_listar_programaciones_por_docente_sin_clases_devuelve_lista_vacia():
+    docente = _docente()
+
+    assert repository.listar_programaciones_por_docente(docente.id) == []

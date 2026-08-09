@@ -81,6 +81,7 @@ from configuracion import repository
 
 LIMITE_ANTES_MORA_MINUTOS_DEFECTO = 120
 MAX_REINTENTOS_RECORDATORIO_DEFECTO = 3
+LIMITE_NO_RECLAMADA_MINUTOS_DEFECTO = 30
 
 
 def crear_configuracion(
@@ -88,6 +89,7 @@ def crear_configuracion(
     limite_antes_mora_minutos: int = LIMITE_ANTES_MORA_MINUTOS_DEFECTO,
     max_reintentos_recordatorio: int = MAX_REINTENTOS_RECORDATORIO_DEFECTO,
     plantilla_recordatorio: str | None = None,
+    limite_no_reclamada_minutos: int = LIMITE_NO_RECLAMADA_MINUTOS_DEFECTO,
 ):
     """Crea la fila de configuración, validando primero que la ubicación
     referenciada exista en catalogos (mismo patrón que
@@ -108,6 +110,7 @@ def crear_configuracion(
         limite_antes_mora_minutos=limite_antes_mora_minutos,
         max_reintentos_recordatorio=max_reintentos_recordatorio,
         plantilla_recordatorio=plantilla_recordatorio,
+        limite_no_reclamada_minutos=limite_no_reclamada_minutos,
     )
 
 
@@ -138,6 +141,7 @@ def obtener_configuracion():
         limite_antes_mora_minutos=LIMITE_ANTES_MORA_MINUTOS_DEFECTO,
         max_reintentos_recordatorio=MAX_REINTENTOS_RECORDATORIO_DEFECTO,
         plantilla_recordatorio=None,
+        limite_no_reclamada_minutos=LIMITE_NO_RECLAMADA_MINUTOS_DEFECTO,
     )
 
 
@@ -146,6 +150,7 @@ def actualizar_configuracion(
     limite_antes_mora_minutos: int,
     max_reintentos_recordatorio: int,
     plantilla_recordatorio: str | None = None,
+    limite_no_reclamada_minutos: int = LIMITE_NO_RECLAMADA_MINUTOS_DEFECTO,
 ):
     """Actualiza la fila de configuración vigente, validando primero que
     la ubicación referenciada exista en catalogos.
@@ -164,4 +169,5 @@ def actualizar_configuracion(
         limite_antes_mora_minutos,
         max_reintentos_recordatorio,
         plantilla_recordatorio,
+        limite_no_reclamada_minutos=limite_no_reclamada_minutos,
     )

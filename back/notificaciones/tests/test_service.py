@@ -28,6 +28,8 @@ from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
 from configuracion import service as configuracion_service
 from equipos import service as equipos_service
+from llaves import service as llaves_service
+from llaves.model import OrigenLlave, TipoEntregaLlave
 from notificaciones import repository, service
 from notificaciones.model import EstadoEnvioNotificacion, TipoNotificacion
 from prestamos import service as prestamos_service
@@ -61,6 +63,27 @@ def _prestamo(suffix="1"):
     equipo = equipos_service.crear_equipo(f"Equipo {suffix}", f"EQ-{suffix}")
     return prestamos_service.crear_prestamo(
         solicitante.id, prestamista.id, ubicacion.id, [equipo.id]
+    )
+
+
+def _llave(suffix="1"):
+    bloque = catalogos_service.crear_bloque(f"Bloque-{suffix}")
+    tipo_silleteria = catalogos_service.crear_tipo_silleteria(f"Silla-{suffix}")
+    salon = catalogos_service.crear_salon(f"Salon-{suffix}", bloque.id, tipo_silleteria.id)
+    docente_titular = _persona(f"300000000{suffix}", f"Docente {suffix}", correo=None)
+    reclamado_por = _persona(f"400000000{suffix}", f"Reclamado {suffix}", correo=None)
+    usuario_entrega = _usuario(f"entrega-{suffix}@uco.edu.co", f"Portero {suffix}")
+    ubicacion_entrega = catalogos_service.crear_ubicacion(
+        f"ubicacion-entrega-llave-{suffix}", permite_prestamo_llaves=True
+    )
+    return llaves_service.crear_llave(
+        salon.id,
+        docente_titular.id,
+        reclamado_por.id,
+        OrigenLlave.MANUAL,
+        TipoEntregaLlave.CREDENCIAL,
+        usuario_entrega.id,
+        ubicacion_entrega.id,
     )
 
 
@@ -245,6 +268,68 @@ def test_enviar_recordatorio_deja_fecha_hora_seteada():
 
     assert notificacion.fecha_hora is not None
     assert notificacion.fecha_hora >= antes
+
+
+# ------------------------------------------------------------------
+# enviar_recordatorio — correlación con llave_id
+# ------------------------------------------------------------------
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_enviar_recordatorio_con_llave_id_valido_persiste_la_fk():
+    persona = _persona()
+    llave = _llave()
+
+    notificacion = service.enviar_recordatorio(
+        persona.id, mensaje="Recordatorio", llave_id=llave.id, numero_intento=1
+    )
+
+    assert notificacion.llave_id == llave.id
+    assert notificacion.numero_intento == 1
+
+
+def test_enviar_recordatorio_con_llave_id_inexistente_da_value_error_claro():
+    persona = _persona()
+
+    with pytest.raises(ValueError, match="llave"):
+        service.enviar_recordatorio(
+            persona.id,
+            mensaje="Recordatorio",
+            llave_id="00000000-0000-0000-0000-000000000000",
+        )
+
+
+def test_enviar_recordatorio_con_llave_id_y_prestamo_id_da_value_error_claro():
+    persona = _persona()
+    llave = _llave()
+    prestamo = _prestamo()
+
+    with pytest.raises(ValueError, match="llave_id.*prestamo_id|prestamo_id.*llave_id"):
+        service.enviar_recordatorio(
+            persona.id,
+            mensaje="Recordatorio",
+            llave_id=llave.id,
+            prestamo_id=prestamo.id,
+        )
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_enviar_recordatorio_sin_llave_id_sigue_funcionando_como_antes():
+    persona = _persona()
+
+    notificacion = service.enviar_recordatorio(persona.id, mensaje="Recordatorio")
+
+    assert notificacion.llave_id is None
+
+
+@override_settings(EMAIL_BACKEND=LOCMEM_BACKEND)
+def test_contar_recordatorios_por_llave_delega_al_repository():
+    persona = _persona()
+    llave = _llave()
+    service.enviar_recordatorio(persona.id, mensaje="Uno", llave_id=llave.id, numero_intento=1)
+    service.enviar_recordatorio(persona.id, mensaje="Dos", llave_id=llave.id, numero_intento=2)
+
+    assert service.contar_recordatorios_por_llave(llave.id) == 2
 
 
 # ------------------------------------------------------------------

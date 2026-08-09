@@ -122,6 +122,24 @@ max_reintentos_recordatorio`) es un valor configurable en otra tabla, no
 una constante que Postgres pueda validar con un `CHECK` en esta columna;
 aplicar ese tope sigue siendo responsabilidad de quien invoca
 `enviar_recordatorio` (ver `service.py`), no de esta capa de modelo.
+
+Nota de diseño — `llave` (agregada junto con `sdd/scheduler-transiciones`):
+mismo criterio exacto que `prestamo` (ver nota de diseño más arriba) —
+`ForeignKey` a `llaves.model.Llave`, `on_delete=PROTECT` (el DDL no
+declara `ON DELETE` explícito), `null=True, blank=True`, única FK de este
+modelo hacia `Llave` (sin `related_name` explícito, sin ambigüedad).
+Mismo import-boundary rule: esta clase se importa acá solo para declarar
+la columna — `notificaciones.repository`/`service` NUNCA importan
+`llaves.model` directamente, la validación de que la llave exista pasa
+por `llaves.service.obtener_llave` (ver `service.py`).
+
+`llave_id`/`prestamo_id` son dos correlaciones alternativas (una
+notificación de tipo `'recordatorio'` puede estar motivada por una llave
+en mora o, en el futuro, por un préstamo de equipos vencido — nunca por
+ambos a la vez: son dos dominios de negocio distintos). Por eso
+`ck_notificacion_correlacion_unica` exige que a lo sumo una de las dos
+esté poblada; ambas en `NULL` sigue siendo legal (`'manual'`/
+`'vencimiento'` sin correlación específica).
 """
 
 import uuid
@@ -129,6 +147,7 @@ import uuid
 from django.db import models
 
 from comunidad.model import Comunidad
+from llaves.model import Llave
 from prestamos.model import Prestamo
 from usuarios.model import Usuario
 
@@ -173,6 +192,13 @@ class Notificacion(models.Model):
     )
     numero_intento = models.IntegerField(null=True, blank=True)
     fecha_hora = models.DateTimeField(null=True, blank=True)
+    llave = models.ForeignKey(
+        Llave,
+        on_delete=models.PROTECT,
+        db_column="llave_id",
+        null=True,
+        blank=True,
+    )
 
     class Meta:
         db_table = "notificacion"
@@ -184,6 +210,12 @@ class Notificacion(models.Model):
             models.CheckConstraint(
                 check=models.Q(estado_envio__in=EstadoEnvioNotificacion.values),
                 name="ck_notificacion_estado_envio_valido",
+            ),
+            models.CheckConstraint(
+                check=~(
+                    models.Q(llave__isnull=False) & models.Q(prestamo__isnull=False)
+                ),
+                name="ck_notificacion_correlacion_unica",
             ),
         ]
 

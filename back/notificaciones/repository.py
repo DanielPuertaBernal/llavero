@@ -11,12 +11,12 @@ según el resultado observado y pasa ese valor ya cerrado a este método —
 igual separación de responsabilidades que `novedades.repository.
 crear_novedad` recibe `categoria` ya validada por quien llama.
 
-`prestamo_id`/`numero_intento`/`fecha_hora` son kwargs opcionales
-(default `None`) igual que `enviado_por_id`: este método no valida nada
-de negocio (que el préstamo exista, etc.) — esa validación vive en
-`service.py` (ver `service.enviar_recordatorio`). Este método solo los
-pasa tal cual a `Notificacion.objects.create`, mismo criterio que ya
-aplicaba a `enviado_por_id`.
+`prestamo_id`/`numero_intento`/`fecha_hora`/`llave_id` son kwargs
+opcionales (default `None`) igual que `enviado_por_id`: este método no
+valida nada de negocio (que el préstamo/llave exista, etc.) — esa
+validación vive en `service.py` (ver `service.enviar_recordatorio`). Este
+método solo los pasa tal cual a `Notificacion.objects.create`, mismo
+criterio que ya aplicaba a `enviado_por_id`/`prestamo_id`.
 """
 
 from notificaciones.model import Notificacion
@@ -32,6 +32,7 @@ def crear_notificacion(
     prestamo_id=None,
     numero_intento=None,
     fecha_hora=None,
+    llave_id=None,
 ) -> Notificacion:
     return Notificacion.objects.create(
         destinatario_id=destinatario_id,
@@ -43,6 +44,7 @@ def crear_notificacion(
         prestamo_id=prestamo_id,
         numero_intento=numero_intento,
         fecha_hora=fecha_hora,
+        llave_id=llave_id,
     )
 
 
@@ -72,3 +74,12 @@ def listar_por_tipo(tipo: str):
 
 def listar_por_estado_envio(estado_envio: str):
     return list(Notificacion.objects.filter(estado_envio=estado_envio).order_by("tipo"))
+
+
+def contar_recordatorios_por_llave(llave_id) -> int:
+    """Cuenta cuántos recordatorios (cualquier `tipo`/`estado_envio`) ya se
+    han correlacionado a esa llave vía `llave_id` — usado por el futuro
+    scheduler (ver `sdd/scheduler-transiciones`) para comparar contra
+    `configuracion.max_reintentos_recordatorio` antes de enviar uno nuevo.
+    """
+    return Notificacion.objects.filter(llave_id=llave_id).count()

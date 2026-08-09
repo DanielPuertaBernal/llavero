@@ -41,6 +41,7 @@ def test_crear_configuracion_con_referencia_valida_delega_al_repository():
     assert configuracion.ubicacion_defecto_id == ubicacion.id
     assert configuracion.limite_antes_mora_minutos == 120
     assert configuracion.max_reintentos_recordatorio == 3
+    assert configuracion.limite_no_reclamada_minutos == 30
 
 
 def test_crear_configuracion_si_ya_existe_una_fila_da_value_error_claro():
@@ -73,6 +74,7 @@ def test_obtener_configuracion_crea_una_por_defecto_si_no_existe_ninguna():
     assert configuracion.max_reintentos_recordatorio == 3
     assert configuracion.plantilla_recordatorio is None
     assert configuracion.ubicacion_defecto_id is not None
+    assert configuracion.limite_no_reclamada_minutos == 30
     assert repository.obtener_configuracion().id == configuracion.id
 
 
@@ -121,12 +123,14 @@ def test_actualizar_configuracion_reemplaza_los_campos_de_la_fila_existente():
         limite_antes_mora_minutos=90,
         max_reintentos_recordatorio=1,
         plantilla_recordatorio="Nueva plantilla",
+        limite_no_reclamada_minutos=45,
     )
 
     assert actualizada.ubicacion_defecto_id == otra_ubicacion.id
     assert actualizada.limite_antes_mora_minutos == 90
     assert actualizada.max_reintentos_recordatorio == 1
     assert actualizada.plantilla_recordatorio == "Nueva plantilla"
+    assert actualizada.limite_no_reclamada_minutos == 45
 
 
 def test_actualizar_configuracion_crea_la_fila_si_todavia_no_existia():

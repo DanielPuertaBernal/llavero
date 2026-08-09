@@ -94,6 +94,13 @@ está en `'demora_entrega'` o `'entregado'` — la transición solo tiene
 sentido una vez, desde `'en_prestamo'`. NO envía ninguna notificación ni
 lee `configuracion`: eso es responsabilidad del futuro scheduler
 (orquestador), no de este módulo (ver `sdd/scheduler-transiciones`).
+
+Regla dura de dirección de import (ver `sdd/scheduler-transiciones`):
+`notificaciones.service` ahora importa `llaves.service` (para validar
+`llave_id` al correlacionar un recordatorio, vía `obtener_llave`). Por
+eso `llaves.service` JAMÁS debe importar `notificaciones.service` de
+vuelta — eso crearía un ciclo real. Este módulo no envía notificaciones;
+el futuro scheduler es el único orquestador que conoce ambos módulos.
 """
 
 from django.utils import timezone

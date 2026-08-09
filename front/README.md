@@ -11,8 +11,12 @@ Ver el diseño completo en [`../DOC/`](../DOC/README.md):
 
 ## Estado
 
-Scaffold inicial: Core/Auth de punta a punta, sin features todavía (Llaves,
-Prestamos, Catalogos, etc. se construyen una por una en sesiones futuras).
+Core/Auth de punta a punta, más la primera feature real: `Catalogos`
+(Salones + Bloques + TiposSilleteria, Ubicaciones — ver
+`src/app/features/catalogos/`). Roles y TipoPersona quedan fuera de
+alcance a propósito (sin página de administración, ver docstrings del
+módulo). El resto de las 14 features (Llaves, Prestamos, etc.) se
+construyen una por una en sesiones futuras.
 
 ## Estructura
 
@@ -26,8 +30,12 @@ src/app/
     shared/      vacío a propósito — componentes PrimeNG reutilizables
                  (lector de credencial, indicador de mora) cuando la
                  primera feature los necesite, ver core/shared/README.md
-  features/      vacío a propósito — las 15 features del dominio, una por
-                 feature module/standalone component + servicio co-localizado
+  features/
+    catalogos/   Salones (+ Bloques/TiposSilleteria co-gestionados desde su
+                 vista) y Ubicaciones — cada entidad con su servicio de
+                 datos co-localizado (injectQuery/injectMutation)
+                 [las 14 features restantes del dominio se agregan una por
+                 una en sesiones futuras, mismo patrón]
   dashboard-placeholder/
                  placeholder de solo prueba del flujo de auth end-to-end,
                  se reemplaza por la feature Dashboard real

@@ -65,6 +65,21 @@ def listar_por_solicitante(solicitante_id):
     )
 
 
+def listar_aprobadas_hasta(fecha):
+    """Reservas `aprobada` con `fecha <= fecha` — candidatas del futuro
+    scheduler (`sdd/scheduler-transiciones`) para evaluar
+    `domain.es_no_reclamada` antes de `service.marcar_no_reclamada`. Sin
+    ordenar por horario (a diferencia de
+    `listar_por_salon_y_fecha_aprobadas`): el consumidor evalúa cada fila
+    independientemente, no compara franjas entre sí."""
+    return list(
+        ReservaIndividual.objects.filter(
+            fecha__lte=fecha,
+            estado=EstadoReservaIndividual.APROBADA,
+        )
+    )
+
+
 def cambiar_estado(reserva_id, nuevo_estado: str):
     reserva = ReservaIndividual.objects.filter(id=reserva_id).first()
     if reserva is None:

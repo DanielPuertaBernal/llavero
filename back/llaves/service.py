@@ -81,6 +81,19 @@ como enum de solo forma).
 No se usa `transaction.atomic()` en este módulo: cada operación de
 escritura es un único INSERT/UPDATE de una sola tabla, ya atómico de por
 sí en Django (autocommit por sentencia).
+
+Nota de diseño — `marcar_demora` (transición automática por tiempo,
+`domain.es_mora`, ver ese módulo): lanza `ValueError` si la llave no
+existe (a diferencia de `devolver_llave`, que devuelve `None` — se eligió
+`ValueError` acá porque el único caller previsto es el futuro `scheduler`
+recorriendo una lista de llaves `en_prestamo` que él mismo acaba de
+consultar vía `listar_llaves_por_estado`; un id ausente en ese flujo es un
+error de programación/carrera de datos, no un "no encontrado" esperable
+de un caller HTTP), y es un no-op silencioso (sin error) si la llave ya
+está en `'demora_entrega'` o `'entregado'` — la transición solo tiene
+sentido una vez, desde `'en_prestamo'`. NO envía ninguna notificación ni
+lee `configuracion`: eso es responsabilidad del futuro scheduler
+(orquestador), no de este módulo (ver `sdd/scheduler-transiciones`).
 """
 
 from django.utils import timezone
@@ -88,7 +101,7 @@ from django.utils import timezone
 from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
 from llaves import domain, repository
-from llaves.model import OrigenLlave
+from llaves.model import EstadoLlave, OrigenLlave
 from novedades import service as novedades_service
 from reservas import service as reservas_service
 from usuarios import service as usuarios_service
@@ -200,6 +213,23 @@ def listar_llaves_activas_por_reclamado_por(reclamado_por_id):
     módulo importe `llaves.model`/`repository` (ver docstring del
     módulo)."""
     return repository.listar_activas_por_reclamado_por(reclamado_por_id)
+
+
+def marcar_demora(llave_id):
+    """Marca la Llave con ese id en 'demora_entrega' (transición
+    automática por tiempo, ver Nota de diseño del módulo).
+
+    Lanza ValueError si la llave no existe. Es un no-op (no lanza, no
+    cambia nada) si la llave ya está en 'demora_entrega' o 'entregado':
+    solo transiciona desde 'en_prestamo'. No envía notificaciones ni lee
+    `configuracion`.
+    """
+    llave = repository.obtener_por_id(llave_id)
+    if llave is None:
+        raise ValueError(f"No existe una llave con id {llave_id}")
+    if llave.estado != EstadoLlave.EN_PRESTAMO:
+        return llave
+    return repository.marcar_demora(llave_id)
 
 
 def devolver_llave(

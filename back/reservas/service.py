@@ -35,14 +35,18 @@ Convención de esta API, igual que el resto de módulos:
   funciones lanzan `ValueError` también cuando la reserva no existe — ver
   nota de diseño puntual en cada una para el porqué.
 
-`no_reclamada` NO tiene una función de transición explícita en este
-service: el DDL confirma el valor del enum, pero ningún análisis de
-negocio disponible para este módulo especifica el mecanismo/disparador que
-la produce (mismo caso ya resuelto en `llaves.domain` para
-`demora_entrega` — ver esa nota de diseño completa). No se inventa un
-mecanismo no especificado. Cuando se defina, es una extensión aditiva
-(`service.marcar_no_reclamada(reserva_id)`), no un cambio a lo ya
-construido.
+Nota de diseño — `marcar_no_reclamada` (transición automática por tiempo,
+`domain.es_no_reclamada`, ver ese módulo — antes documentada como
+"mecanismo no especificado", ya resuelta en `sdd/scheduler-transiciones`):
+lanza `ValueError` si la reserva no existe (mismo criterio que
+`cancelar_reserva`/`completar_reserva`: el único caller previsto es el
+futuro `scheduler` recorriendo una lista de reservas `aprobada` que él
+mismo acaba de consultar vía `listar_reservas_aprobadas_hasta`), y es un
+no-op silencioso (sin error) si la reserva ya está en `'no_reclamada'`,
+`'completada'` o `'cancelada'` — la transición solo tiene sentido una vez,
+desde `'aprobada'`. Reusa `repository.cambiar_estado` (no hay función de
+repository dedicada, misma forma que `cancelar_reserva`/
+`completar_reserva`).
 
 No se usa `transaction.atomic()` en este módulo: cada operación de
 escritura es un único INSERT/UPDATE de una sola tabla, ya atómico de por
@@ -171,3 +175,26 @@ def completar_reserva(reserva_id):
             "(solo se puede completar una reserva 'aprobada')"
         )
     return repository.cambiar_estado(reserva_id, EstadoReservaIndividual.COMPLETADA)
+
+
+def marcar_no_reclamada(reserva_id):
+    """Marca la ReservaIndividual con ese id en 'no_reclamada' (transición
+    automática por tiempo, ver Nota de diseño del módulo).
+
+    Lanza ValueError si la reserva no existe. Es un no-op (no lanza, no
+    cambia nada) si la reserva ya está en 'no_reclamada', 'completada' o
+    'cancelada': solo transiciona desde 'aprobada'.
+    """
+    reserva = repository.obtener_por_id(reserva_id)
+    if reserva is None:
+        raise ValueError(f"No existe una reserva con id {reserva_id}")
+    if reserva.estado != EstadoReservaIndividual.APROBADA:
+        return reserva
+    return repository.cambiar_estado(reserva_id, EstadoReservaIndividual.NO_RECLAMADA)
+
+
+def listar_reservas_aprobadas_hasta(fecha):
+    """Reservas 'aprobada' con fecha <= `fecha` — candidatas del futuro
+    scheduler (ver Nota de diseño del módulo y `repository.
+    listar_aprobadas_hasta`)."""
+    return repository.listar_aprobadas_hasta(fecha)

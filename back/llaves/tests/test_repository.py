@@ -530,6 +530,30 @@ def test_devolver_llave_inexistente_devuelve_none():
     )
 
 
+# ------------------------------------------------------------------
+# marcar_demora
+# ------------------------------------------------------------------
+
+
+def test_marcar_demora_actualiza_solo_el_campo_estado():
+    creada = _llave()
+
+    actualizada = repository.marcar_demora(creada.id)
+
+    assert actualizada.estado == EstadoLlave.DEMORA_ENTREGA
+    persistida = repository.obtener_por_id(creada.id)
+    assert persistida.estado == EstadoLlave.DEMORA_ENTREGA
+    # No debe tocar ningún otro campo (single-field UPDATE, ver docstring).
+    assert persistida.fecha_hora_devolucion is None
+    assert persistida.usuario_recibe_id is None
+
+
+def test_marcar_demora_inexistente_devuelve_none():
+    assert (
+        repository.marcar_demora("00000000-0000-0000-0000-000000000000") is None
+    )
+
+
 def test_devolver_llave_con_fecha_anterior_a_la_entrega_falla_por_check_constraint():
     # CHECK (fecha_hora_devolucion IS NULL OR fecha_hora_devolucion >
     # fecha_hora_entrega) del DDL: se fuerza pasando una fecha anterior a

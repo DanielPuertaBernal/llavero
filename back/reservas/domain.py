@@ -26,9 +26,23 @@ Es lógica pura y sin estado: dos franjas horarias [inicio, fin) se
 solapan si y solo si cada una empieza antes de que la otra termine. No
 toca la base de datos — quien la usa (`service.py`) es responsable de
 traer las reservas candidatas a comparar.
+
+Nota de diseño — `es_no_reclamada` (transición automática `'aprobada'` ->
+`'no_reclamada'`, ver `service.marcar_no_reclamada`): anclada en
+`hora_inicio` (no `hora_fin`), decisión de negocio tomada explícitamente
+para `sdd/scheduler-transiciones` — una reserva que nadie reclamó al
+empezar su franja es "no reclamada" a partir de
+`hora_inicio + límite`, sin importar cuánto dure la reserva. Combina
+`fecha` (DateField) + `hora_inicio` (TimeField) en un datetime aware vía
+`timezone.make_aware(datetime.combine(...))`: el proyecto corre con
+`USE_TZ=True` y `TIME_ZONE="America/Bogota"`, zona sin DST desde 1993, así
+que `make_aware` nunca puede lanzar por hora ambigua/inexistente acá (ver
+diseño completo en `sdd/scheduler-transiciones/design`).
 """
 
 import datetime
+
+from django.utils import timezone
 
 
 def hay_solapamiento(
@@ -47,3 +61,22 @@ def hay_solapamiento(
     `programacion.domain.hay_solapamiento`).
     """
     return hora_inicio_a < hora_fin_b and hora_inicio_b < hora_fin_a
+
+
+def es_no_reclamada(
+    fecha: datetime.date,
+    hora_inicio: datetime.time,
+    limite_minutos: int,
+    ahora: datetime.datetime,
+) -> bool:
+    """True si ya pasó `limite_minutos` desde el inicio de la franja
+    (`fecha` + `hora_inicio`) respecto de `ahora` — la decisión pura
+    detrás de la transición `service.marcar_no_reclamada` (ver nota de
+    diseño del módulo).
+
+    `ahora` es un datetime aware (`USE_TZ=True`). Exactamente en el
+    límite NO es no-reclamada todavía — mismo criterio que
+    `llaves.domain.es_mora`.
+    """
+    inicio = timezone.make_aware(datetime.datetime.combine(fecha, hora_inicio))
+    return ahora > inicio + datetime.timedelta(minutes=limite_minutos)

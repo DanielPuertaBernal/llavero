@@ -81,6 +81,20 @@ def listar_activas_por_reclamado_por(reclamado_por_id):
     )
 
 
+def marcar_demora(llave_id):
+    """Pone estado='demora_entrega' en la Llave con ese id (single-field
+    UPDATE, mismo patrón que `devolver_llave`), o devuelve None si no
+    existe. La decisión de si la transición es válida (solo desde
+    'en_prestamo', no-op si ya está en 'demora_entrega'/'entregado') ya se
+    tomó en `service.marcar_demora` antes de llegar acá."""
+    llave = Llave.objects.filter(id=llave_id).first()
+    if llave is None:
+        return None
+    llave.estado = EstadoLlave.DEMORA_ENTREGA
+    llave.save(update_fields=["estado"])
+    return llave
+
+
 def devolver_llave(
     llave_id,
     usuario_recibe_id,

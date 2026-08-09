@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     "comunidad",
     "programacion",
     "monitores",
+    "novedades",
     "configuracion",
     # No se agrega "ninja_jwt" (ni "ninja_jwt.token_blacklist"): solo se usan
     # sus primitivos de bajo nivel (ninja_jwt.tokens.RefreshToken/AccessToken),

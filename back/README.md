@@ -28,7 +28,7 @@ cp env.example .env
 
 > Nota: el archivo de ejemplo se llama `env.example` (sin el punto inicial) porque el entorno de desarrollo con el que se generó este scaffold bloquea la creación de archivos `.env*` como medida de seguridad. Renómbralo tú a `.env.example` si quieres seguir la convención habitual — el contenido es el mismo, y `.gitignore` ya ignora cualquiera de las dos variantes de nombre real (`.env`).
 
-Claves esperadas: `DEBUG`, `SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `ALLOWED_HOSTS`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, `FRONTEND_POST_LOGIN_REDIRECT_URL` (login federado Office 365, ver `auth/service.py`), `EMAIL_HOST`, `EMAIL_HOST_FALLBACK`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_TIMEOUT`, `DEFAULT_FROM_EMAIL` (relay SMTP institucional, ver `notificaciones/service.py`). Ver `env.example` para la lista completa con comentarios.
+Claves esperadas: `DEBUG`, `SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `ALLOWED_HOSTS`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, `FRONTEND_POST_LOGIN_REDIRECT_URL` (login federado Office 365, ver `auth/service.py`), `EMAIL_HOST`, `EMAIL_HOST_FALLBACK`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_TIMEOUT`, `DEFAULT_FROM_EMAIL` (relay SMTP institucional, ver `notificaciones/service.py`), `SCHEDULER_API_KEY` (clave del endpoint protegido `POST /api/scheduler/ejecutar-transiciones`, ver `scheduler/security.py` y la sección "Despliegue del scheduler externo" más abajo). Ver `env.example` para la lista completa con comentarios.
 
 ## Base de datos y migraciones
 
@@ -54,7 +54,19 @@ pytest -v
 python manage.py runserver
 ```
 
-La API queda montada en `http://localhost:8000/api/` (una única instancia de `NinjaAPI`, con el router de cada uno de los 16 módulos agregado ahí — `auth`, `catalogos`, `equipos`, `usuarios`, `comunidad`, `programacion`, `monitores`, `novedades`, `reservas`, `reservas-semestrales`, `llaves`, `configuracion`, `notificaciones`, `prestamos`, `nfc`; ver `config/urls.py` para la lista completa y actualizada de routers montados). Documentación interactiva autogenerada en `http://localhost:8000/api/docs`.
+La API queda montada en `http://localhost:8000/api/` (una única instancia de `NinjaAPI`, con el router de cada uno de los 17 módulos agregado ahí — `auth`, `catalogos`, `equipos`, `usuarios`, `comunidad`, `programacion`, `monitores`, `novedades`, `reservas`, `reservas-semestrales`, `llaves`, `configuracion`, `notificaciones`, `prestamos`, `nfc`, `scheduler`; ver `config/urls.py` para la lista completa y actualizada de routers montados). Documentación interactiva autogenerada en `http://localhost:8000/api/docs`.
+
+## Despliegue del scheduler externo
+
+`POST /api/scheduler/ejecutar-transiciones` (módulo `scheduler`, ver `scheduler/service.py`) no tiene ningún cron/Celery-beat propio en este backend — es responsabilidad de quien despliegue el sistema programar una llamada periódica (p. ej. cada 5–10 minutos) contra ese endpoint, con el header `X-Scheduler-Api-Key` igual al valor configurado en `SCHEDULER_API_KEY` (ver `env.example`). Mientras esa variable esté vacía (default), el endpoint responde `401` siempre — desplegar antes de provisionar el caller externo es seguro.
+
+**Antes de la primera invocación**, ejecuta contra la base de datos de producción:
+
+```sql
+SELECT count(*) FROM reserva_individual WHERE estado = 'aprobada';
+```
+
+Esto es una decisión de diseño explícita, no un olvido (ver `sdd/scheduler-transiciones/design`, sección "Risks"): el endpoint **no tiene ningún límite de "mirar hacia atrás"** — la primera corrida procesa TODO el histórico de reservas `aprobada` que ya pasaron su horario, y envía un `enviar_vencimiento` por cada una. Conocer ese número de antemano evita sorpresas (un pico repentino de correos salientes contra el relay SMTP institucional) al activar el scheduler por primera vez. La respuesta del propio endpoint (`reservas_marcadas_no_reclamada`/`vencimientos_enviados`) hace observable el tamaño real de ese primer lote.
 
 ## Convención de módulos (monolito modular)
 

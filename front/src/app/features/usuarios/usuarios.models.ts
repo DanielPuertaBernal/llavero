@@ -15,16 +15,20 @@
 // contagia a los modelos de acá: lo que se manda y se recibe por
 // `/api/usuarios/*` sigue siendo snake_case.
 //
-// Nota de alcance — `Usuario` NO es un CRUD: el backend expone solo
-// `GET /`, `GET /{id}`, `POST /`, `POST /vincular-oid-microsoft` y
-// `POST /{id}/desactivar`. NO hay PATCH, NO hay DELETE y NO hay un endpoint
-// para reactivar (ver back/usuarios/controller.py). Consecuencias que esta
+// Nota de alcance — `Usuario` sigue sin ser un CRUD completo: el backend
+// expone `GET /`, `GET /{id}`, `POST /`, `POST /vincular-oid-microsoft`,
+// `PATCH /{id}`, `POST /{id}/desactivar` y `POST /{id}/reactivar` (ver
+// back/usuarios/controller.py). NO hay DELETE. Consecuencias que esta
 // feature respeta:
 //
-// 1. Un usuario no se edita una vez creado — por eso acá no existe un tipo
-//    `UsuarioPatch`/`Partial<UsuarioInput>` ni un diálogo de edición.
-// 2. La desactivación es de una sola dirección: no hay forma de reactivar
-//    desde la aplicación, y el diálogo de confirmación lo dice explícito.
+// 1. Un usuario SÍ se edita (`PATCH /{id}`, cuerpo parcial), pero solo en
+//    sus 4 campos de datos — ver `UsuarioPatchInput` más abajo.
+// 2. El ESTADO (`activo`) no se toca por PATCH: tiene sus propias
+//    transiciones explícitas, `desactivar` y `reactivar`. Ambas existen, así
+//    que la desactivación ya no es de una sola dirección y el diálogo de
+//    confirmación lo dice así.
+// 3. Un usuario nunca se borra: darlo de baja es desactivarlo, y su
+//    historial de préstamos sigue siendo referenciable.
 //
 // Nota de alcance — `POST /vincular-oid-microsoft` NO se modela acá a
 // propósito: es un paso del login federado de Office 365 (el backend
@@ -73,6 +77,31 @@ export interface UsuarioInput {
   rol_id: string;
   ubicacion_id: string;
   activo: boolean;
+}
+
+/**
+ * `UsuarioPatch` del controller: el cuerpo de `PATCH /api/usuarios/{id}`.
+ * Todos los campos son opcionales y el backend aplica SOLO los que llegan
+ * (`exclude_unset`), así que el tipo es una parcial de verdad, no un
+ * `UsuarioInput` con campos nullables.
+ *
+ * Nota deliberada — `activo` NO está acá, y no es un olvido: el backend lo
+ * excluye del schema a propósito. El estado de un usuario se cambia con
+ * `POST /{id}/desactivar` y `POST /{id}/reactivar`, que son transiciones
+ * explícitas y auditables (la primera incluso aplica la autoprotección de
+ * "nadie se desactiva a sí mismo"). Colar `activo` en un PATCH sería
+ * saltarse esa regla por la puerta de atrás, así que el tipo lo hace
+ * imposible de expresar en vez de confiar en que nadie lo mande.
+ *
+ * Por eso tampoco se define como `Partial<UsuarioInput>`: ese alias SÍ
+ * incluiría `activo`, y el error se detectaría recién en tiempo de
+ * ejecución (o ni eso, porque el backend lo ignoraría en silencio).
+ */
+export interface UsuarioPatchInput {
+  nombre?: string;
+  email_institucional?: string;
+  rol_id?: string;
+  ubicacion_id?: string;
 }
 
 /**

@@ -174,14 +174,113 @@ describe('UsuarioFormDialogComponent', () => {
     expect(fixture.componentInstance.visible()).toBe(true);
   });
 
-  it('es de solo creación: no expone una entrada para precargar un usuario existente', async () => {
+  it('en modo edición precarga el formulario desde la entrada y guardar hace PATCH, no POST', async () => {
     const fixture = TestBed.createComponent(UsuarioFormDialogComponent);
     await cederMicrotask();
     responderCargaInicial(httpMock);
+    fixture.componentRef.setInput('usuario', usuarioDto);
     fixture.detectChanges();
 
-    // El backend no expone PATCH sobre usuarios, así que un modo edición
-    // sería una promesa que la API no puede cumplir.
-    expect(() => fixture.componentRef.setInput('usuario', usuarioDto)).toThrow();
+    const component = fixture.componentInstance as unknown as UsuarioFormDialogInternals;
+    expect(component.form.getRawValue()).toEqual(valoresBase);
+
+    component.form.patchValue({ nombre: 'Ana Renombrada' });
+    fixture.componentInstance.visible.set(true);
+
+    const emitidos: number[] = [];
+    fixture.componentInstance.guardado.subscribe(() => emitidos.push(1));
+
+    component.guardar();
+    await cederMicrotask();
+
+    httpMock.expectNone({ method: 'POST', url: `${BASE_URL}/` });
+    const req = httpMock.expectOne({ method: 'PATCH', url: `${BASE_URL}/us-1` });
+    // `activo` NO viaja en el PATCH: el backend no lo acepta por ese camino
+    // (el estado se cambia con desactivar/reactivar).
+    expect(req.request.body).toEqual({
+      nombre: 'Ana Renombrada',
+      email_institucional: 'ana@uco.edu.co',
+      rol_id: 'r-1',
+      ubicacion_id: 'ub-1',
+    });
+    req.flush({ ...usuarioDto, nombre: 'Ana Renombrada' });
+    await cederMicrotask();
+
+    // Refetch tras invalidar el prefijo `['usuarios']` (query activa acá).
+    httpMock.expectOne(`${BASE_URL}/`).flush([{ ...usuarioDto, nombre: 'Ana Renombrada' }]);
+
+    await vi.waitFor(() => {
+      expect(fixture.componentInstance.visible()).toBe(false);
+      expect(emitidos.length).toBe(1);
+    });
+  });
+
+  it('la casilla "Usuario activo" está en modo creación y desaparece en modo edición', async () => {
+    const fixture = TestBed.createComponent(UsuarioFormDialogComponent);
+    await cederMicrotask();
+    responderCargaInicial(httpMock);
+    fixture.componentInstance.visible.set(true);
+    fixture.detectChanges();
+
+    // `UsuarioIn` sí acepta `activo`, así que crear con la casilla es válido.
+    expect(fixture.nativeElement.querySelector('#usuario-activo')).not.toBeNull();
+
+    fixture.componentRef.setInput('usuario', usuarioDto);
+    fixture.detectChanges();
+
+    // `UsuarioPatch` NO acepta `activo`: ofrecer la casilla sería prometer
+    // un cambio que el PATCH nunca haría.
+    expect(fixture.nativeElement.querySelector('#usuario-activo')).toBeNull();
+  });
+
+  it('el encabezado distingue creación de edición', async () => {
+    const fixture = TestBed.createComponent(UsuarioFormDialogComponent);
+    await cederMicrotask();
+    responderCargaInicial(httpMock);
+    fixture.componentInstance.visible.set(true);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Nuevo usuario');
+
+    fixture.componentRef.setInput('usuario', usuarioDto);
+    fixture.detectChanges();
+
+    expect(fixture.nativeElement.textContent).toContain('Editar usuario');
+  });
+
+  it('al fallar la edición sugiere el correo duplicado: el backend responde 500, no un {detail} limpio', async () => {
+    const fixture = TestBed.createComponent(UsuarioFormDialogComponent);
+    await cederMicrotask();
+    responderCargaInicial(httpMock);
+    fixture.componentRef.setInput('usuario', usuarioDto);
+    fixture.detectChanges();
+
+    const messageService = TestBed.inject(MessageService);
+    const addSpy = vi.spyOn(messageService, 'add');
+
+    const component = fixture.componentInstance as unknown as UsuarioFormDialogInternals;
+    component.form.patchValue({ email_institucional: 'bruno@uco.edu.co' });
+    fixture.componentInstance.visible.set(true);
+    component.guardar();
+    await cederMicrotask();
+
+    // La unicidad del correo NO se valida en Python: el error de Postgres se
+    // propaga como 500 sin `{detail}`, así que `extraerMensajeError` cae al
+    // mensaje por defecto — y ese mensaje debe ser útil.
+    httpMock
+      .expectOne({ method: 'PATCH', url: `${BASE_URL}/us-1` })
+      .flush('Internal Server Error', { status: 500, statusText: 'Internal Server Error' });
+
+    await vi.waitFor(() =>
+      expect(addSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          summary: 'No se pudo actualizar el usuario',
+          detail: expect.stringContaining('correo institucional'),
+        }),
+      ),
+    );
+    // El diálogo sigue abierto para que el operador corrija el correo.
+    expect(fixture.componentInstance.visible()).toBe(true);
   });
 });

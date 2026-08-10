@@ -23,12 +23,20 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
 /**
  * Vista principal de Usuarios: el padrón de operadores de la aplicación.
  *
- * A diferencia de las vistas de `catalogos`, esta NO es un CRUD: el backend
- * solo permite crear (`POST /api/usuarios/`) y desactivar
- * (`POST /api/usuarios/{id}/desactivar`) — no existen PATCH ni DELETE, ni
- * un endpoint para reactivar (ver back/usuarios/controller.py). Por eso la
- * columna de acciones tiene un único botón, "Desactivar usuario", y no hay
- * editar ni eliminar.
+ * A diferencia de las vistas de `catalogos`, esta sigue sin ser un CRUD
+ * completo: el backend permite crear (`POST /api/usuarios/`), editar
+ * (`PATCH /api/usuarios/{id}`) y alternar el estado
+ * (`POST /{id}/desactivar` y `POST /{id}/reactivar`), pero NO existe DELETE
+ * (ver back/usuarios/controller.py). Por eso la columna de acciones tiene
+ * "Editar usuario", "Desactivar usuario" y "Reactivar usuario", y no hay
+ * ningún botón de eliminar: un usuario se da de baja desactivándolo, y su
+ * historial de préstamos sigue siendo referenciable.
+ *
+ * Nota de diseño — el ESTADO no se edita desde el formulario: el diálogo
+ * oculta la casilla `activo` en modo edición porque `UsuarioPatch` no la
+ * acepta (ver `UsuarioFormDialogComponent`). Las dos transiciones viven acá,
+ * como acciones de fila con confirmación, que es donde el operador puede
+ * leer sus consecuencias antes de aceptar.
  *
  * Nota de arquitectura — esta es la primera feature que depende de
  * `core/auth`, y es legítimo: la regla dura del proyecto prohíbe que una
@@ -57,17 +65,23 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
  *   explícito para que la asimetría entre features se lea como una
  *   decisión y no como un olvido.
  *
- * Nota de diseño — el botón se deshabilita en dos casos, y ninguno de los
- * dos es "validar reglas de negocio del backend en el cliente", sino no
- * ofrecer una acción que no existe (mismo criterio que el multiselect de
- * `prestamo-devolucion-dialog`, que solo lista equipos todavía
- * `entregado`):
+ * Nota de diseño — "Desactivar usuario" se deshabilita en dos casos, y
+ * ninguno de los dos es "validar reglas de negocio del backend en el
+ * cliente", sino no ofrecer una acción que no significa nada (mismo criterio
+ * que el multiselect de `prestamo-devolucion-dialog`, que solo lista equipos
+ * todavía `entregado`):
  *
- * 1. `activo === false` — el usuario ya está desactivado, y como no hay
- *    endpoint para reactivar, la única transición posible ya ocurrió.
+ * 1. `activo === false` — el usuario ya está desactivado; la acción que le
+ *    corresponde a esa fila es la simétrica, "Reactivar usuario".
  * 2. La fila es la del propio operador autenticado — el backend responde
  *    400 por autoprotección (`AutodesactivacionError`), así que ofrecer el
  *    botón sería invitar a un error garantizado.
+ *
+ * "Reactivar usuario" es la contraparte exacta del punto 1: solo se RENDERIZA
+ * en las filas inactivas. No se muestra deshabilitado en las activas porque
+ * no aporta información — la etiqueta de estado de la misma fila ya dice que
+ * el usuario está activo. Ese endpoint no tiene autoprotección (nadie está
+ * quitándose el acceso), así que no depende de la sesión.
  *
  * En ambos casos el backend sigue siendo la autoridad: si una petición se
  * cuela igual (por ejemplo, una sesión que cambia en otra pestaña), lo que
@@ -149,6 +163,21 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
           </td>
           <td>
             <p-button
+              icon="pi pi-pencil"
+              [text]="true"
+              (onClick)="abrirEditar(usuario)"
+              [ariaLabel]="'Editar usuario'"
+            />
+            @if (!usuario.activo) {
+              <p-button
+                icon="pi pi-refresh"
+                severity="success"
+                [text]="true"
+                (onClick)="confirmarReactivar(usuario)"
+                [ariaLabel]="'Reactivar usuario'"
+              />
+            }
+            <p-button
               icon="pi pi-ban"
               severity="danger"
               [text]="true"
@@ -166,7 +195,7 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
       </ng-template>
     </p-table>
 
-    <app-usuario-form-dialog [(visible)]="formDialogVisible" />
+    <app-usuario-form-dialog [(visible)]="formDialogVisible" [usuario]="usuarioEditando()" />
   `,
 })
 export class UsuariosListComponent {
@@ -181,6 +210,7 @@ export class UsuariosListComponent {
   protected readonly busqueda = signal('');
   protected readonly filtroEstado = signal<FiltroEstadoUsuario>('todos');
   protected readonly formDialogVisible = signal(false);
+  protected readonly usuarioEditando = signal<Usuario | null>(null);
 
   protected readonly cargando = computed(() => this.usuariosService.usuarios.isPending());
 
@@ -212,21 +242,59 @@ export class UsuariosListComponent {
   }
 
   protected abrirCrear(): void {
+    // Sin este reinicio el diálogo se abriría en modo edición con los datos
+    // de la última fila editada.
+    this.usuarioEditando.set(null);
+    this.formDialogVisible.set(true);
+  }
+
+  protected abrirEditar(usuario: Usuario): void {
+    this.usuarioEditando.set(usuario);
     this.formDialogVisible.set(true);
   }
 
   protected confirmarDesactivar(usuario: Usuario): void {
     this.confirmationService.confirm({
       header: 'Desactivar usuario',
-      // El mensaje dice explícitamente que no hay vuelta atrás DESDE LA
-      // APLICACIÓN: el backend no expone ningún endpoint para reactivar, así
-      // que el operador debe saberlo antes de aceptar, no después.
+      // El mensaje describe la consecuencia INMEDIATA (pierde el acceso) y
+      // aclara que la decisión es reversible: `POST /{id}/reactivar` existe,
+      // así que decir "no se puede deshacer" sería falso.
       message:
-        `¿Desactivar a "${usuario.nombre}"? Perderá el acceso a la aplicación. ` +
-        `Esta acción no se puede deshacer desde la aplicación: no existe una opción para reactivarlo.`,
+        `¿Desactivar a "${usuario.nombre}"? Perderá el acceso a la aplicación de inmediato. ` +
+        `Podrás volver a reactivarlo más adelante desde esta misma lista.`,
       acceptLabel: 'Desactivar',
       rejectLabel: 'Cancelar',
       accept: () => this.desactivar(usuario),
+    });
+  }
+
+  protected confirmarReactivar(usuario: Usuario): void {
+    this.confirmationService.confirm({
+      header: 'Reactivar usuario',
+      message:
+        `¿Reactivar a "${usuario.nombre}"? Volverá a tener acceso a la aplicación ` +
+        `con el rol y la ubicación que tiene asignados.`,
+      acceptLabel: 'Reactivar',
+      rejectLabel: 'Cancelar',
+      accept: () => this.reactivar(usuario),
+    });
+  }
+
+  /**
+   * A diferencia de `desactivar`, no se consulta `AuthService`: el endpoint
+   * no recibe `usuario_actual_id` porque no hay regla de autoprotección que
+   * aplicar al devolverle el acceso a alguien.
+   */
+  private reactivar(usuario: Usuario): void {
+    this.usuariosService.reactivar.mutate(usuario.id, {
+      onSuccess: () =>
+        this.messageService.add({ severity: 'success', summary: 'Usuario reactivado' }),
+      onError: (error) =>
+        this.messageService.add({
+          severity: 'error',
+          summary: 'No se pudo reactivar el usuario',
+          detail: extraerMensajeError(error, 'Intenta de nuevo.'),
+        }),
     });
   }
 

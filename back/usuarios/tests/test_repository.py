@@ -174,6 +174,88 @@ def test_vincular_oid_microsoft_con_oid_duplicado_falla_por_unicidad():
 
 
 # ------------------------------------------------------------------
+# actualizar_usuario
+# ------------------------------------------------------------------
+
+
+def test_actualizar_usuario_actualiza_solo_los_campos_provistos():
+    rol = _rol()
+    ubicacion = _ubicacion()
+    creado = repository.crear_usuario("Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id)
+
+    actualizado = repository.actualizar_usuario(creado.id, nombre="Ana María Pérez")
+
+    assert actualizado.nombre == "Ana María Pérez"
+    # Los campos no provistos conservan su valor anterior.
+    persistido = repository.obtener_usuario_por_id(creado.id)
+    assert persistido.nombre == "Ana María Pérez"
+    assert persistido.email_institucional == "ana.perez@uco.edu.co"
+    assert persistido.rol_id == rol.id
+    assert persistido.ubicacion_id == ubicacion.id
+
+
+def test_actualizar_usuario_sin_campos_provistos_no_cambia_nada():
+    rol = _rol()
+    ubicacion = _ubicacion()
+    creado = repository.crear_usuario("Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id)
+
+    actualizado = repository.actualizar_usuario(creado.id)
+
+    assert actualizado.id == creado.id
+    persistido = repository.obtener_usuario_por_id(creado.id)
+    assert persistido.nombre == "Ana Pérez"
+    assert persistido.email_institucional == "ana.perez@uco.edu.co"
+
+
+def test_actualizar_usuario_cambia_rol_y_ubicacion():
+    rol = _rol()
+    ubicacion = _ubicacion()
+    otro_rol = catalogos_service.crear_rol("otro-rol-test-usuarios-repo")
+    otra_ubicacion = catalogos_service.crear_ubicacion("otra-ubicacion-test-usuarios-repo")
+    creado = repository.crear_usuario("Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id)
+
+    actualizado = repository.actualizar_usuario(
+        creado.id, rol_id=otro_rol.id, ubicacion_id=otra_ubicacion.id
+    )
+
+    assert actualizado.rol_id == otro_rol.id
+    assert actualizado.ubicacion_id == otra_ubicacion.id
+
+
+def test_actualizar_usuario_no_toca_activo():
+    # `activo` no es parte de la firma de actualizar_usuario: activación y
+    # desactivación tienen sus propios métodos (ver docstring del módulo).
+    rol = _rol()
+    ubicacion = _ubicacion()
+    creado = repository.crear_usuario(
+        "Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id, activo=False
+    )
+
+    repository.actualizar_usuario(creado.id, nombre="Ana María Pérez")
+
+    assert repository.obtener_usuario_por_id(creado.id).activo is False
+
+
+def test_actualizar_usuario_inexistente_devuelve_none():
+    assert (
+        repository.actualizar_usuario(
+            "00000000-0000-0000-0000-000000000000", nombre="Ana María Pérez"
+        )
+        is None
+    )
+
+
+def test_actualizar_usuario_con_email_duplicado_falla_por_unicidad():
+    rol = _rol()
+    ubicacion = _ubicacion()
+    repository.crear_usuario("Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id)
+    otro = repository.crear_usuario("Luis Gómez", "luis.gomez@uco.edu.co", rol.id, ubicacion.id)
+
+    with pytest.raises(IntegrityError):
+        repository.actualizar_usuario(otro.id, email_institucional="ana.perez@uco.edu.co")
+
+
+# ------------------------------------------------------------------
 # desactivar_usuario
 # ------------------------------------------------------------------
 
@@ -191,3 +273,35 @@ def test_desactivar_usuario_pone_activo_en_false():
 
 def test_desactivar_usuario_inexistente_devuelve_none():
     assert repository.desactivar_usuario("00000000-0000-0000-0000-000000000000") is None
+
+
+# ------------------------------------------------------------------
+# reactivar_usuario
+# ------------------------------------------------------------------
+
+
+def test_reactivar_usuario_pone_activo_en_true():
+    rol = _rol()
+    ubicacion = _ubicacion()
+    creado = repository.crear_usuario(
+        "Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id, activo=False
+    )
+
+    actualizado = repository.reactivar_usuario(creado.id)
+
+    assert actualizado.activo is True
+    assert repository.obtener_usuario_por_id(creado.id).activo is True
+
+
+def test_reactivar_usuario_ya_activo_lo_deja_activo():
+    rol = _rol()
+    ubicacion = _ubicacion()
+    creado = repository.crear_usuario("Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id)
+
+    actualizado = repository.reactivar_usuario(creado.id)
+
+    assert actualizado.activo is True
+
+
+def test_reactivar_usuario_inexistente_devuelve_none():
+    assert repository.reactivar_usuario("00000000-0000-0000-0000-000000000000") is None

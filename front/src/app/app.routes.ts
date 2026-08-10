@@ -49,5 +49,17 @@ export const routes: Routes = [
       import('./features/prestamos/prestamos-list.component').then((m) => m.PrestamosListComponent),
     canActivate: [authGuard],
   },
+  // Cuarta feature real (`usuarios`, ver `src/app/features/usuarios/`): una
+  // sola vista, el padrón de operadores. Tampoco es un CRUD — el backend
+  // solo expone crear y desactivar, sin PATCH, sin DELETE y sin endpoint
+  // para reactivar (ver back/usuarios/controller.py). Es además la primera
+  // feature que depende de `core/auth`: `POST /{id}/desactivar` exige el id
+  // del usuario que ejecuta la acción.
+  {
+    path: 'usuarios',
+    loadComponent: () =>
+      import('./features/usuarios/usuarios-list.component').then((m) => m.UsuariosListComponent),
+    canActivate: [authGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

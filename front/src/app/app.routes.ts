@@ -38,5 +38,16 @@ export const routes: Routes = [
       import('./features/llaves/llaves-list.component').then((m) => m.LlavesListComponent),
     canActivate: [authGuard],
   },
+  // Tercera feature real (`prestamos`, ver `src/app/features/prestamos/`):
+  // también una sola vista, por la misma razón que llaves — el módulo es un
+  // ciclo de vida (entrega de N equipos -> devoluciones parciales ->
+  // devolución completa), no un CRUD (ver back/prestamos/controller.py). El
+  // detalle de cada préstamo se abre expandiendo su fila, sin ruta propia.
+  {
+    path: 'prestamos',
+    loadComponent: () =>
+      import('./features/prestamos/prestamos-list.component').then((m) => m.PrestamosListComponent),
+    canActivate: [authGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

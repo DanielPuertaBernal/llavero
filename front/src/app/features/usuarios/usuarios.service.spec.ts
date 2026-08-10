@@ -5,6 +5,7 @@ import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-exper
 
 import { environment } from '../../../environments/environment';
 import { usuariosQueryKeys } from './usuarios-query-keys';
+import type { UsuarioPatchInput } from './usuarios.models';
 import { UsuariosService } from './usuarios.service';
 
 const BASE_URL = `${environment.apiBaseUrl}/usuarios`;
@@ -79,6 +80,86 @@ describe('UsuariosService', () => {
 
     expect(invalidateSpy).toHaveBeenCalledTimes(1);
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: usuariosQueryKeys.raiz });
+  });
+
+  it('actualizar hace PATCH a /api/usuarios/{id} con SOLO los campos cambiados e invalida el prefijo ["usuarios"]', async () => {
+    httpMock.expectOne(`${BASE_URL}/`).flush([]);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
+
+    const promesa = service.actualizar.mutateAsync({ id: 'us-1', nombre: 'Ana Renombrada' });
+    await cederMicrotask();
+    const req = httpMock.expectOne({ method: 'PATCH', url: `${BASE_URL}/us-1` });
+    // `id` identifica al objetivo y viaja en la URL: no debe colarse en el
+    // cuerpo, porque `UsuarioPatch` no lo declara y el backend solo aplica
+    // los campos presentes.
+    expect(req.request.body).toEqual({ nombre: 'Ana Renombrada' });
+    req.flush({ ...usuarioDto, nombre: 'Ana Renombrada' });
+    await promesa;
+
+    expect(invalidateSpy).toHaveBeenCalledTimes(1);
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: usuariosQueryKeys.raiz });
+  });
+
+  it('actualizar acepta los 4 campos de datos y NO `activo`, que el tipo rechaza en compilación', async () => {
+    httpMock.expectOne(`${BASE_URL}/`).flush([]);
+    vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
+
+    // La barrera contra `activo` es de TIPOS, no de runtime: TypeScript no
+    // borra propiedades en ejecución, así que un `expect` sobre el cuerpo de
+    // un request al que se le coló `activo` no probaría nada. Lo que fija la
+    // regla es que esta declaración NO COMPILE — el `@ts-expect-error` falla
+    // el build el día que alguien agregue `activo` a `UsuarioPatchInput`.
+    // @ts-expect-error `activo` no es parcheable: se cambia con desactivar/reactivar
+    const cuerpoInvalido: { id: string } & UsuarioPatchInput = { id: 'us-1', activo: false };
+    expect(cuerpoInvalido.id).toBe('us-1');
+
+    const promesa = service.actualizar.mutateAsync({
+      id: 'us-1',
+      nombre: 'Ana Vigilante',
+      email_institucional: 'ana@uco.edu.co',
+      rol_id: 'r-2',
+      ubicacion_id: 'ub-2',
+    });
+    await cederMicrotask();
+    const req = httpMock.expectOne({ method: 'PATCH', url: `${BASE_URL}/us-1` });
+    expect(req.request.body).toEqual({
+      nombre: 'Ana Vigilante',
+      email_institucional: 'ana@uco.edu.co',
+      rol_id: 'r-2',
+      ubicacion_id: 'ub-2',
+    });
+    req.flush(usuarioDto);
+    await promesa;
+  });
+
+  it('reactivar hace POST a /api/usuarios/{id}/reactivar e invalida el prefijo ["usuarios"]', async () => {
+    httpMock.expectOne(`${BASE_URL}/`).flush([]);
+    const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
+
+    const promesa = service.reactivar.mutateAsync('us-1');
+    await cederMicrotask();
+    const req = httpMock.expectOne({ method: 'POST', url: `${BASE_URL}/us-1/reactivar` });
+    // El endpoint no recibe cuerpo; el `{}` existe solo porque
+    // `HttpClient.post` exige el argumento (ver usuarios.service.ts).
+    expect(req.request.body).toEqual({});
+    req.flush({ ...usuarioDto, activo: true });
+    await promesa;
+
+    expect(invalidateSpy).toHaveBeenCalledTimes(1);
+    expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: usuariosQueryKeys.raiz });
+  });
+
+  it('reactivar propaga el 404 del backend cuando el usuario no existe', async () => {
+    httpMock.expectOne(`${BASE_URL}/`).flush([]);
+    vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);
+
+    const promesa = service.reactivar.mutateAsync('us-inexistente');
+    await cederMicrotask();
+    httpMock
+      .expectOne({ method: 'POST', url: `${BASE_URL}/us-inexistente/reactivar` })
+      .flush({ detail: 'Usuario no encontrado' }, { status: 404, statusText: 'Not Found' });
+
+    await expect(promesa).rejects.toBeTruthy();
   });
 
   it('desactivar hace POST a /api/usuarios/{id}/desactivar con solo usuario_actual_id en el cuerpo', async () => {

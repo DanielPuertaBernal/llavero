@@ -61,6 +61,7 @@ interface UsuariosListInternals {
   busqueda: import('@angular/core').WritableSignal<string>;
   filtroEstado: import('@angular/core').WritableSignal<FiltroEstadoUsuario>;
   formDialogVisible: import('@angular/core').WritableSignal<boolean>;
+  usuarioEditando: import('@angular/core').WritableSignal<Usuario | null>;
   onEstadoChange(estado: FiltroEstadoUsuario): void;
   abrirCrear(): void;
 }
@@ -72,10 +73,25 @@ function responderCargaInicial(httpMock: HttpTestingController, usuarios: Usuari
   httpMock.expectOne(`${API}/catalogos/ubicaciones`).flush([ubicacionDto]);
 }
 
-function botonesDesactivar(fixture: { nativeElement: HTMLElement }): NodeListOf<HTMLButtonElement> {
+function botonesPorEtiqueta(
+  fixture: { nativeElement: HTMLElement },
+  etiqueta: string,
+): NodeListOf<HTMLButtonElement> {
   return fixture.nativeElement.querySelectorAll(
-    'button[aria-label="Desactivar usuario"]',
+    `button[aria-label="${etiqueta}"]`,
   ) as NodeListOf<HTMLButtonElement>;
+}
+
+function botonesDesactivar(fixture: { nativeElement: HTMLElement }): NodeListOf<HTMLButtonElement> {
+  return botonesPorEtiqueta(fixture, 'Desactivar usuario');
+}
+
+function botonesEditar(fixture: { nativeElement: HTMLElement }): NodeListOf<HTMLButtonElement> {
+  return botonesPorEtiqueta(fixture, 'Editar usuario');
+}
+
+function botonesReactivar(fixture: { nativeElement: HTMLElement }): NodeListOf<HTMLButtonElement> {
+  return botonesPorEtiqueta(fixture, 'Reactivar usuario');
 }
 
 describe('UsuariosListComponent', () => {
@@ -239,14 +255,14 @@ describe('UsuariosListComponent', () => {
     const botones = botonesDesactivar(fixture);
     // Activo y ajeno: la única acción realmente disponible.
     expect(botones[0].disabled).toBe(false);
-    // Ya inactivo: no hay endpoint para reactivar, y desactivarlo otra vez
-    // no significa nada.
+    // Ya inactivo: desactivarlo otra vez no significa nada — la acción que
+    // le corresponde a esa fila es "Reactivar usuario".
     expect(botones[1].disabled).toBe(true);
     // La propia fila: el backend lo rechaza con su 400 de autoprotección.
     expect(botones[2].disabled).toBe(true);
   });
 
-  it('desactivar pide confirmación advirtiendo que no se puede deshacer y envía el id del usuario autenticado', async () => {
+  it('desactivar pide confirmación diciendo que es reversible y envía el id del usuario autenticado', async () => {
     const fixture = TestBed.createComponent(UsuariosListComponent);
     await cederMicrotask();
     fixture.detectChanges();
@@ -265,9 +281,12 @@ describe('UsuariosListComponent', () => {
     expect(confirmSpy).toHaveBeenCalledOnce();
     const confirmacion: Confirmation = confirmSpy.mock.calls[0][0];
     expect(confirmacion.message).toContain('Ana Vigilante');
-    // El operador debe saber ANTES de aceptar que no hay vuelta atrás: el
-    // backend no expone un endpoint para reactivar.
-    expect(confirmacion.message).toContain('no se puede deshacer');
+    // El backend YA expone `POST /{id}/reactivar`, así que el mensaje no
+    // puede seguir diciendo que la acción es irreversible: eso sería mentirle
+    // al operador. Lo que debe comunicar es la pérdida inmediata de acceso y
+    // que la decisión se puede revertir después.
+    expect(confirmacion.message).not.toContain('no se puede deshacer');
+    expect(confirmacion.message).toContain('reactivar');
 
     confirmacion.accept?.();
     await cederMicrotask();
@@ -360,6 +379,127 @@ describe('UsuariosListComponent', () => {
     component.abrirCrear();
 
     expect(component.formDialogVisible()).toBe(true);
+  });
+
+  it('"Editar usuario" abre el diálogo con la fila precargada, y "Nuevo usuario" la limpia', async () => {
+    const fixture = TestBed.createComponent(UsuariosListComponent);
+    await cederMicrotask();
+    fixture.detectChanges();
+    responderCargaInicial(httpMock, [usuarioActivo, usuarioInactivo]);
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      // El botón de editar existe en TODAS las filas: `UsuarioPatch` no
+      // depende del estado del usuario.
+      expect(botonesEditar(fixture).length).toBe(2);
+    });
+
+    const component = fixture.componentInstance as unknown as UsuariosListInternals;
+    botonesEditar(fixture)[1].click();
+
+    expect(component.usuarioEditando()).toEqual(usuarioInactivo);
+    expect(component.formDialogVisible()).toBe(true);
+
+    // Sin este reinicio, "Nuevo usuario" abriría el diálogo en modo edición
+    // con los datos de la última fila tocada.
+    component.abrirCrear();
+    expect(component.usuarioEditando()).toBeNull();
+  });
+
+  it('"Reactivar usuario" solo aparece en las filas inactivas', async () => {
+    const fixture = TestBed.createComponent(UsuariosListComponent);
+    await cederMicrotask();
+    fixture.detectChanges();
+    responderCargaInicial(httpMock, [usuarioActivo, usuarioInactivo, usuarioPropio]);
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(3);
+    });
+
+    // Solo `Bruno Retirado` está inactivo: reactivar a alguien que ya está
+    // activo no es una acción que tenga sentido ofrecer.
+    expect(botonesReactivar(fixture).length).toBe(1);
+    const fila = botonesReactivar(fixture)[0].closest('tr') as HTMLElement;
+    expect(fila.textContent).toContain('Bruno Retirado');
+  });
+
+  it('reactivar pide confirmación y hace POST a /api/usuarios/{id}/reactivar sin cuerpo', async () => {
+    const fixture = TestBed.createComponent(UsuariosListComponent);
+    await cederMicrotask();
+    fixture.detectChanges();
+    responderCargaInicial(httpMock, [usuarioInactivo]);
+
+    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
+    const messageService = fixture.debugElement.injector.get(MessageService);
+    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
+    const addSpy = vi.spyOn(messageService, 'add');
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(botonesReactivar(fixture).length).toBe(1);
+    });
+
+    botonesReactivar(fixture)[0].click();
+
+    expect(confirmSpy).toHaveBeenCalledOnce();
+    const confirmacion: Confirmation = confirmSpy.mock.calls[0][0];
+    expect(confirmacion.message).toContain('Bruno Retirado');
+    expect(confirmacion.header).toBe('Reactivar usuario');
+
+    confirmacion.accept?.();
+    await cederMicrotask();
+
+    const req = httpMock.expectOne({ method: 'POST', url: `${BASE_URL}/us-2/reactivar` });
+    // A diferencia de desactivar, el endpoint NO recibe `usuario_actual_id`:
+    // no hay regla de autoprotección que aplicar al reactivar.
+    expect(req.request.body).toEqual({});
+    req.flush({ ...usuarioInactivo, activo: true });
+    await cederMicrotask();
+
+    // Refetch tras invalidar el prefijo `['usuarios']`.
+    httpMock.expectOne(`${BASE_URL}/`).flush([{ ...usuarioInactivo, activo: true }]);
+
+    await vi.waitFor(() =>
+      expect(addSpy).toHaveBeenCalledWith(
+        expect.objectContaining({ severity: 'success', summary: 'Usuario reactivado' }),
+      ),
+    );
+  });
+
+  it('muestra el mensaje del backend tal cual cuando la reactivación falla con 404', async () => {
+    const fixture = TestBed.createComponent(UsuariosListComponent);
+    await cederMicrotask();
+    fixture.detectChanges();
+    responderCargaInicial(httpMock, [usuarioInactivo]);
+
+    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
+    const messageService = fixture.debugElement.injector.get(MessageService);
+    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
+    const addSpy = vi.spyOn(messageService, 'add');
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(botonesReactivar(fixture).length).toBe(1);
+    });
+
+    botonesReactivar(fixture)[0].click();
+    confirmSpy.mock.calls[0][0].accept?.();
+    await cederMicrotask();
+
+    httpMock
+      .expectOne({ method: 'POST', url: `${BASE_URL}/us-2/reactivar` })
+      .flush({ detail: 'Usuario no encontrado' }, { status: 404, statusText: 'Not Found' });
+
+    await vi.waitFor(() =>
+      expect(addSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          summary: 'No se pudo reactivar el usuario',
+          detail: 'Usuario no encontrado',
+        }),
+      ),
+    );
   });
 
   it('muestra un mensaje vacío en español cuando ningún usuario coincide', async () => {

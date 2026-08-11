@@ -25,10 +25,24 @@ una función de este service, nunca agregar el import inverso.
 Convención de esta API, igual que el resto de módulos:
 - `obtener_reserva`/`listar_*` no lanzan excepción ante "no existe"/"sin
   resultados": devuelven `None`/lista vacía.
-- `crear_reserva` lanza `ValueError` cuando `salon_id`/`solicitante_id` no
-  existen, o cuando la franja se solapa con otra reserva ya `aprobada`
-  para el mismo salón/fecha (`domain.hay_solapamiento`), mismo patrón que
-  `programacion.service.crear_programacion` con clases regulares.
+- `crear_reserva` lanza `ValueError` cuando la franja viola
+  `hora_inicio < hora_fin`, cuando `salon_id`/`solicitante_id` no existen,
+  o cuando la franja se solapa con otra reserva ya `aprobada` para el
+  mismo salón/fecha (`domain.hay_solapamiento`), mismo patrón que
+  `programacion.service.crear_programacion` con clases regulares y que
+  `reservas_semestrales.service.crear_grupo_reservas_semestrales`.
+
+Nota de diseño — `hora_inicio < hora_fin` se valida en `service.py`, NO en
+`domain.py`: es una comparación de dos parámetros contra sí mismos, sin
+ninguna regla de negocio que documentar aparte (a diferencia de
+`hay_solapamiento`, cuyo criterio de franjas adyacentes sí merece una
+función pura nombrada y sus propios tests). Mismo criterio ya aplicado en
+`reservas_semestrales.service._validar_y_crear_franja`, el único otro
+módulo que valida esta misma regla: su `domain.py` tampoco expone un
+predicado para ella. La regla sigue además replicada como CHECK
+`ck_reserva_individual_horario_valido` en el DDL (ver `model.py`), que
+queda como última línea de defensa — el service existe para que el cliente
+reciba un 400 con `detail` en vez del 500 de un IntegrityError crudo.
 - `cancelar_reserva`/`completar_reserva` transicionan el estado. A
   diferencia de `novedades.service.cerrar_novedad`/`llaves.service.
   devolver_llave` (que devuelven `None` si el id no existe), estas dos
@@ -86,16 +100,29 @@ def crear_reserva(
     hora_fin,
     motivo: str | None = None,
 ):
-    """Crea una ReservaIndividual validando primero que `salon_id`/
-    `solicitante_id` referenciados existan, y que la franja horaria no se
-    solape con otra reserva ya `aprobada` en el mismo salón la misma
-    fecha. Lanza ValueError claro en ambos casos, en vez de dejar
-    propagar el IntegrityError crudo de Postgres o permitir un choque de
-    horarios silencioso.
+    """Crea una ReservaIndividual validando que la franja horaria sea
+    válida (`hora_inicio < hora_fin`), que `salon_id`/`solicitante_id`
+    referenciados existan, y que la franja no se solape con otra reserva
+    ya `aprobada` en el mismo salón la misma fecha. Lanza ValueError claro
+    en los tres casos, en vez de dejar propagar el IntegrityError crudo de
+    Postgres o permitir un choque de horarios silencioso.
+
+    La franja se valida PRIMERO, antes que las referencias y el
+    solapamiento: es la única de las tres comprobaciones que es pura (no
+    consulta la base de datos), así que descartar acá un request
+    imposible evita hasta tres consultas inútiles — dos `obtener_*`
+    cross-módulo más el `listar_por_salon_y_fecha_aprobadas` del
+    solapamiento. Mismo orden que `reservas_semestrales.service.
+    _validar_y_crear_franja`, que también valida la franja antes de
+    cualquier consulta de solapamiento.
 
     Nace siempre en estado 'aprobada' (default del DDL, ver model.py): no
     hay parámetro `estado` acá.
     """
+    if hora_inicio >= hora_fin:
+        raise ValueError(
+            f"hora_inicio ({hora_inicio}) debe ser anterior a hora_fin ({hora_fin})"
+        )
     if catalogos_service.obtener_salon(salon_id) is None:
         raise ValueError(f"No existe un salon con id {salon_id}")
     if comunidad_service.obtener_persona(solicitante_id) is None:

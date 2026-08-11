@@ -163,11 +163,14 @@ describe('ReservaFormDialogComponent', () => {
     await vi.waitFor(() => expect(fixture.componentInstance.visible()).toBe(false));
   });
 
-  it('rechaza una franja invertida o vacía sin llamar al backend', async () => {
+  it('deja la validación de la franja al backend y muestra su 400', async () => {
     const fixture = TestBed.createComponent(ReservaFormDialogComponent);
     await cederMicrotask();
     responderCargaInicial(httpMock);
     fixture.detectChanges();
+
+    const messageService = TestBed.inject(MessageService);
+    const addSpy = vi.spyOn(messageService, 'add');
 
     const component = fixture.componentInstance as unknown as FormDialogInternals;
     component.form.setValue({
@@ -179,18 +182,29 @@ describe('ReservaFormDialogComponent', () => {
       motivo: '',
     });
 
-    // El CHECK `hora_inicio < hora_fin` del DDL no tiene traducción a 400 en
-    // `service.crear_reserva`: enviarlo reventaría como IntegrityError (500).
-    expect(component.form.invalid).toBe(true);
-    expect(component.form.errors).toEqual({ franjaInvertida: true });
+    // `hora_inicio < hora_fin` la valida `service.crear_reserva` y responde
+    // 400 con `detail`: el formulario no replica la regla, la envía.
+    expect(component.form.valid).toBe(true);
 
+    fixture.componentInstance.visible.set(true);
     component.guardar();
     await cederMicrotask();
-    httpMock.expectNone({ method: 'POST', url: `${BASE_URL}/` });
 
-    // Y una franja de duración cero tampoco es válida (el CHECK es estricto).
-    component.form.patchValue({ hora_inicio: hora8, hora_fin: new Date(2026, 7, 20, 8, 0, 0) });
-    expect(component.form.invalid).toBe(true);
+    httpMock
+      .expectOne({ method: 'POST', url: `${BASE_URL}/` })
+      .flush(
+        { detail: 'hora_inicio (10:00:00) debe ser anterior a hora_fin (08:00:00)' },
+        { status: 400, statusText: 'Bad Request' },
+      );
+
+    await vi.waitFor(() =>
+      expect(addSpy).toHaveBeenCalledWith(
+        expect.objectContaining({
+          severity: 'error',
+          detail: expect.stringContaining('debe ser anterior a hora_fin'),
+        }),
+      ),
+    );
   });
 
   it('muestra el mensaje del backend tal cual cuando la reserva es rechazada con 400', async () => {

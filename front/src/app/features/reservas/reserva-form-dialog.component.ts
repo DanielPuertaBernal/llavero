@@ -1,11 +1,5 @@
 import { Component, computed, inject, model, output } from '@angular/core';
-import {
-  FormBuilder,
-  ReactiveFormsModule,
-  Validators,
-  type AbstractControl,
-  type ValidationErrors,
-} from '@angular/forms';
+import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -35,24 +29,12 @@ import type { ReservaInput } from './reservas.models';
  * sin zona): `toISOString()` los convertiría a UTC y en Colombia (UTC-5)
  * mandaría el día anterior y las horas corridas 5 posiciones.
  *
- * Nota de diseño — `franjaInvertida` es la ÚNICA validación de negocio que se
- * anticipa acá, y es una excepción deliberada a la regla del proyecto de no
- * replicar reglas del backend. El motivo: `hora_inicio < hora_fin` existe en
- * el backend SOLO como `CheckConstraint` del modelo
- * (`ck_reserva_individual_horario_valido`, ver back/reservas/model.py) —
- * `service.crear_reserva` no lo comprueba, así que enviar una franja
- * invertida no produce un 400 con `detail` legible sino un `IntegrityError`
- * de Postgres sin capturar, es decir un 500. No se anticipa acá para
- * ahorrarle un viaje al servidor: se anticipa porque el servidor no tiene una
- * respuesta que mostrarle al usuario. (Reportado como hueco del backend; si
- * `crear_reserva` llegara a traducirlo a `ValueError`, este validador puede
- * quitarse sin tocar nada más.)
- *
- * Las demás reglas SÍ se dejan al backend, como siempre: que el salón y el
- * solicitante existan, y sobre todo el SOLAPAMIENTO con otra reserva ya
- * aprobada — la lista cargada en el navegador puede estar desactualizada
- * frente a otra pestaña, así que un chequeo cliente sería una adivinanza. El
- * 400 se muestra tal cual (ver reservas-error.util.ts).
+ * Ninguna regla de negocio se replica acá: que la franja sea válida
+ * (`hora_inicio < hora_fin`), que el salón y el solicitante existan, y sobre
+ * todo el SOLAPAMIENTO con otra reserva ya aprobada son todas del backend.
+ * La lista cargada en el navegador puede estar desactualizada frente a otra
+ * pestaña, así que un chequeo cliente sería una adivinanza. El 400 se muestra
+ * tal cual (ver reservas-error.util.ts).
  */
 @Component({
   selector: 'app-reserva-form-dialog',
@@ -132,11 +114,6 @@ import type { ReservaInput } from './reservas.models';
             hourFormat="24"
             placeholder="HH:MM"
           />
-          @if (form.errors?.['franjaInvertida']) {
-            <small role="alert" class="reserva-form-dialog__error">
-              La hora de fin debe ser posterior a la de inicio.
-            </small>
-          }
         </div>
 
         <div class="reserva-form-dialog__campo">
@@ -182,17 +159,14 @@ export class ReservaFormDialogComponent {
   // `Validators.required` rechaza). Fecha y horas son `Date | null` porque eso
   // es lo que `p-datepicker` escribe en el control; `null` = sin elegir.
   // `motivo` arranca en `''` y se omite del payload si queda en blanco.
-  protected readonly form = this.fb.nonNullable.group(
-    {
-      salon_id: ['', Validators.required],
-      solicitante_id: ['', Validators.required],
-      fecha: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-      hora_inicio: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-      hora_fin: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-      motivo: [''],
-    },
-    { validators: franjaValida },
-  );
+  protected readonly form = this.fb.nonNullable.group({
+    salon_id: ['', Validators.required],
+    solicitante_id: ['', Validators.required],
+    fecha: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+    hora_inicio: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+    hora_fin: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+    motivo: [''],
+  });
 
   protected readonly guardando = computed(() => this.reservasService.crear.isPending());
 
@@ -245,32 +219,6 @@ export class ReservaFormDialogComponent {
   protected cancelar(): void {
     this.visible.set(false);
   }
-}
-
-/**
- * Validador de grupo: la franja debe ser `hora_inicio < hora_fin`, el mismo
- * criterio ESTRICTO del CHECK del DDL (una franja de duración cero no es
- * válida). Ver la nota de diseño del componente sobre por qué esta regla
- * concreta sí se anticipa en el cliente.
- *
- * Mientras falte alguna de las dos horas no opina: de eso ya se encarga el
- * `Validators.required` de cada control, y marcar además un error de grupo
- * solo agregaría ruido a un formulario a medio llenar.
- */
-function franjaValida(grupo: AbstractControl): ValidationErrors | null {
-  const inicio = grupo.get('hora_inicio')?.value as Date | null;
-  const fin = grupo.get('hora_fin')?.value as Date | null;
-  if (!inicio || !fin) {
-    return null;
-  }
-  return minutosDelDia(inicio) < minutosDelDia(fin) ? null : { franjaInvertida: true };
-}
-
-/** Solo la hora del día importa para comparar la franja: los dos `Date` de
- * `p-datepicker` en modo `timeOnly` pueden traer días distintos según cuándo
- * se tocó cada selector. */
-function minutosDelDia(momento: Date): number {
-  return momento.getHours() * 60 + momento.getMinutes();
 }
 
 /** `Date` -> `YYYY-MM-DD` tomando los componentes LOCALES (ver la nota de

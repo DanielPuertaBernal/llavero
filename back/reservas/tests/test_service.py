@@ -89,6 +89,69 @@ def test_crear_reserva_nace_siempre_aprobada():
 
 
 # ------------------------------------------------------------------
+# crear_reserva — validación de la franja horaria
+# ------------------------------------------------------------------
+#
+# `hora_inicio < hora_fin` también lo garantiza el CHECK
+# `ck_reserva_individual_horario_valido` del DDL (ver
+# `test_repository.test_crear_reserva_con_hora_inicio_no_anterior_a_hora_
+# fin_falla_por_check_constraint`), pero ahí llega como IntegrityError
+# crudo — un 500 sin `detail` para el cliente. El service la valida antes
+# para que el controller la traduzca a un 400 como el resto de las reglas
+# (mismo criterio que `reservas_semestrales.service`).
+
+
+def test_crear_reserva_con_hora_inicio_posterior_a_hora_fin_da_value_error_claro():
+    salon = _salon()
+    solicitante = _solicitante()
+
+    with pytest.raises(ValueError, match="anterior"):
+        service.crear_reserva(
+            salon.id, solicitante.id, datetime.date(2026, 3, 10),
+            datetime.time(10, 0), datetime.time(8, 0),
+        )
+
+
+def test_crear_reserva_con_hora_inicio_igual_a_hora_fin_da_value_error_claro():
+    salon = _salon()
+    solicitante = _solicitante()
+
+    # Franja vacía: el CHECK del DDL exige `<` estricto, no `<=`.
+    with pytest.raises(ValueError, match="anterior"):
+        service.crear_reserva(
+            salon.id, solicitante.id, datetime.date(2026, 3, 10),
+            datetime.time(8, 0), datetime.time(8, 0),
+        )
+
+
+def test_crear_reserva_con_franja_minima_valida_no_da_value_error():
+    salon = _salon()
+    solicitante = _solicitante()
+
+    # Un minuto de duración es el caso válido más pequeño, justo al lado
+    # del límite: fija el criterio en `>=` y no en algo más permisivo.
+    reserva = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(8, 1),
+    )
+
+    assert reserva.hora_fin == datetime.time(8, 1)
+
+
+def test_crear_reserva_con_franja_invalida_no_consulta_las_referencias():
+    # La franja es pura y no toca la DB: se valida ANTES que salon_id/
+    # solicitante_id, así que un request con AMBOS problemas reporta la
+    # franja (ver docstring de `service.crear_reserva`).
+    with pytest.raises(ValueError, match="anterior"):
+        service.crear_reserva(
+            "00000000-0000-0000-0000-000000000000",
+            "00000000-0000-0000-0000-000000000000",
+            datetime.date(2026, 3, 10),
+            datetime.time(10, 0), datetime.time(8, 0),
+        )
+
+
+# ------------------------------------------------------------------
 # crear_reserva — validación de solapamiento
 # ------------------------------------------------------------------
 

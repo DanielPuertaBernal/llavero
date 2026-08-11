@@ -61,5 +61,18 @@ export const routes: Routes = [
       import('./features/usuarios/usuarios-list.component').then((m) => m.UsuariosListComponent),
     canActivate: [authGuard],
   },
+  // Quinta feature real (`reservas`, ver `src/app/features/reservas/`): una
+  // sola vista, por la misma razón que llaves y prestamos — el módulo es un
+  // ciclo de vida (`aprobada` -> `cancelada`/`completada`/`no_reclamada`), no
+  // un CRUD (ver back/reservas/controller.py). La ruta es `reservas` a secas
+  // porque cubre solo la reserva INDIVIDUAL; la reserva semestral es otro
+  // módulo del backend (`/api/reservas-semestrales`) y tendrá su propia ruta
+  // hermana cuando exista su feature.
+  {
+    path: 'reservas',
+    loadComponent: () =>
+      import('./features/reservas/reservas-list.component').then((m) => m.ReservasListComponent),
+    canActivate: [authGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

@@ -92,6 +92,21 @@ export const routes: Routes = [
             (m) => m.ReservasListComponent,
           ),
       },
+      // Sexta feature real (`reservas-semestrales`, ver
+      // `src/app/features/reservas-semestrales/`): la ruta hermana prometida en
+      // la nota de arriba. Cubre la franja RECURRENTE semanal vigente durante un
+      // semestre (`back/reservas_semestrales/controller.py`) — otra tabla, otro
+      // módulo del backend, sin columna `estado` (cancelar es un DELETE real del
+      // grupo completo, no una transición). Una sola vista, mismo criterio que
+      // sus hermanas: el backend solo permite crear el grupo y cancelarlo, no hay
+      // PATCH ni DELETE por franja suelta.
+      {
+        path: 'reservas-semestrales',
+        loadComponent: () =>
+          import('./features/reservas-semestrales/reservas-semestrales-list.component').then(
+            (m) => m.ReservasSemestralesListComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

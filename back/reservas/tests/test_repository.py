@@ -221,6 +221,22 @@ def test_listar_por_solicitante_solo_devuelve_las_de_ese_solicitante():
 
 
 # ------------------------------------------------------------------
+# listar_por_estado
+# ------------------------------------------------------------------
+
+
+def test_listar_por_estado_solo_devuelve_ese_estado():
+    aprobada = _reserva(salon=_salon("101"), solicitante=_persona("1000000001", "Uno"))
+    cancelada = _reserva(salon=_salon("102"), solicitante=_persona("1000000002", "Dos"))
+    repository.cambiar_estado(cancelada.id, EstadoReservaIndividual.CANCELADA)
+
+    resultado = repository.listar_por_estado(EstadoReservaIndividual.APROBADA)
+
+    assert aprobada.id in {r.id for r in resultado}
+    assert cancelada.id not in {r.id for r in resultado}
+
+
+# ------------------------------------------------------------------
 # cambiar_estado
 # ------------------------------------------------------------------
 

@@ -94,8 +94,3 @@ el frontend compile o para correr los tests (mockeados con
 - **TanStack Query**: `@tanstack/angular-query-experimental` (nombre de
   paquete correcto verificado en npm — sigue siendo "experimental" en su
   nomenclatura pese a ser la integración oficial recomendada).
-- **`front/README.md` vs. `DOC/4.4 Diagrama de Componentes.md`**: ese
-  diagrama todavía menciona "MSAL Angular" como librería del frontend —
-  quedó desactualizado tras la decisión posterior de eliminar MSAL (ver
-  arriba); este scaffold sigue la decisión vigente (sin MSAL), no el
-  diagrama.

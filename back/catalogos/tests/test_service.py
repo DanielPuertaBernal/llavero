@@ -327,3 +327,182 @@ def test_eliminar_tipo_silleteria_referenciada_por_salon_da_value_error_claro():
 
     with pytest.raises(ValueError, match="tipo_silleteria"):
         service.eliminar_tipo_silleteria(tipo_silleteria.id)
+
+
+# ------------------------------------------------------------------
+# Unicidad — un choque de unicidad causado por datos del usuario se
+# valida acá y sale como ValueError claro (nunca como IntegrityError
+# crudo que el controller no puede traducir a un 400 con {detail}).
+# Los nombres de fixture se mantienen cortos a propósito: `Rol.nombre` y
+# `Salon.nombre` son varchar(30) en el DDL.
+# ------------------------------------------------------------------
+
+
+def test_crear_rol_con_nombre_duplicado_da_value_error_claro():
+    repository.crear_rol("rol-dup")
+
+    with pytest.raises(ValueError, match="Ya existe un rol"):
+        service.crear_rol("rol-dup")
+
+
+def test_crear_rol_con_nombre_libre_lo_crea():
+    creado = service.crear_rol("rol-libre")
+
+    assert creado.nombre == "rol-libre"
+
+
+def test_actualizar_rol_con_nombre_de_otro_rol_da_value_error_claro():
+    repository.crear_rol("rol-ocupado")
+    rol = repository.crear_rol("rol-a-renombrar")
+
+    with pytest.raises(ValueError, match="Ya existe un rol"):
+        service.actualizar_rol(rol.id, nombre="rol-ocupado")
+
+
+def test_actualizar_rol_con_su_propio_nombre_no_da_error():
+    rol = repository.crear_rol("rol-mismo-nombre")
+
+    actualizado = service.actualizar_rol(rol.id, nombre="rol-mismo-nombre")
+
+    assert actualizado.nombre == "rol-mismo-nombre"
+
+
+def test_crear_tipo_persona_con_nombre_duplicado_da_value_error_claro():
+    repository.crear_tipo_persona("tp-dup")
+
+    with pytest.raises(ValueError, match="Ya existe un tipo_persona"):
+        service.crear_tipo_persona("tp-dup")
+
+
+def test_actualizar_tipo_persona_con_nombre_de_otro_da_value_error_claro():
+    repository.crear_tipo_persona("tp-ocupado")
+    tipo_persona = repository.crear_tipo_persona("tp-a-renombrar")
+
+    with pytest.raises(ValueError, match="Ya existe un tipo_persona"):
+        service.actualizar_tipo_persona(tipo_persona.id, nombre="tp-ocupado")
+
+
+def test_actualizar_tipo_persona_con_su_propio_nombre_no_da_error():
+    tipo_persona = repository.crear_tipo_persona("tp-mismo-nombre")
+
+    actualizado = service.actualizar_tipo_persona(
+        tipo_persona.id, nombre="tp-mismo-nombre"
+    )
+
+    assert actualizado.nombre == "tp-mismo-nombre"
+
+
+def test_crear_bloque_con_nombre_duplicado_da_value_error_claro():
+    repository.crear_bloque("Bloque dup")
+
+    with pytest.raises(ValueError, match="Ya existe un bloque"):
+        service.crear_bloque("Bloque dup")
+
+
+def test_actualizar_bloque_con_nombre_de_otro_da_value_error_claro():
+    repository.crear_bloque("Bloque ocupado")
+    bloque = repository.crear_bloque("Bloque a renombrar")
+
+    with pytest.raises(ValueError, match="Ya existe un bloque"):
+        service.actualizar_bloque(bloque.id, nombre="Bloque ocupado")
+
+
+def test_actualizar_bloque_con_su_propio_nombre_no_da_error():
+    bloque = repository.crear_bloque("Bloque mismo nombre")
+
+    actualizado = service.actualizar_bloque(bloque.id, nombre="Bloque mismo nombre")
+
+    assert actualizado.nombre == "Bloque mismo nombre"
+
+
+def test_crear_tipo_silleteria_con_nombre_duplicado_da_value_error_claro():
+    repository.crear_tipo_silleteria("silleteria-dup")
+
+    with pytest.raises(ValueError, match="Ya existe un tipo_silleteria"):
+        service.crear_tipo_silleteria("silleteria-dup")
+
+
+def test_actualizar_tipo_silleteria_con_nombre_de_otro_da_value_error_claro():
+    repository.crear_tipo_silleteria("silleteria-ocupada")
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-renombrar")
+
+    with pytest.raises(ValueError, match="Ya existe un tipo_silleteria"):
+        service.actualizar_tipo_silleteria(
+            tipo_silleteria.id, nombre="silleteria-ocupada"
+        )
+
+
+def test_actualizar_tipo_silleteria_con_su_propio_nombre_no_da_error():
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-misma")
+
+    actualizado = service.actualizar_tipo_silleteria(
+        tipo_silleteria.id, nombre="silleteria-misma"
+    )
+
+    assert actualizado.nombre == "silleteria-misma"
+
+
+def test_crear_ubicacion_con_nombre_repetido_no_da_error():
+    # `Ubicacion.nombre` NO es único en el DDL (ni columna UNIQUE ni
+    # UniqueConstraint, ver model.py): dos ubicaciones homónimas son
+    # legítimas y no se les inventa una validación de unicidad.
+    service.crear_ubicacion("Porteria principal")
+
+    segunda = service.crear_ubicacion("Porteria principal")
+
+    assert segunda.nombre == "Porteria principal"
+
+
+def test_crear_salon_con_nombre_duplicado_en_el_mismo_bloque_da_value_error_claro():
+    bloque = repository.crear_bloque("Bloque salon dup")
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-salon-dup")
+    repository.crear_salon("101", bloque.id, tipo_silleteria.id)
+
+    with pytest.raises(ValueError, match="Ya existe un salon"):
+        service.crear_salon("101", bloque.id, tipo_silleteria.id)
+
+
+def test_crear_salon_con_el_mismo_nombre_en_otro_bloque_lo_crea():
+    # La unicidad de Salon es del PAR (nombre, bloque), no del nombre
+    # solo: `uq_salon_nombre_bloque`.
+    bloque_1 = repository.crear_bloque("Bloque salon par 1")
+    bloque_2 = repository.crear_bloque("Bloque salon par 2")
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-salon-par")
+    repository.crear_salon("101", bloque_1.id, tipo_silleteria.id)
+
+    creado = service.crear_salon("101", bloque_2.id, tipo_silleteria.id)
+
+    assert creado.bloque_id == bloque_2.id
+
+
+def test_actualizar_salon_a_un_par_nombre_bloque_ocupado_da_value_error_claro():
+    bloque = repository.crear_bloque("Bloque salon patch dup")
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-salon-patch")
+    repository.crear_salon("101", bloque.id, tipo_silleteria.id)
+    salon = repository.crear_salon("102", bloque.id, tipo_silleteria.id)
+
+    with pytest.raises(ValueError, match="Ya existe un salon"):
+        service.actualizar_salon(salon.id, nombre="101")
+
+
+def test_actualizar_salon_con_su_propio_par_nombre_bloque_no_da_error():
+    bloque = repository.crear_bloque("Bloque salon patch propio")
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-salon-propio")
+    salon = repository.crear_salon("101", bloque.id, tipo_silleteria.id)
+
+    actualizado = service.actualizar_salon(salon.id, nombre="101", cantidad_sillas=30)
+
+    assert actualizado.cantidad_sillas == 30
+
+
+def test_actualizar_salon_moviendolo_a_un_bloque_con_ese_nombre_da_value_error_claro():
+    # Solo cambia `bloque_id`: el par resultante (nombre actual, bloque
+    # nuevo) también debe validarse, no solo el nombre entrante.
+    bloque_1 = repository.crear_bloque("Bloque salon mueve 1")
+    bloque_2 = repository.crear_bloque("Bloque salon mueve 2")
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-salon-mueve")
+    repository.crear_salon("101", bloque_2.id, tipo_silleteria.id)
+    salon = repository.crear_salon("101", bloque_1.id, tipo_silleteria.id)
+
+    with pytest.raises(ValueError, match="Ya existe un salon"):
+        service.actualizar_salon(salon.id, bloque_id=bloque_2.id)

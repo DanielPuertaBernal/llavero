@@ -270,8 +270,20 @@ def test_dos_detalles_entregados_del_mismo_equipo_falla_por_unicidad():
     equipo = _equipo()
     repository.crear_detalle_prestamo(_prestamo().id, equipo.id)
 
+    # Segundo préstamo con solicitante/prestamista/ubicación propios: con la
+    # validación de unicidad de catalogos (`crear_tipo_persona`/`crear_rol`)
+    # ya no se puede reusar `_prestamo()` con sus defaults acá, porque
+    # colisionaría con el primero ANTES de llegar al IntegrityError que este
+    # test quiere probar (el de `idx_equipo_entregado_unico`), igual que en
+    # `test_nuevo_detalle_del_mismo_equipo_tras_devolver_el_anterior_no_falla`.
+    otro_prestamo = _prestamo(
+        solicitante=_persona("1000000002", "Persona Dos"),
+        usuario_prestamista=_usuario("usuario-2@uco.edu.co", "Usuario Dos"),
+        ubicacion=_ubicacion("ubicacion-2"),
+    )
+
     with pytest.raises(IntegrityError):
-        repository.crear_detalle_prestamo(_prestamo().id, equipo.id)
+        repository.crear_detalle_prestamo(otro_prestamo.id, equipo.id)
 
 
 def test_nuevo_detalle_del_mismo_equipo_tras_devolver_el_anterior_no_falla():

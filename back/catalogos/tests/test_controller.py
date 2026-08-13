@@ -159,3 +159,72 @@ def test_delete_salon_inexistente_devuelve_404():
     )
 
     assert response.status_code == 404
+
+
+# ------------------------------------------------------------------
+# Unicidad — un choque de unicidad tiene que llegar al cliente como 400
+# con {detail} legible, nunca como el 500 sin cuerpo que producía el
+# IntegrityError crudo (ver docstring de `service.py`).
+# ------------------------------------------------------------------
+
+
+def test_post_rol_con_nombre_duplicado_devuelve_400_con_detail():
+    repository.crear_rol("rol-http-dup")
+    client = Client()
+
+    response = client.post(
+        "/api/catalogos/roles",
+        data=json.dumps({"nombre": "rol-http-dup"}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+    assert "rol-http-dup" in response.json()["detail"]
+
+
+def test_post_bloque_con_nombre_duplicado_devuelve_400():
+    repository.crear_bloque("Bloque http dup")
+    client = Client()
+
+    response = client.post(
+        "/api/catalogos/bloques",
+        data=json.dumps({"nombre": "Bloque http dup"}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+
+
+def test_patch_bloque_con_nombre_de_otro_bloque_devuelve_400():
+    repository.crear_bloque("Bloque http ocupado")
+    bloque = repository.crear_bloque("Bloque http a renombrar")
+    client = Client()
+
+    response = client.patch(
+        f"/api/catalogos/bloques/{bloque.id}",
+        data=json.dumps({"nombre": "Bloque http ocupado"}),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400
+
+
+def test_post_salon_duplicado_en_el_mismo_bloque_devuelve_400():
+    bloque = repository.crear_bloque("Bloque http salon dup")
+    tipo_silleteria = repository.crear_tipo_silleteria("silleteria-http-dup")
+    repository.crear_salon("101", bloque.id, tipo_silleteria.id)
+    client = Client()
+
+    response = client.post(
+        "/api/catalogos/salones",
+        data=json.dumps(
+            {
+                "nombre": "101",
+                "bloque_id": str(bloque.id),
+                "tipo_silleteria_id": str(tipo_silleteria.id),
+            }
+        ),
+        content_type="application/json",
+    )
+
+    assert response.status_code == 400

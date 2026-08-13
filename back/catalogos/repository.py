@@ -237,6 +237,15 @@ def obtener_tipo_silleteria_por_id(tipo_silleteria_id):
     return TipoSilleteria.objects.filter(id=tipo_silleteria_id).first()
 
 
+def obtener_tipo_silleteria_por_nombre(nombre: str):
+    """Lookup por la clave natural (`nombre` es UNIQUE en el DDL), simétrico
+    a `obtener_rol_por_nombre`/`obtener_tipo_persona_por_nombre`/
+    `obtener_bloque_por_nombre`. Lo consume `service.crear_tipo_silleteria`/
+    `actualizar_tipo_silleteria` para anticipar el choque de unicidad con un
+    ValueError claro (ver docstring de `service.py`)."""
+    return TipoSilleteria.objects.filter(nombre=nombre).first()
+
+
 def actualizar_tipo_silleteria(tipo_silleteria_id, nombre: str | None = None):
     """Ver docstring de `actualizar_rol`."""
     tipo_silleteria = TipoSilleteria.objects.filter(id=tipo_silleteria_id).first()
@@ -289,6 +298,15 @@ def crear_salon(
 
 def obtener_salon_por_id(salon_id):
     return Salon.objects.filter(id=salon_id).first()
+
+
+def obtener_salon_por_nombre_y_bloque(nombre: str, bloque_id):
+    """Lookup por la clave natural COMPUESTA de Salon: `uq_salon_nombre_bloque`
+    declara únicos el PAR (`nombre`, `bloque`), no `nombre` por sí solo (dos
+    bloques pueden tener cada uno su salón "101"). Lo consume
+    `service.crear_salon`/`actualizar_salon` para anticipar ese choque de
+    unicidad con un ValueError claro (ver docstring de `service.py`)."""
+    return Salon.objects.filter(nombre=nombre, bloque_id=bloque_id).first()
 
 
 def actualizar_salon(

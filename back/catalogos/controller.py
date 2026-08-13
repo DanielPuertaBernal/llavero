@@ -160,9 +160,13 @@ def listar_roles(request):
     return service.listar_roles()
 
 
-@router.post("/roles", response={201: RolOut})
+@router.post("/roles", response={201: RolOut, 400: dict})
 def crear_rol(request, payload: RolIn):
-    return 201, service.crear_rol(payload.nombre)
+    try:
+        rol = service.crear_rol(payload.nombre)
+    except ValueError as exc:
+        return 400, {"detail": str(exc)}
+    return 201, rol
 
 
 @router.patch("/roles/{rol_id}", response={200: RolOut, 404: dict, 400: dict})
@@ -198,9 +202,13 @@ def listar_tipos_persona(request):
     return service.listar_tipos_persona()
 
 
-@router.post("/tipos-persona", response={201: TipoPersonaOut})
+@router.post("/tipos-persona", response={201: TipoPersonaOut, 400: dict})
 def crear_tipo_persona(request, payload: TipoPersonaIn):
-    return 201, service.crear_tipo_persona(payload.nombre)
+    try:
+        tipo_persona = service.crear_tipo_persona(payload.nombre)
+    except ValueError as exc:
+        return 400, {"detail": str(exc)}
+    return 201, tipo_persona
 
 
 @router.patch(
@@ -288,9 +296,13 @@ def listar_bloques(request):
     return service.listar_bloques()
 
 
-@router.post("/bloques", response={201: BloqueOut})
+@router.post("/bloques", response={201: BloqueOut, 400: dict})
 def crear_bloque(request, payload: BloqueIn):
-    return 201, service.crear_bloque(payload.nombre)
+    try:
+        bloque = service.crear_bloque(payload.nombre)
+    except ValueError as exc:
+        return 400, {"detail": str(exc)}
+    return 201, bloque
 
 
 @router.patch("/bloques/{bloque_id}", response={200: BloqueOut, 404: dict, 400: dict})
@@ -326,9 +338,13 @@ def listar_tipos_silleteria(request):
     return service.listar_tipos_silleteria()
 
 
-@router.post("/tipos-silleteria", response={201: TipoSilleteriaOut})
+@router.post("/tipos-silleteria", response={201: TipoSilleteriaOut, 400: dict})
 def crear_tipo_silleteria(request, payload: TipoSilleteriaIn):
-    return 201, service.crear_tipo_silleteria(payload.nombre)
+    try:
+        tipo_silleteria = service.crear_tipo_silleteria(payload.nombre)
+    except ValueError as exc:
+        return 400, {"detail": str(exc)}
+    return 201, tipo_silleteria
 
 
 @router.patch(

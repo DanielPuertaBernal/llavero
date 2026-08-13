@@ -5,6 +5,7 @@ import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-exper
 
 import { environment } from '../../../environments/environment';
 import { ReservasListComponent } from './reservas-list.component';
+import type { ReservasService } from './reservas.service';
 import type { EstadoReserva, Reserva } from './reservas.models';
 
 const API = environment.apiBaseUrl;
@@ -61,6 +62,7 @@ interface ReservasListInternals {
   cancelacionDialogVisible: import('@angular/core').WritableSignal<boolean>;
   reservaACancelar: import('@angular/core').WritableSignal<Reserva | null>;
   abrirFormulario(): void;
+  reservasService: ReservasService;
 }
 
 /** Los 2 lookups que dispara `ReservasLookupsService` al inyectarse. */
@@ -144,7 +146,7 @@ describe('ReservasListComponent', () => {
     httpMock.expectOne(`${BASE_URL}/`).flush([reservaAprobada, reservaCompletada]);
   });
 
-  it('el filtro de estado filtra EN MEMORIA, sin pedirle nada al servidor', async () => {
+  it('el filtro de estado consulta al SERVIDOR su endpoint propio', async () => {
     const fixture = TestBed.createComponent(ReservasListComponent);
     await cederMicrotask();
     fixture.detectChanges();
@@ -158,13 +160,41 @@ describe('ReservasListComponent', () => {
 
     const component = fixture.componentInstance as unknown as ReservasListInternals;
     component.onEstadoChange('completada');
-    fixture.detectChanges();
+    await cederMicrotask();
 
-    // El backend NO expone `GET /reservas/estado/{estado}` (ver
-    // back/reservas/controller.py): este filtro no puede ser una consulta.
-    httpMock.expectNone((request) => request.url.includes('/estado/'));
-    expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(1);
-    expect(fixture.nativeElement.textContent).toContain('Completada');
+    // No es un filtro en memoria: hay una petición nueva a otro endpoint.
+    httpMock.expectOne(`${BASE_URL}/estado/completada`).flush([reservaCompletada]);
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.querySelectorAll('tbody tr').length).toBe(1);
+      expect(fixture.nativeElement.textContent).toContain('Completada');
+    });
+  });
+
+  it('elegir un solicitante limpia el filtro de estado, y viceversa (mutuamente excluyentes)', async () => {
+    const fixture = TestBed.createComponent(ReservasListComponent);
+    await cederMicrotask();
+    fixture.detectChanges();
+    httpMock.expectOne(`${BASE_URL}/`).flush([reservaAprobada, reservaCompletada]);
+    responderLookups(httpMock);
+    await cederMicrotask();
+
+    const component = fixture.componentInstance as unknown as ReservasListInternals;
+
+    component.onEstadoChange('completada');
+    await cederMicrotask();
+    httpMock.expectOne(`${BASE_URL}/estado/completada`).flush([reservaCompletada]);
+
+    component.onSolicitanteChange('p-1');
+    await cederMicrotask();
+    httpMock.expectOne(`${BASE_URL}/solicitante/p-1`).flush([reservaAprobada]);
+    expect(component.reservasService.filtroEstado()).toBeNull();
+
+    component.onEstadoChange('completada');
+    await cederMicrotask();
+    httpMock.expectOne(`${BASE_URL}/estado/completada`).flush([reservaCompletada]);
+    expect(component.reservasService.filtroSolicitante()).toBeNull();
   });
 
   it('la búsqueda filtra por el nombre ya resuelto del salón, no por su id', async () => {

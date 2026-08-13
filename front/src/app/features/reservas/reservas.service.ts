@@ -9,7 +9,7 @@ import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
 import { reservasQueryKeys } from './reservas-query-keys';
-import type { Reserva, ReservaInput } from './reservas.models';
+import type { EstadoReserva, Reserva, ReservaInput } from './reservas.models';
 
 const BASE_URL = `${environment.apiBaseUrl}/reservas`;
 
@@ -28,21 +28,26 @@ const BASE_URL = `${environment.apiBaseUrl}/reservas`;
  * tiene endpoint HTTP (ver el docstring de back/reservas/controller.py, que
  * lo declara explícitamente). No se inventa acá una llamada para ellas.
  *
- * Nota de diseño — el filtro por solicitante vive acá y no en el componente:
- * `GET /api/reservas/solicitante/{id}` es un endpoint distinto de
- * `GET /api/reservas/`, así que filtrar por solicitante es una consulta al
- * SERVIDOR, no un `filter()` sobre la lista ya cargada. `filtroSolicitante`
- * es la señal que elige cuál de los dos endpoints alimenta `reservas`: la
- * función de opciones de `injectQuery` se re-evalúa sola cuando la señal
- * cambia (integración reactiva de TanStack con signals), cambiando a la vez
- * `queryKey` y `queryFn`. Como la clave cambia, cada solicitante conserva su
- * propia entrada de caché en vez de pisarse entre sí.
+ * Nota de diseño — los filtros por solicitante y por estado viven acá y no en
+ * el componente: `GET /api/reservas/solicitante/{id}` y `GET /api/reservas/
+ * estado/{estado}` son endpoints distintos de `GET /api/reservas/` (este
+ * último ya replicando el patrón de `PrestamosService.filtroEstado`, ver su
+ * docstring), así que filtrar por cualquiera de los dos es una consulta al
+ * SERVIDOR, no un `filter()` sobre la lista ya cargada. `filtroSolicitante`/
+ * `filtroEstado` son las señales que eligen cuál de los tres endpoints
+ * alimenta `reservas`: la función de opciones de `injectQuery` se re-evalúa
+ * sola cuando cualquiera cambia (integración reactiva de TanStack con
+ * signals), cambiando a la vez `queryKey` y `queryFn`. Como la clave cambia,
+ * cada solicitante/estado conserva su propia entrada de caché en vez de
+ * pisarse entre sí.
  *
- * En cambio el filtro por ESTADO no vive acá, a diferencia de
- * `PrestamosService.filtroEstado`: el backend de reservas no expone
- * `GET /estado/{estado}`, así que ese filtro es necesariamente en memoria y
- * pertenece al componente de lista. No se inventa acá un endpoint que no
- * existe ni se simula uno con parámetros de query que el controller ignoraría.
+ * Nota de diseño — precedencia cuando ambos filtros están fijados a la vez:
+ * el backend no expone un endpoint combinado solicitante+estado, así que
+ * `reservas` solo puede alimentarse de UNO de los tres. `ReservasListComponent`
+ * ya impone exclusión mutua en la UI (elegir un solicitante limpia
+ * `filtroEstado` y viceversa, ver su docstring), así que en la práctica los
+ * dos nunca están fijados a la vez; `filtroEstado` gana en el `injectQuery`
+ * de acá solo como cinturón de seguridad ante ese caso que la UI ya evita.
  *
  * Nota de diseño — `invalidar()` invalida el prefijo `['reservas']`, no una
  * clave puntual: crear o cancelar una reserva desactualiza tanto la lista
@@ -63,19 +68,25 @@ export class ReservasService {
 
   /** `null` = sin filtro (lista completa). */
   readonly filtroSolicitante = signal<string | null>(null);
+  /** `null` = sin filtro (lista completa). */
+  readonly filtroEstado = signal<EstadoReserva | null>(null);
 
   readonly reservas = injectQuery(() => {
+    const estado = this.filtroEstado();
     const solicitanteId = this.filtroSolicitante();
-    return {
-      queryKey: solicitanteId
+    const queryKey = estado
+      ? reservasQueryKeys.porEstado(estado)
+      : solicitanteId
         ? reservasQueryKeys.porSolicitante(solicitanteId)
-        : reservasQueryKeys.lista,
-      queryFn: () =>
-        firstValueFrom(
-          this.http.get<Reserva[]>(
-            solicitanteId ? `${BASE_URL}/solicitante/${solicitanteId}` : `${BASE_URL}/`,
-          ),
-        ),
+        : reservasQueryKeys.lista;
+    const url = estado
+      ? `${BASE_URL}/estado/${estado}`
+      : solicitanteId
+        ? `${BASE_URL}/solicitante/${solicitanteId}`
+        : `${BASE_URL}/`;
+    return {
+      queryKey,
+      queryFn: () => firstValueFrom(this.http.get<Reserva[]>(url)),
     };
   });
 

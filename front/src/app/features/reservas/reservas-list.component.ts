@@ -47,16 +47,19 @@ const SEVERIDAD_ESTADO: Record<EstadoReserva, 'info' | 'success' | 'secondary' |
  *
  * Nota de diseño — tres filtros, con DOS naturalezas distintas:
  *
- * - El de SOLICITANTE consulta al servidor: `GET /api/reservas/solicitante/
- *   {id}` es un endpoint propio, así que seleccionar una persona cambia la
- *   consulta (y su clave de caché) en `ReservasService`, no filtra la lista
- *   ya descargada. Ver la nota de diseño de
- *   `ReservasService.filtroSolicitante`.
- * - El de ESTADO filtra EN MEMORIA, a diferencia del filtro por estado de
- *   `prestamos`: reservas no expone un `GET /estado/{estado}` equivalente
- *   (ver back/reservas/controller.py), y no se inventa un endpoint que no
- *   existe ni se simula con parámetros de query que el controller ignoraría.
- * - El de TEXTO también filtra en el cliente, y lo hace sobre los nombres YA
+ * - El de SOLICITANTE y el de ESTADO consultan al servidor: `GET /api/
+ *   reservas/solicitante/{id}` y `GET /api/reservas/estado/{estado}` son
+ *   endpoints propios (este último ya replicando el patrón de `prestamos`),
+ *   así que elegirlos cambia la consulta (y su clave de caché) en
+ *   `ReservasService`, no filtran la lista ya descargada. Ver la nota de
+ *   diseño de `ReservasService.filtroSolicitante`/`filtroEstado`.
+ *
+ *   Los dos selects son mutuamente excluyentes: `onSolicitanteChange` limpia
+ *   `filtroEstado` y `onEstadoChange` limpia `filtroSolicitante`, porque el
+ *   backend no expone un endpoint combinado solicitante+estado y
+ *   `ReservasService.reservas` solo puede alimentarse de uno de los dos a la
+ *   vez (ver la Nota de diseño de precedencia en `reservas.service.ts`).
+ * - El de TEXTO filtra en el cliente, y lo hace sobre los nombres YA
  *   RESUELTOS (salón, solicitante) más el motivo — no sobre los UUID crudos
  *   que trae `ReservaIndividualOut`, que para el usuario no significan nada.
  *
@@ -114,7 +117,7 @@ const SEVERIDAD_ESTADO: Record<EstadoReserva, 'info' | 'success' | 'secondary' |
         [options]="opcionesEstado"
         optionLabel="label"
         optionValue="value"
-        [ngModel]="filtroEstado()"
+        [ngModel]="reservasService.filtroEstado()"
         [ngModelOptions]="{ standalone: true }"
         (ngModelChange)="onEstadoChange($event)"
         ariaLabel="Filtrar por estado"
@@ -188,9 +191,6 @@ export class ReservasListComponent {
   ];
 
   protected readonly busqueda = signal('');
-  /** `null` = sin filtro. Vive en el componente, no en el servicio: es un
-   * filtro en memoria (no hay endpoint por estado). */
-  protected readonly filtroEstado = signal<EstadoReserva | null>(null);
   protected readonly formDialogVisible = signal(false);
   protected readonly cancelacionDialogVisible = signal(false);
   protected readonly reservaACancelar = signal<Reserva | null>(null);
@@ -199,22 +199,18 @@ export class ReservasListComponent {
 
   protected readonly filtradas = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();
-    const estado = this.filtroEstado();
     const reservas = this.reservasService.reservas.data() ?? [];
 
-    return reservas.filter((reserva) => {
-      if (estado && reserva.estado !== estado) {
-        return false;
-      }
-      if (!termino) {
-        return true;
-      }
-      return [
+    if (!termino) {
+      return reservas;
+    }
+    return reservas.filter((reserva) =>
+      [
         this.lookups.nombreSalon(reserva.salon_id),
         this.lookups.nombrePersona(reserva.solicitante_id),
         reserva.motivo ?? '',
-      ].some((texto) => texto.toLowerCase().includes(termino));
-    });
+      ].some((texto) => texto.toLowerCase().includes(termino)),
+    );
   });
 
   protected onBusquedaChange(evento: Event): void {
@@ -223,10 +219,12 @@ export class ReservasListComponent {
 
   protected onSolicitanteChange(solicitanteId: string | null): void {
     this.reservasService.filtroSolicitante.set(solicitanteId);
+    this.reservasService.filtroEstado.set(null);
   }
 
   protected onEstadoChange(estado: EstadoReserva | null): void {
-    this.filtroEstado.set(estado);
+    this.reservasService.filtroEstado.set(estado);
+    this.reservasService.filtroSolicitante.set(null);
   }
 
   protected fecha(reserva: Reserva): string {

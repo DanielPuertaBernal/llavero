@@ -74,5 +74,19 @@ export const routes: Routes = [
       import('./features/reservas/reservas-list.component').then((m) => m.ReservasListComponent),
     canActivate: [authGuard],
   },
+  // Séptima feature real (`monitores`, ver `src/app/features/monitores/`):
+  // una sola vista. Estructuralmente es más parecida a `usuarios` que a
+  // `reservas`/`prestamos`: no hay ciclo de vida de estado, solo el flag
+  // `activo` con soft-delete vía `desactivar` — y a diferencia de `usuarios`,
+  // tampoco hay `reactivar` (ver back/monitores/controller.py: solo
+  // `GET /`, `GET /{id}`, `POST /` y `POST /{id}/desactivar`).
+  {
+    path: 'monitores',
+    loadComponent: () =>
+      import('./features/monitores/monitores-list.component').then(
+        (m) => m.MonitoresListComponent,
+      ),
+    canActivate: [authGuard],
+  },
   { path: '', pathMatch: 'full', redirectTo: 'dashboard' },
 ];

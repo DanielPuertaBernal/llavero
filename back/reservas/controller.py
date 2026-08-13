@@ -80,6 +80,11 @@ def crear_reserva(request, payload: ReservaIndividualIn):
     return 201, reserva
 
 
+@router.get("/estado/{estado}", response=list[ReservaIndividualOut])
+def listar_reservas_por_estado(request, estado: EstadoReservaIndividual):
+    return service.listar_reservas_por_estado(estado)
+
+
 @router.get("/solicitante/{solicitante_id}", response=list[ReservaIndividualOut])
 def listar_reservas_por_solicitante(request, solicitante_id: uuid.UUID):
     return service.listar_reservas_por_solicitante(solicitante_id)

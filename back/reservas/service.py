@@ -154,6 +154,10 @@ def listar_reservas_por_solicitante(solicitante_id):
     return repository.listar_por_solicitante(solicitante_id)
 
 
+def listar_reservas_por_estado(estado):
+    return repository.listar_por_estado(estado)
+
+
 def cancelar_reserva(reserva_id):
     """Cancela la reserva (estado -> 'cancelada'): la única transición que
     un caller externo puede pedir de forma explícita fuera del flujo de

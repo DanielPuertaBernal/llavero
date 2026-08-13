@@ -71,6 +71,42 @@ describe('ReservasService', () => {
     expect(queryClient.getQueryData(reservasQueryKeys.porSolicitante('p-9'))).toEqual([deOtro]);
   });
 
+  it('al fijar el filtro de estado consulta el endpoint por estado bajo su propia clave', async () => {
+    httpMock.expectOne(`${BASE_URL}/`).flush([reservaDto]);
+    await vi.waitFor(() => expect(service.reservas.data()).toEqual([reservaDto]));
+
+    service.filtroEstado.set('cancelada');
+    await cederMicrotask();
+
+    const cancelada = { ...reservaDto, id: 'rv-3', estado: 'cancelada' };
+    httpMock.expectOne(`${BASE_URL}/estado/cancelada`).flush([cancelada]);
+
+    await vi.waitFor(() => expect(service.reservas.data()).toEqual([cancelada]));
+    // La lista sin filtro sigue cacheada aparte: son dos claves distintas.
+    expect(queryClient.getQueryData(reservasQueryKeys.lista)).toEqual([reservaDto]);
+    expect(queryClient.getQueryData(reservasQueryKeys.porEstado('cancelada'))).toEqual([
+      cancelada,
+    ]);
+  });
+
+  it('con filtroEstado y filtroSolicitante fijados a la vez, filtroEstado tiene precedencia', async () => {
+    httpMock.expectOne(`${BASE_URL}/`).flush([reservaDto]);
+    await vi.waitFor(() => expect(service.reservas.data()).toEqual([reservaDto]));
+
+    service.filtroSolicitante.set('p-9');
+    await cederMicrotask();
+    httpMock.expectOne(`${BASE_URL}/solicitante/p-9`).flush([reservaDto]);
+    await vi.waitFor(() => expect(service.reservas.data()).toEqual([reservaDto]));
+
+    service.filtroEstado.set('cancelada');
+    await cederMicrotask();
+
+    const cancelada = { ...reservaDto, id: 'rv-3', estado: 'cancelada' };
+    httpMock.expectOne(`${BASE_URL}/estado/cancelada`).flush([cancelada]);
+
+    await vi.waitFor(() => expect(service.reservas.data()).toEqual([cancelada]));
+  });
+
   it('crear hace POST a /api/reservas/ con el cuerpo tal cual e invalida el prefijo ["reservas"]', async () => {
     httpMock.expectOne(`${BASE_URL}/`).flush([]);
     const invalidateSpy = vi.spyOn(queryClient, 'invalidateQueries').mockResolvedValue(undefined);

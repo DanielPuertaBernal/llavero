@@ -65,6 +65,14 @@ def listar_por_solicitante(solicitante_id):
     )
 
 
+def listar_por_estado(estado: str):
+    return list(
+        ReservaIndividual.objects.filter(estado=estado).order_by(
+            "-fecha", "hora_inicio"
+        )
+    )
+
+
 def listar_aprobadas_hasta(fecha):
     """Reservas `aprobada` con `fecha <= fecha` — candidatas del futuro
     scheduler (`sdd/scheduler-transiciones`) para evaluar

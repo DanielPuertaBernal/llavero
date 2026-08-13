@@ -102,3 +102,17 @@ def test_post_reserva_con_solapamiento_devuelve_400_con_detail():
 
     assert response.status_code == 400
     assert "solapa" in response.json()["detail"]
+
+
+def test_get_reservas_por_estado_solo_devuelve_ese_estado():
+    salon = _salon()
+    solicitante = _solicitante()
+    aprobada = _post(_payload(salon, solicitante, "08:00:00", "10:00:00")).json()
+
+    response = Client().get("/api/reservas/estado/aprobada")
+
+    assert response.status_code == 200
+    ids = {r["id"] for r in response.json()}
+    assert aprobada["id"] in ids
+    for reserva in response.json():
+        assert reserva["estado"] == "aprobada"

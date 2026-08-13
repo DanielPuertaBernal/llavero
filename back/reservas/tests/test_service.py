@@ -296,6 +296,26 @@ def test_listar_reservas_por_solicitante_delega_al_repository():
     assert [r.id for r in resultado] == [creada.id]
 
 
+def test_listar_reservas_por_estado_solo_devuelve_ese_estado():
+    salon = _salon()
+    solicitante = _solicitante()
+    aprobada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    otro_salon = _salon("102")
+    cancelada = service.crear_reserva(
+        otro_salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    service.cancelar_reserva(cancelada.id)
+
+    resultado = service.listar_reservas_por_estado(EstadoReservaIndividual.APROBADA)
+
+    assert aprobada.id in {r.id for r in resultado}
+    assert cancelada.id not in {r.id for r in resultado}
+
+
 # ------------------------------------------------------------------
 # cancelar_reserva
 # ------------------------------------------------------------------

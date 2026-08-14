@@ -26,6 +26,42 @@ traer las franjas candidatas a comparar.
 
 import datetime
 
+DIAS_SEMANA = [
+    "lunes",
+    "martes",
+    "miercoles",
+    "jueves",
+    "viernes",
+    "sabado",
+    "domingo",
+]
+
+
+def dia_semana_de_fecha(fecha: datetime.date) -> str:
+    """Mapea `fecha.weekday()` (convención de Python: 0=lunes ...
+    6=domingo) al string de día de semana correspondiente (mismos 7
+    valores que `model.DiaSemana`).
+
+    Necesaria para RF15 (validación cruzada de horarios): esta franja
+    (`ReservaSemestral`) vive anclada a un `dia` recurrente que se repite
+    cada semana durante todo el semestre (sin `fecha` puntual), mientras
+    que `reservas.ReservaIndividual` vive anclada a una `fecha` puntual
+    concreta — no hay columna común entre ambas fuentes. Para que
+    `service._validar_y_crear_franja` pueda preguntar "¿alguna
+    `ReservaIndividual` aprobada, en alguna fecha del semestre, cae en
+    este mismo día de la semana y choca en horario?", hace falta convertir
+    cada `fecha` candidata de esa consulta al `dia` recurrente que le
+    corresponde — eso es lo que resuelve esta función.
+
+    Reimplementada acá (en vez de importada desde
+    `disponibilidad.domain`/`programacion.domain`/`reservas.domain`) por
+    el mismo criterio ya aplicado a `hay_solapamiento` en este archivo: se
+    prefiere una duplicación deliberada de unas pocas líneas de lógica
+    pura antes que la primera excepción a la regla dura "un módulo consume
+    a otro solo vía su `.service`, nunca vía `.domain`".
+    """
+    return DIAS_SEMANA[fecha.weekday()]
+
 
 def hay_solapamiento(
     hora_inicio_a: datetime.time,

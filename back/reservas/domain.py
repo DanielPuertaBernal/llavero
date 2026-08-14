@@ -44,6 +44,43 @@ import datetime
 
 from django.utils import timezone
 
+DIAS_SEMANA = [
+    "lunes",
+    "martes",
+    "miercoles",
+    "jueves",
+    "viernes",
+    "sabado",
+    "domingo",
+]
+
+
+def dia_semana_de_fecha(fecha: datetime.date) -> str:
+    """Mapea `fecha.weekday()` (convención de Python: 0=lunes ...
+    6=domingo) al string de día de semana correspondiente (mismos 7
+    valores que `programacion.model.DiaSemana`/
+    `reservas_semestrales.model.DiaSemana`).
+
+    Necesaria para RF15 (validación cruzada de horarios): `ReservaIndividual`
+    vive anclada a una `fecha` puntual concreta, mientras que
+    `Programacion`/`ReservaSemestral` viven ancladas a un `dia` recurrente
+    que se repite cada semana durante todo el semestre (sin `fecha`) — no
+    hay columna común entre esta fuente y esas dos. Para que
+    `crear_reserva` pueda preguntar "¿esta fecha puntual, en el día de la
+    semana que le corresponde, choca con alguna clase ya programada o
+    reserva semestral vigente?" (ver `service.crear_reserva`), hace falta
+    convertir la `fecha` de la nueva reserva al `dia` recurrente
+    equivalente — eso es lo que resuelve esta función.
+
+    Reimplementada acá (en vez de importada desde
+    `disponibilidad.domain`/`programacion.domain`) por el mismo criterio ya
+    aplicado a `hay_solapamiento` en este archivo: se prefiere una
+    duplicación deliberada de unas pocas líneas de lógica pura antes que la
+    primera excepción a la regla dura "un módulo consume a otro solo vía su
+    `.service`, nunca vía `.domain`".
+    """
+    return DIAS_SEMANA[fecha.weekday()]
+
 
 def hay_solapamiento(
     hora_inicio_a: datetime.time,

@@ -16,6 +16,7 @@ import pytest
 from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
 from programacion import service as programacion_service
+from reservas import service as reservas_service
 from reservas_semestrales import repository, service
 from reservas_semestrales.model import DiaSemana
 
@@ -314,6 +315,98 @@ def test_crear_grupo_sin_choque_contra_programacion_no_da_value_error():
     )
 
     assert creada.hora_inicio == datetime.time(10, 0)
+
+
+# ------------------------------------------------------------------
+# crear_grupo_reservas_semestrales — solapamiento contra ReservaIndividual
+# (RF15: validación cruzada, ver docstring de
+# service._existe_solapamiento_con_reserva_individual_aprobada en
+# programacion/service.py para el detalle del cruce recurrente-puntual,
+# reusado acá con la misma lógica).
+# ------------------------------------------------------------------
+
+
+def test_crear_grupo_con_solapamiento_contra_reserva_individual_aprobada_da_value_error():
+    salon = _salon()
+    solicitante = _persona()
+    semestre = _semestre()
+    otro_solicitante = _persona("1000000002", "Solicitante Dos")
+    # Lunes 9 de marzo de 2026, dentro del rango del semestre.
+    reservas_service.crear_reserva(
+        salon.id, otro_solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(9, 0), datetime.time(11, 0),
+    )
+
+    with pytest.raises(ValueError, match="solapa"):
+        service.crear_grupo_reservas_semestrales(
+            salon.id,
+            solicitante.id,
+            semestre.id,
+            [{"dia": DiaSemana.LUNES, "hora_inicio": datetime.time(8, 0), "hora_fin": datetime.time(10, 0)}],
+        )
+
+
+def test_crear_grupo_sin_choque_contra_reserva_individual_no_da_value_error():
+    salon = _salon()
+    solicitante = _persona()
+    semestre = _semestre()
+    otro_solicitante = _persona("1000000002", "Solicitante Dos")
+    reservas_service.crear_reserva(
+        salon.id, otro_solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(10, 0), datetime.time(12, 0),
+    )
+
+    [creada] = service.crear_grupo_reservas_semestrales(
+        salon.id,
+        solicitante.id,
+        semestre.id,
+        [{"dia": DiaSemana.LUNES, "hora_inicio": datetime.time(8, 0), "hora_fin": datetime.time(10, 0)}],
+    )
+
+    assert creada.dia == DiaSemana.LUNES
+
+
+def test_crear_grupo_no_choca_con_reserva_individual_cancelada():
+    salon = _salon()
+    solicitante = _persona()
+    semestre = _semestre()
+    otro_solicitante = _persona("1000000002", "Solicitante Dos")
+    reserva = reservas_service.crear_reserva(
+        salon.id, otro_solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    reservas_service.cancelar_reserva(reserva.id)
+
+    [creada] = service.crear_grupo_reservas_semestrales(
+        salon.id,
+        solicitante.id,
+        semestre.id,
+        [{"dia": DiaSemana.LUNES, "hora_inicio": datetime.time(8, 0), "hora_fin": datetime.time(10, 0)}],
+    )
+
+    assert creada.dia == DiaSemana.LUNES
+
+
+def test_crear_grupo_no_choca_con_reserva_individual_fuera_del_semestre():
+    salon = _salon()
+    solicitante = _persona()
+    semestre = _semestre()
+    otro_solicitante = _persona("1000000002", "Solicitante Dos")
+    # Lunes 6 de julio de 2026, fuera del rango del semestre (termina el
+    # 2026-06-15).
+    reservas_service.crear_reserva(
+        salon.id, otro_solicitante.id, datetime.date(2026, 7, 6),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    [creada] = service.crear_grupo_reservas_semestrales(
+        salon.id,
+        solicitante.id,
+        semestre.id,
+        [{"dia": DiaSemana.LUNES, "hora_inicio": datetime.time(8, 0), "hora_fin": datetime.time(10, 0)}],
+    )
+
+    assert creada.dia == DiaSemana.LUNES
 
 
 # ------------------------------------------------------------------

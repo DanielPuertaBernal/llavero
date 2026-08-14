@@ -201,11 +201,23 @@ def test_consultar_disponibilidad_marca_conflicto_entre_reserva_individual_y_pro
     programacion = _programacion(
         salon, docente, semestre, hora_inicio=datetime.time(8, 0), hora_fin=datetime.time(10, 0)
     )
-    # Reserva individual que se solapa con la clase (ver docstring del
-    # módulo — no hay validación de escritura cruzada todavía, así que
-    # esto puede existir en la base de datos hoy).
-    reserva_ind = _reserva_individual(
-        salon, solicitante, LUNES, hora_inicio=datetime.time(9, 0), hora_fin=datetime.time(11, 0)
+    # Reserva individual que se solapa con la clase, insertada vía
+    # `reservas.repository` (NO `reservas.service.crear_reserva`) a
+    # propósito: desde RF15, `crear_reserva`/`crear_programacion` SÍ
+    # validan cruzado al escribir (ver `reservas/service.py`), así que ya
+    # no es posible crear este choque a través de la API pública — el
+    # propio `crear_reserva` lo rechazaría con `ValueError`. Este test
+    # sigue siendo válido: `conflictos` (agregación de solo LECTURA, ver
+    # docstring de `disponibilidad/service.py`) existe justamente para
+    # datos que nunca pasaron por esa validación de escritura (p. ej.
+    # migrados directamente desde el sistema legacy), que es exactamente
+    # lo que esta inserción vía `repository` simula. Única excepción
+    # deliberada a la convención de este archivo (fixtures cross-módulo
+    # vía `.service`, ver docstring del módulo) — acotada a este test.
+    from reservas import repository as reservas_repository
+
+    reserva_ind = reservas_repository.crear_reserva(
+        salon.id, solicitante.id, LUNES, datetime.time(9, 0), datetime.time(11, 0)
     )
 
     resultado = service.consultar_disponibilidad_salon(salon.id, fecha=LUNES)

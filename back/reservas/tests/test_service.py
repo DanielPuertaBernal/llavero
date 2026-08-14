@@ -14,8 +14,11 @@ import pytest
 
 from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
+from programacion import service as programacion_service
 from reservas import repository, service
 from reservas.model import EstadoReservaIndividual
+from reservas_semestrales import service as reservas_semestrales_service
+from reservas_semestrales.model import DiaSemana as DiaSemanaSemestral
 
 pytestmark = pytest.mark.django_db
 
@@ -29,6 +32,17 @@ def _salon(nombre="101"):
 def _solicitante(numero_documento="1000000001", nombre="Solicitante Prueba"):
     tipo_persona = catalogos_service.crear_tipo_persona(f"tipo-{numero_documento}")
     return comunidad_service.crear_persona(numero_documento, nombre, tipo_persona.id)
+
+
+def _docente(numero_documento="1000000098"):
+    tipo_persona = catalogos_service.crear_tipo_persona(f"tipo-{numero_documento}")
+    return comunidad_service.crear_persona(numero_documento, "Docente Prueba", tipo_persona.id)
+
+
+def _semestre(codigo="2026-1"):
+    return programacion_service.crear_semestre(
+        codigo, datetime.date(2026, 1, 15), datetime.date(2026, 6, 15)
+    )
 
 
 # ------------------------------------------------------------------
@@ -234,6 +248,85 @@ def test_crear_reserva_no_choca_con_una_reserva_previa_cancelada():
     )
 
     assert segunda.hora_inicio == datetime.time(9, 0)
+
+
+# ------------------------------------------------------------------
+# crear_reserva — validación cruzada RF15: contra Programacion y
+# ReservaSemestral (fuentes recurrentes, ver docstring de
+# service.crear_reserva y reservas.domain.dia_semana_de_fecha).
+# ------------------------------------------------------------------
+
+
+def test_crear_reserva_con_solapamiento_contra_programacion_da_value_error():
+    salon = _salon()
+    solicitante = _solicitante()
+    docente = _docente()
+    semestre = _semestre()
+    programacion_service.crear_programacion(
+        salon.id, docente.id, semestre.id, "lunes",
+        datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+    )
+
+    # Lunes 9 de marzo de 2026.
+    with pytest.raises(ValueError, match="solapa"):
+        service.crear_reserva(
+            salon.id, solicitante.id, datetime.date(2026, 3, 9),
+            datetime.time(9, 0), datetime.time(11, 0),
+        )
+
+
+def test_crear_reserva_con_solapamiento_contra_reserva_semestral_da_value_error():
+    salon = _salon()
+    solicitante = _solicitante()
+    otro_solicitante = _solicitante("1000000097", "Otro Solicitante")
+    semestre = _semestre()
+    reservas_semestrales_service.crear_reserva_semestral(
+        salon.id, otro_solicitante.id, semestre.id, DiaSemanaSemestral.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    with pytest.raises(ValueError, match="solapa"):
+        service.crear_reserva(
+            salon.id, solicitante.id, datetime.date(2026, 3, 9),
+            datetime.time(9, 0), datetime.time(11, 0),
+        )
+
+
+def test_crear_reserva_sin_choque_contra_programacion_ni_reserva_semestral_no_da_value_error():
+    salon = _salon()
+    solicitante = _solicitante()
+    docente = _docente()
+    semestre = _semestre()
+    programacion_service.crear_programacion(
+        salon.id, docente.id, semestre.id, "lunes",
+        datetime.time(10, 0), datetime.time(12, 0), "Cálculo I",
+    )
+
+    creada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    assert creada.fecha == datetime.date(2026, 3, 9)
+
+
+def test_crear_reserva_no_choca_con_programacion_de_otro_dia_de_semana():
+    salon = _salon()
+    solicitante = _solicitante()
+    docente = _docente()
+    semestre = _semestre()
+    programacion_service.crear_programacion(
+        salon.id, docente.id, semestre.id, "martes",
+        datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+    )
+
+    # 2026-03-09 es lunes, no martes: no debe chocar con la programación.
+    creada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    assert creada.fecha == datetime.date(2026, 3, 9)
 
 
 # ------------------------------------------------------------------

@@ -2,15 +2,9 @@ import { HttpClient } from '@angular/common/http';
 import { inject } from '@angular/core';
 import type { CanActivateFn } from '@angular/router';
 import { Router } from '@angular/router';
-import { firstValueFrom } from 'rxjs';
 
-import { environment } from '../../../environments/environment';
 import { AuthService } from './auth.service';
-
-interface RolLookupDto {
-  id: string;
-  nombre: string;
-}
+import { resolverNombreRol } from './rol-resolver';
 
 /**
  * Fábrica de guards por rol (RF26: el directorio de comunidad solo lo
@@ -28,6 +22,12 @@ interface RolLookupDto {
  * /catalogos/roles), asi que el UUID no es un enum fijo que se pueda
  * comparar en el cliente sin resolverlo primero -- de ahi la consulta a
  * GET /api/catalogos/roles en cada activacion de la ruta.
+ *
+ * Nota de refactor -- la resolucion en si (el GET y la busqueda por id) vive
+ * en `resolverNombreRol` (ver rol-resolver.ts), extraida de aca cuando la
+ * feature `historial` (RF28) necesito la misma resolucion pero SIN bloquear
+ * la navegacion (ver historial.service.ts): este guard sigue siendo el unico
+ * dueño de la decision de fallar CERRADO (redirigir) ante cualquier fallo.
  *
  * Nota de diseño -- falla CERRADO en los tres casos donde no se puede
  * confirmar el rol (sin sesion, rol no encontrado en el catalogo, o el
@@ -52,10 +52,7 @@ export function crearGuardaDeRol(rolesPermitidos: string[]): CanActivateFn {
     }
 
     try {
-      const roles = await firstValueFrom(
-        http.get<RolLookupDto[]>(`${environment.apiBaseUrl}/catalogos/roles`),
-      );
-      const nombreRol = roles.find((rol) => rol.id === usuario.rolId)?.nombre;
+      const nombreRol = await resolverNombreRol(http, usuario.rolId);
       if (nombreRol && rolesPermitidos.includes(nombreRol)) {
         return true;
       }

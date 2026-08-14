@@ -89,6 +89,11 @@ INSTALLED_APPS = [
     # disponibilidad/apps.py) — se registra igual por consistencia
     # estructural, mismo criterio que "nfc"/"scheduler".
     "disponibilidad",
+    # historial: sin tabla propia (RF27/RF28, agregador de solo lectura
+    # sobre llaves/prestamos vía sus .service, ver historial/apps.py) — se
+    # registra igual por consistencia estructural, mismo criterio que
+    # "nfc"/"scheduler"/"disponibilidad".
+    "historial",
 ]
 
 # Config de django-ninja-jwt para los JWT propios (access+refresh) emitidos

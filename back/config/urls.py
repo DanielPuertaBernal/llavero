@@ -15,6 +15,7 @@ from comunidad.controller import router as comunidad_router
 from configuracion.controller import router as configuracion_router
 from disponibilidad.controller import router as disponibilidad_router
 from equipos.controller import router as equipos_router
+from historial.controller import router as historial_router
 from llaves.controller import router as llaves_router
 from monitores.controller import router as monitores_router
 from nfc.controller import router as nfc_router
@@ -48,6 +49,7 @@ api.add_router("/prestamos", prestamos_router, tags=["prestamos"])
 api.add_router("/nfc", nfc_router, tags=["nfc"])
 api.add_router("/scheduler", scheduler_router, tags=["scheduler"])
 api.add_router("/disponibilidad", disponibilidad_router, tags=["disponibilidad"])
+api.add_router("/historial", historial_router, tags=["historial"])
 
 urlpatterns = [
     path("api/", api.urls),

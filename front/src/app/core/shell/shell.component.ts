@@ -64,6 +64,7 @@ export class ShellComponent {
     { label: 'Reservas', routerLink: '/reservas' },
     { label: 'Reservas Semestrales', routerLink: '/reservas-semestrales' },
     { label: 'Monitores', routerLink: '/monitores' },
+    { label: 'Disponibilidad', routerLink: '/disponibilidad' },
   ];
 
   protected async cerrarSesion(): Promise<void> {

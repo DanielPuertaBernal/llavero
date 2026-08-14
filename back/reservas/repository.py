@@ -65,6 +65,24 @@ def listar_por_solicitante(solicitante_id):
     )
 
 
+def listar_por_salon(salon_id, fecha_desde=None, fecha_hasta=None):
+    """Todas las reservas de `salon_id`, sin filtrar por `estado` — a
+    diferencia de `listar_por_salon_y_fecha_aprobadas` (usada para el
+    chequeo de solapamiento al crear, solo `aprobada`) — agregada para el
+    consumo del futuro `disponibilidad` (RF14: la vista de calendario
+    superpone las tres fuentes tal cual están, incluida una reserva
+    `cancelada`/`completada`/`no_reclamada`, dato crudo que el caller decide
+    cómo pintar). `fecha_desde`/`fecha_hasta` son opcionales e inclusivos en
+    ambos extremos; sin ellos devuelve TODAS las reservas del salón sin
+    límite de fecha."""
+    qs = ReservaIndividual.objects.filter(salon_id=salon_id)
+    if fecha_desde is not None:
+        qs = qs.filter(fecha__gte=fecha_desde)
+    if fecha_hasta is not None:
+        qs = qs.filter(fecha__lte=fecha_hasta)
+    return list(qs.order_by("-fecha", "hora_inicio"))
+
+
 def listar_por_estado(estado: str):
     return list(
         ReservaIndividual.objects.filter(estado=estado).order_by(

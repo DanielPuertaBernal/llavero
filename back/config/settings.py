@@ -84,6 +84,11 @@ INSTALLED_APPS = [
     # automáticas por tiempo (ver sdd/scheduler-transiciones/design) — se
     # registra igual por consistencia estructural, mismo criterio que "nfc".
     "scheduler",
+    # disponibilidad: sin tabla propia (RF14/RF15, agregador de solo lectura
+    # sobre programacion/reservas_semestrales/reservas vía sus .service, ver
+    # disponibilidad/apps.py) — se registra igual por consistencia
+    # estructural, mismo criterio que "nfc"/"scheduler".
+    "disponibilidad",
 ]
 
 # Config de django-ninja-jwt para los JWT propios (access+refresh) emitidos

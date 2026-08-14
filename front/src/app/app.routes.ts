@@ -153,6 +153,20 @@ export const routes: Routes = [
             (m) => m.NotificacionesListComponent,
           ),
       },
+      // Décima feature real (`disponibilidad`, ver
+      // `src/app/features/disponibilidad/`): RF14, una sola vista de SOLO
+      // LECTURA (a diferencia de todas las anteriores, no hay ningún botón de
+      // escritura). Consulta `GET /api/disponibilidad/salon/{salon_id}`
+      // (único endpoint del módulo) superponiendo las tres fuentes
+      // (programación académica, reservas semestrales, reservas
+      // individuales) y resaltando los conflictos que el backend ya calculó.
+      {
+        path: 'disponibilidad',
+        loadComponent: () =>
+          import('./features/disponibilidad/disponibilidad-vista.component').then(
+            (m) => m.DisponibilidadVistaComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

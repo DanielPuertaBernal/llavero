@@ -75,6 +75,7 @@ describe('ShellComponent', () => {
         '/prestamos',
         '/usuarios',
         '/reservas',
+        '/notificaciones',
       ]),
     );
   });

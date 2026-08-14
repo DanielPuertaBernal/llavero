@@ -9,7 +9,8 @@ import { AuthService } from '../auth/auth.service';
 /**
  * Shell de navegación de la app autenticada. Es la ruta padre que envuelve
  * todas las features protegidas (`dashboard`, `catalogos/*`, `llaves`,
- * `prestamos`, `usuarios`, `reservas`) en `app.routes.ts` — un solo
+ * `prestamos`, `usuarios`, `reservas`, `monitores`, `notificaciones`) en
+ * `app.routes.ts` — un solo
  * `authGuard` acá arriba en vez de uno repetido por hija. `AuthCallbackComponent`
  * queda deliberadamente FUERA de este shell (es la pantalla de callback
  * OAuth, sin navegación).
@@ -64,6 +65,7 @@ export class ShellComponent {
     { label: 'Reservas', routerLink: '/reservas' },
     { label: 'Reservas Semestrales', routerLink: '/reservas-semestrales' },
     { label: 'Monitores', routerLink: '/monitores' },
+    { label: 'Notificaciones', routerLink: '/notificaciones' },
   ];
 
   protected async cerrarSesion(): Promise<void> {

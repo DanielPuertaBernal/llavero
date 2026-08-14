@@ -63,6 +63,7 @@ export class ShellComponent {
     { label: 'Usuarios', routerLink: '/usuarios' },
     { label: 'Reservas', routerLink: '/reservas' },
     { label: 'Reservas Semestrales', routerLink: '/reservas-semestrales' },
+    { label: 'Monitores', routerLink: '/monitores' },
   ];
 
   protected async cerrarSesion(): Promise<void> {

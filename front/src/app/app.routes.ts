@@ -107,6 +107,19 @@ export const routes: Routes = [
             (m) => m.ReservasSemestralesListComponent,
           ),
       },
+      // Séptima feature real (`monitores`, ver `src/app/features/monitores/`):
+      // una sola vista. Estructuralmente es más parecida a `usuarios` que a
+      // `reservas`/`prestamos`: no hay ciclo de vida de estado, solo el flag
+      // `activo` con soft-delete vía `desactivar` — y a diferencia de `usuarios`,
+      // tampoco hay `reactivar` (ver back/monitores/controller.py: solo
+      // `GET /`, `GET /{id}`, `POST /` y `POST /{id}/desactivar`).
+      {
+        path: 'monitores',
+        loadComponent: () =>
+          import('./features/monitores/monitores-list.component').then(
+            (m) => m.MonitoresListComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

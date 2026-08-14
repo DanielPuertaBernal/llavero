@@ -9,11 +9,18 @@ import { AuthService } from '../auth/auth.service';
 /**
  * Shell de navegación de la app autenticada. Es la ruta padre que envuelve
  * todas las features protegidas (`dashboard`, `catalogos/*`, `llaves`,
+<<<<<<< HEAD
+ * `prestamos`, `usuarios`, `reservas`, `reservas-semestrales`, `monitores`,
+ * `novedades`) en `app.routes.ts` — un solo `authGuard` acá arriba en vez de
+ * uno repetido por hija. `AuthCallbackComponent` queda deliberadamente FUERA
+ * de este shell (es la pantalla de callback OAuth, sin navegación).
+=======
  * `prestamos`, `usuarios`, `reservas`, `monitores`, `notificaciones`) en
  * `app.routes.ts` — un solo
  * `authGuard` acá arriba en vez de uno repetido por hija. `AuthCallbackComponent`
  * queda deliberadamente FUERA de este shell (es la pantalla de callback
  * OAuth, sin navegación).
+>>>>>>> origin/develop
  *
  * Usa `p-menubar` (el módulo de barra de navegación de PrimeNG) para
  * mantener consistencia visual con el resto del sistema de diseño ya usado
@@ -65,6 +72,7 @@ export class ShellComponent {
     { label: 'Reservas', routerLink: '/reservas' },
     { label: 'Reservas Semestrales', routerLink: '/reservas-semestrales' },
     { label: 'Monitores', routerLink: '/monitores' },
+    { label: 'Novedades', routerLink: '/novedades' },
     { label: 'Notificaciones', routerLink: '/notificaciones' },
   ];
 

@@ -137,6 +137,22 @@ export const routes: Routes = [
             (m) => m.NovedadesListComponent,
           ),
       },
+      // Novena feature real (`notificaciones`, ver
+      // `src/app/features/notificaciones/`): una sola vista. Tampoco es un
+      // CRUD ni un ciclo de vida de estado propio (no hay "cerrar"/
+      // "cancelar"/"desactivar" sobre una fila existente): `estado_envio` lo
+      // decide el backend según si el envío SMTP tuvo éxito, nunca el
+      // cliente (ver back/notificaciones/service.py). Es crear (enviar) y
+      // listar/filtrar — la acción "Reenviar" (RF24) reutiliza el mismo
+      // diálogo de envío para crear una fila nueva, no muta la fallida (ver
+      // notificaciones.service.ts).
+      {
+        path: 'notificaciones',
+        loadComponent: () =>
+          import('./features/notificaciones/notificaciones-list.component').then(
+            (m) => m.NotificacionesListComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

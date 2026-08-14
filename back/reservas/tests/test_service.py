@@ -491,3 +491,78 @@ def test_listar_reservas_aprobadas_hasta_delega_al_repository():
     ids = {r.id for r in resultado}
     assert ids == {aprobada.id}
     assert despues.id not in ids
+
+
+# ------------------------------------------------------------------
+# listar_por_salon — agregado para el consumo del futuro `disponibilidad`
+# (RF14): a diferencia de `listar_reservas_aprobadas_hasta`, esta NO filtra
+# por estado (una vista de calendario también necesita mostrar reservas
+# canceladas/completadas si el caller lo pide) ni por una fecha puntual —
+# admite un rango opcional [fecha_desde, fecha_hasta].
+# ------------------------------------------------------------------
+
+
+def test_listar_por_salon_sin_rango_devuelve_todas_las_reservas_del_salon_sin_filtrar_por_estado():
+    salon = _salon()
+    otro_salon = _salon("102")
+    solicitante = _solicitante()
+    aprobada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    otra_fecha = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 12),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    cancelada = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 14),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    service.cancelar_reserva(cancelada.id)
+    service.crear_reserva(
+        otro_salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    resultado = service.listar_por_salon(salon.id)
+
+    ids = {r.id for r in resultado}
+    assert ids == {aprobada.id, otra_fecha.id, cancelada.id}
+
+
+def test_listar_por_salon_con_rango_de_fechas_filtra_inclusive_en_ambos_extremos():
+    salon = _salon()
+    solicitante = _solicitante()
+    antes = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    dentro_inicio = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 10),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    dentro_fin = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 12),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    despues = service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 13),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    resultado = service.listar_por_salon(
+        salon.id, fecha_desde=datetime.date(2026, 3, 10), fecha_hasta=datetime.date(2026, 3, 12)
+    )
+
+    ids = {r.id for r in resultado}
+    assert ids == {dentro_inicio.id, dentro_fin.id}
+    assert antes.id not in ids
+    assert despues.id not in ids
+
+
+def test_listar_por_salon_con_salon_sin_reservas_devuelve_lista_vacia():
+    salon = _salon()
+
+    resultado = service.listar_por_salon(salon.id)
+
+    assert resultado == []

@@ -224,6 +224,24 @@ def marcar_no_reclamada(reserva_id):
     return repository.cambiar_estado(reserva_id, EstadoReservaIndividual.NO_RECLAMADA)
 
 
+def listar_por_salon(salon_id, fecha_desde=None, fecha_hasta=None):
+    """Todas las reservas de `salon_id`, sin filtrar por `estado` ni por
+    fecha (a menos que se pase `fecha_desde`/`fecha_hasta`, ambos
+    inclusivos) — agregada para el consumo del futuro módulo
+    `disponibilidad` (RF14: vista de calendario que superpone `Programacion`
+    + `ReservaSemestral` + `ReservaIndividual`), que necesita ver el dato
+    crudo de todas las reservas de un salón, incluidas las
+    `cancelada`/`completada`/`no_reclamada` (a diferencia de
+    `existe_solapamiento_en_salon`, que sí filtra a `aprobada` porque esa sí
+    es una pregunta de negocio distinta: "¿hay algo que choque con esto
+    ahora mismo?"). Mismo criterio de extensión aditiva ya aplicado en
+    `reservas_semestrales.service.listar_por_solicitante`/
+    `programacion.service.listar_programaciones_por_docente` cuando un
+    nuevo consumidor cross-módulo necesitó una consulta que no estaba
+    expuesta todavía."""
+    return repository.listar_por_salon(salon_id, fecha_desde=fecha_desde, fecha_hasta=fecha_hasta)
+
+
 def listar_reservas_aprobadas_hasta(fecha):
     """Reservas 'aprobada' con fecha <= `fecha` — candidatas del futuro
     scheduler (ver Nota de diseño del módulo y `repository.

@@ -2,6 +2,7 @@ import { Routes } from '@angular/router';
 
 import { AuthCallbackComponent } from './core/auth/auth-callback.component';
 import { authGuard } from './core/auth/auth.guard';
+import { crearGuardaDeRol } from './core/auth/rol.guard';
 import { DashboardPlaceholderComponent } from './dashboard-placeholder/dashboard-placeholder.component';
 
 // Todas las features protegidas viven como hijas de `ShellComponent` (ver
@@ -165,6 +166,25 @@ export const routes: Routes = [
         loadComponent: () =>
           import('./features/disponibilidad/disponibilidad-vista.component').then(
             (m) => m.DisponibilidadVistaComponent,
+          ),
+      },
+      // Undecima feature real (`comunidad`, ver
+      // `src/app/features/comunidad/`): RF26, una sola vista de SOLO
+      // LECTURA (mismo criterio que `disponibilidad`: no hay ningun boton
+      // de escritura, ver la nota de alcance en comunidad.service.ts para
+      // RF25/RF26). Es la PRIMERA ruta protegida por rol ademas de sesion:
+      // RF26 exige que Portero NO tenga acceso al directorio de comunidad,
+      // asi que ademas de `authGuard` (arriba, ruta padre) esta ruta agrega
+      // `crearGuardaDeRol(...)`, el primer guard por rol del proyecto (ver
+      // core/auth/rol.guard.ts para la nota de diseño completa: por que
+      // resuelve el rol contra GET /api/catalogos/roles en vez de comparar
+      // un id fijo).
+      {
+        path: 'comunidad',
+        canActivate: [crearGuardaDeRol(['Administrador', 'Auxiliar'])],
+        loadComponent: () =>
+          import('./features/comunidad/comunidad-list.component').then(
+            (m) => m.ComunidadListComponent,
           ),
       },
       // Duodécima feature real (`configuracion`, ver

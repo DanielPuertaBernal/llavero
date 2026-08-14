@@ -27,10 +27,28 @@ Convención de esta API, igual que el resto de módulos:
   resultados": devuelven `None`/lista vacía.
 - `crear_reserva` lanza `ValueError` cuando la franja viola
   `hora_inicio < hora_fin`, cuando `salon_id`/`solicitante_id` no existen,
-  o cuando la franja se solapa con otra reserva ya `aprobada` para el
-  mismo salón/fecha (`domain.hay_solapamiento`), mismo patrón que
-  `programacion.service.crear_programacion` con clases regulares y que
-  `reservas_semestrales.service.crear_grupo_reservas_semestrales`.
+  cuando la franja se solapa con otra reserva ya `aprobada` para el mismo
+  salón/fecha (`domain.hay_solapamiento`), o cuando se solapa con una
+  `Programacion`/`ReservaSemestral` recurrente vigente para el día de la
+  semana que le corresponde a `fecha` (RF15, validación cruzada — ver
+  docstring de `crear_reserva`). Mismo patrón que
+  `programacion.service.crear_programacion` y
+  `reservas_semestrales.service.crear_grupo_reservas_semestrales`, que
+  también validan cruzado contra las otras dos fuentes.
+
+Nota de diseño — imports de `programacion.service`/`reservas_semestrales.
+service` a nivel de módulo (arriba): a diferencia de
+`programacion.service`/`reservas_semestrales.service` (que importan
+`reservas.service` de forma DIFERIDA, dentro de la función que lo usa, ver
+sus propios docstrings), este módulo sí puede importarlos al tope del
+archivo sin cerrar ningún ciclo — ninguno de los dos importa
+`reservas.service` a nivel de módulo. Los tres módulos necesitan
+conocerse mutuamente (RF15 exige que cada uno valide cruzado contra los
+otros dos), lo que en un grafo de imports puramente a nivel de módulo
+sería un ciclo de 3 nodos sin solución; se rompe designando a `reservas`
+como el único de los tres que importa a los otros dos arriba, y a
+`programacion`/`reservas_semestrales` como los que resuelven su import de
+`reservas` en tiempo de llamada.
 
 Nota de diseño — `hora_inicio < hora_fin` se valida en `service.py`, NO en
 `domain.py`: es una comparación de dos parámetros contra sí mismos, sin
@@ -69,8 +87,10 @@ sí en Django (autocommit por sentencia).
 
 from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
+from programacion import service as programacion_service
 from reservas import domain, repository
 from reservas.model import EstadoReservaIndividual
+from reservas_semestrales import service as reservas_semestrales_service
 
 
 def listar_reservas():
@@ -102,19 +122,36 @@ def crear_reserva(
 ):
     """Crea una ReservaIndividual validando que la franja horaria sea
     válida (`hora_inicio < hora_fin`), que `salon_id`/`solicitante_id`
-    referenciados existan, y que la franja no se solape con otra reserva
-    ya `aprobada` en el mismo salón la misma fecha. Lanza ValueError claro
-    en los tres casos, en vez de dejar propagar el IntegrityError crudo de
-    Postgres o permitir un choque de horarios silencioso.
+    referenciados existan, y que la franja no se solape con NINGUNA de las
+    TRES fuentes de horario (RF15): otra reserva ya `aprobada` en el mismo
+    salón la misma fecha, una `Programacion` cuyo `dia` recurrente coincida
+    con el día de la semana de `fecha`, o una `ReservaSemestral` en las
+    mismas condiciones. Lanza ValueError claro en todos los casos, en vez
+    de dejar propagar el IntegrityError crudo de Postgres o permitir un
+    choque de horarios silencioso.
 
-    La franja se valida PRIMERO, antes que las referencias y el
-    solapamiento: es la única de las tres comprobaciones que es pura (no
+    El problema de fondo (cruce puntual-contra-recurrente, ver RF15 en
+    DOC/2. Diseño estratégico/2.2 Requerimientos.md): esta reserva vive
+    anclada a una `fecha` puntual concreta, mientras que `Programacion`/
+    `ReservaSemestral` viven ancladas a un `dia` recurrente que se repite
+    cada semana durante todo el semestre (sin `fecha` propia). A diferencia
+    del cruce inverso (`programacion.service._existe_solapamiento_con_
+    reserva_individual_aprobada`, que necesita resolver el rango de fechas
+    de un semestre para saber qué fechas puntuales mirar), acá el cruce es
+    directo: solo hace falta convertir la ÚNICA `fecha` de esta reserva al
+    `dia` recurrente que le corresponde (`domain.dia_semana_de_fecha`) y
+    preguntarles a `programacion.service.existe_solapamiento_en_salon`/
+    `reservas_semestrales.service.existe_solapamiento_en_salon_semestral`
+    (las piezas reutilizables que esos módulos ya exponen para este
+    propósito) si alguna de sus filas choca en ese salón/día/horario — sin
+    necesidad de resolver ningún semestre ni rango de fechas acá.
+
+    La franja se valida PRIMERO, antes que las referencias y los
+    solapamientos: es la única de las comprobaciones que es pura (no
     consulta la base de datos), así que descartar acá un request
-    imposible evita hasta tres consultas inútiles — dos `obtener_*`
-    cross-módulo más el `listar_por_salon_y_fecha_aprobadas` del
-    solapamiento. Mismo orden que `reservas_semestrales.service.
-    _validar_y_crear_franja`, que también valida la franja antes de
-    cualquier consulta de solapamiento.
+    imposible evita varias consultas inútiles. Mismo orden que
+    `reservas_semestrales.service._validar_y_crear_franja`, que también
+    valida la franja antes de cualquier consulta de solapamiento.
 
     Nace siempre en estado 'aprobada' (default del DDL, ver model.py): no
     hay parámetro `estado` acá.
@@ -131,6 +168,19 @@ def crear_reserva(
         raise ValueError(
             f"La franja {hora_inicio}-{hora_fin} se solapa con otra reserva ya "
             f"aprobada en el salón {salon_id} el {fecha}"
+        )
+    dia = domain.dia_semana_de_fecha(fecha)
+    if programacion_service.existe_solapamiento_en_salon(salon_id, dia, hora_inicio, hora_fin):
+        raise ValueError(
+            f"La franja {hora_inicio}-{hora_fin} se solapa con una clase ya "
+            f"programada en el salón {salon_id} el {dia} ({fecha})"
+        )
+    if reservas_semestrales_service.existe_solapamiento_en_salon_semestral(
+        salon_id, dia, hora_inicio, hora_fin
+    ):
+        raise ValueError(
+            f"La franja {hora_inicio}-{hora_fin} se solapa con una reserva "
+            f"semestral ya existente en el salón {salon_id} el {dia} ({fecha})"
         )
     return repository.crear_reserva(
         salon_id, solicitante_id, fecha, hora_inicio, hora_fin, motivo=motivo

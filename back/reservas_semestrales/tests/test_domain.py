@@ -12,7 +12,7 @@ reimplementada acá deliberadamente (ver docstring de
 
 import datetime
 
-from reservas_semestrales.domain import hay_solapamiento
+from reservas_semestrales.domain import dia_semana_de_fecha, hay_solapamiento
 
 
 def _hora(h: int, m: int = 0) -> datetime.time:
@@ -48,3 +48,20 @@ def test_solapamiento_es_simetrico():
     assert hay_solapamiento(a_inicio, a_fin, b_inicio, b_fin) == hay_solapamiento(
         b_inicio, b_fin, a_inicio, a_fin
     )
+
+
+# ------------------------------------------------------------------
+# dia_semana_de_fecha — necesaria para RF15 (validación cruzada): ver
+# docstring de `service._validar_y_crear_franja` para el detalle del
+# cruce "recurrente -> puntual" (esta franja recurrente contra las
+# `ReservaIndividual` de fecha puntual dentro del rango del semestre).
+# Mismo criterio de duplicación deliberada que `hay_solapamiento`.
+# ------------------------------------------------------------------
+
+
+def test_dia_semana_de_fecha_lunes():
+    assert dia_semana_de_fecha(datetime.date(2026, 3, 9)) == "lunes"
+
+
+def test_dia_semana_de_fecha_domingo():
+    assert dia_semana_de_fecha(datetime.date(2026, 3, 15)) == "domingo"

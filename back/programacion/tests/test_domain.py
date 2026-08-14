@@ -7,7 +7,7 @@ probar una función de decisión.
 
 import datetime
 
-from programacion.domain import hay_solapamiento
+from programacion.domain import dia_semana_de_fecha, hay_solapamiento
 
 
 def _hora(h: int, m: int = 0) -> datetime.time:
@@ -43,3 +43,21 @@ def test_solapamiento_es_simetrico():
     assert hay_solapamiento(a_inicio, a_fin, b_inicio, b_fin) == hay_solapamiento(
         b_inicio, b_fin, a_inicio, a_fin
     )
+
+
+# ------------------------------------------------------------------
+# dia_semana_de_fecha — necesaria para RF15 (validación cruzada): dado que
+# `Programacion` vive anclada a un `dia` recurrente (sin fecha puntual) y
+# `ReservaIndividual` vive anclada a una `fecha` puntual (sin día de la
+# semana explícito), cruzar ambas fuentes exige poder mapear una fecha
+# concreta al día de semana recurrente que le corresponde. Ver docstring
+# de `service.crear_programacion` para el detalle completo del cruce.
+# ------------------------------------------------------------------
+
+
+def test_dia_semana_de_fecha_lunes():
+    assert dia_semana_de_fecha(datetime.date(2026, 3, 9)) == "lunes"
+
+
+def test_dia_semana_de_fecha_domingo():
+    assert dia_semana_de_fecha(datetime.date(2026, 3, 15)) == "domingo"

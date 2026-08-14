@@ -187,6 +187,21 @@ export const routes: Routes = [
             (m) => m.ComunidadListComponent,
           ),
       },
+      // Duodécima feature real (`configuracion`, ver
+      // `src/app/features/configuracion/`): una sola vista, y la primera que
+      // es un SINGLETON en vez de una lista o un ciclo de vida — el backend
+      // solo expone `GET /api/configuracion/` (get-or-create, nunca 404) y
+      // `PUT /api/configuracion/` (reemplazo completo) sobre una única fila
+      // que siempre existe (ver back/configuracion/controller.py). Por eso
+      // la ruta apunta directo a un formulario de edición
+      // (`ConfiguracionFormComponent`), sin una vista de lista intermedia.
+      {
+        path: 'configuracion',
+        loadComponent: () =>
+          import('./features/configuracion/configuracion-form.component').then(
+            (m) => m.ConfiguracionFormComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

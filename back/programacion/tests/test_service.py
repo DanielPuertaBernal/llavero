@@ -17,6 +17,7 @@ from catalogos import service as catalogos_service
 from comunidad import service as comunidad_service
 from programacion import repository, service
 from programacion.model import DiaSemana
+from reservas import service as reservas_service
 
 pytestmark = pytest.mark.django_db
 
@@ -207,6 +208,98 @@ def test_crear_programacion_mismas_horas_en_otro_salon_no_da_value_error():
     )
 
     assert en_otro_salon.salon_id == salon_2.id
+
+
+# ------------------------------------------------------------------
+# crear_programacion — validación cruzada RF15: contra ReservaIndividual
+# ya aprobada (fuente puntual, ver docstring de service.crear_programacion
+# y programacion.domain.dia_semana_de_fecha).
+# ------------------------------------------------------------------
+
+
+def test_crear_programacion_con_solapamiento_contra_reserva_individual_aprobada_da_value_error():
+    salon = _salon()
+    docente = _docente()
+    semestre = _semestre()
+    solicitante = comunidad_service.crear_persona(
+        "1000000099", "Solicitante Prueba", catalogos_service.crear_tipo_persona("tipo-sol").id
+    )
+    # Lunes 9 de marzo de 2026 cae dentro del semestre (2026-01-15 a
+    # 2026-06-15) y es un lunes real (ver DIAS_SEMANA/dia_semana_de_fecha).
+    reservas_service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(9, 0), datetime.time(11, 0),
+    )
+
+    with pytest.raises(ValueError, match="solapa"):
+        service.crear_programacion(
+            salon.id, docente.id, semestre.id, DiaSemana.LUNES,
+            datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+        )
+
+
+def test_crear_programacion_sin_choque_contra_reserva_individual_no_da_value_error():
+    salon = _salon()
+    docente = _docente()
+    semestre = _semestre()
+    solicitante = comunidad_service.crear_persona(
+        "1000000099", "Solicitante Prueba", catalogos_service.crear_tipo_persona("tipo-sol").id
+    )
+    reservas_service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(10, 0), datetime.time(12, 0),
+    )
+
+    creada = service.crear_programacion(
+        salon.id, docente.id, semestre.id, DiaSemana.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+    )
+
+    assert creada.materia == "Cálculo I"
+
+
+def test_crear_programacion_no_choca_con_reserva_individual_cancelada():
+    salon = _salon()
+    docente = _docente()
+    semestre = _semestre()
+    solicitante = comunidad_service.crear_persona(
+        "1000000099", "Solicitante Prueba", catalogos_service.crear_tipo_persona("tipo-sol").id
+    )
+    reserva = reservas_service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 3, 9),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+    reservas_service.cancelar_reserva(reserva.id)
+
+    # No debe lanzar: la reserva individual está cancelada, no bloquea.
+    creada = service.crear_programacion(
+        salon.id, docente.id, semestre.id, DiaSemana.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+    )
+
+    assert creada.materia == "Cálculo I"
+
+
+def test_crear_programacion_no_choca_con_reserva_individual_fuera_del_semestre():
+    salon = _salon()
+    docente = _docente()
+    semestre = _semestre()
+    solicitante = comunidad_service.crear_persona(
+        "1000000099", "Solicitante Prueba", catalogos_service.crear_tipo_persona("tipo-sol").id
+    )
+    # Lunes 6 de julio de 2026, fuera del rango del semestre (termina el
+    # 2026-06-15): no debe considerarse para la validación cruzada.
+    reservas_service.crear_reserva(
+        salon.id, solicitante.id, datetime.date(2026, 7, 6),
+        datetime.time(8, 0), datetime.time(10, 0),
+    )
+
+    creada = service.crear_programacion(
+        salon.id, docente.id, semestre.id, DiaSemana.LUNES,
+        datetime.time(8, 0), datetime.time(10, 0), "Cálculo I",
+    )
+
+    assert creada.materia == "Cálculo I"
 
 
 # ------------------------------------------------------------------

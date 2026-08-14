@@ -13,7 +13,7 @@ import datetime
 
 from django.utils import timezone
 
-from reservas.domain import es_no_reclamada, hay_solapamiento
+from reservas.domain import dia_semana_de_fecha, es_no_reclamada, hay_solapamiento
 
 
 def _hora(h: int, m: int = 0) -> datetime.time:
@@ -78,3 +78,21 @@ def test_es_no_reclamada_antes_del_limite_es_false():
     ahora = timezone.make_aware(datetime.datetime(2026, 3, 10, 8, 15))
 
     assert es_no_reclamada(fecha, hora_inicio, 30, ahora) is False
+
+
+# ------------------------------------------------------------------
+# dia_semana_de_fecha — necesaria para RF15 (validación cruzada): una
+# `ReservaIndividual` vive anclada a una `fecha` puntual, mientras que
+# `Programacion`/`ReservaSemestral` viven ancladas a un `dia` recurrente
+# (ver docstring de `service.crear_reserva`, sentido de cruce "puntual ->
+# recurrente"). Mismo criterio de duplicación deliberada que
+# `hay_solapamiento`.
+# ------------------------------------------------------------------
+
+
+def test_dia_semana_de_fecha_lunes():
+    assert dia_semana_de_fecha(datetime.date(2026, 3, 9)) == "lunes"
+
+
+def test_dia_semana_de_fecha_domingo():
+    assert dia_semana_de_fecha(datetime.date(2026, 3, 15)) == "domingo"

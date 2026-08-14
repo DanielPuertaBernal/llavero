@@ -120,6 +120,23 @@ export const routes: Routes = [
             (m) => m.MonitoresListComponent,
           ),
       },
+      // Octava feature real (`novedades`, ver `src/app/features/novedades/`):
+      // una sola vista. Estructuralmente es la MÁS parecida a `monitores`:
+      // crear y una ÚNICA transición de estado (acá `cerrar` en vez de
+      // `desactivar`), sin PATCH ni DELETE y sin endpoint de vuelta (ver
+      // back/novedades/controller.py: solo `GET /`, `GET /{id}`, `POST /`,
+      // `GET /estado/{estado}`, `GET /categoria/{categoria}` y
+      // `POST /{id}/cerrar` — no existe `POST /{id}/reabrir`). Es además la
+      // segunda feature que depende de `core/auth` (después de `usuarios`):
+      // `POST /` exige `registrado_por_id`, que sale de
+      // `AuthService.currentUser().id` en vez de un selector.
+      {
+        path: 'novedades',
+        loadComponent: () =>
+          import('./features/novedades/novedades-list.component').then(
+            (m) => m.NovedadesListComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

@@ -202,6 +202,22 @@ export const routes: Routes = [
             (m) => m.ConfiguracionFormComponent,
           ),
       },
+      // Décimotercera feature real (`historial`, ver
+      // `src/app/features/historial/`): RF27, una sola vista de SOLO
+      // LECTURA (mismo criterio que `disponibilidad`/`comunidad`, ver la
+      // nota de alcance en historial.service.ts). A diferencia de
+      // `comunidad`, esta ruta NO agrega `crearGuardaDeRol(...)`: RF28 no
+      // bloquea a ningún rol fuera de la ruta, solo acota lo que CADA rol ve
+      // dentro de ella (Portero ve solo lo que él procesó, Administrador/
+      // Auxiliar ven todo) -- esa decisión vive dentro de
+      // `HistorialService`, no en el guard de la ruta.
+      {
+        path: 'historial',
+        loadComponent: () =>
+          import('./features/historial/historial-list.component').then(
+            (m) => m.HistorialListComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

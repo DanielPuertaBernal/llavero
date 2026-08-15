@@ -126,7 +126,10 @@ describe('LlaveEntregaDialogComponent', () => {
     component.form.setValue({
       ...valoresBase,
       origen: 'reserva_individual',
-      reserva_id: 'res-1',
+      // Debe cumplir el `Validators.pattern` de UUID del control
+      // `reserva_id` (ver llave-entrega-dialog.component.ts): un id
+      // arbitrario como 'res-1' ya no pasa la validación de forma.
+      reserva_id: '11111111-2222-3333-4444-555555555555',
     });
     expect(component.requiereReserva()).toBe(true);
 
@@ -145,7 +148,7 @@ describe('LlaveEntregaDialogComponent', () => {
       tipo_entrega: 'credencial',
       usuario_entrega_id: 'us-1',
       ubicacion_entrega_id: 'ub-1',
-      reserva_id: 'res-1',
+      reserva_id: '11111111-2222-3333-4444-555555555555',
     });
     req.flush({ ...llaveDto, origen: 'reserva_individual' });
     await cederMicrotask();

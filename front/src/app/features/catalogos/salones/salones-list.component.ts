@@ -133,6 +133,21 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
       <app-tipos-silleteria-manager />
     </p-dialog>
   `,
+  styles: `
+    .salones-list__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .salones-list__acciones {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+    }
+  `,
 })
 export class SalonesListComponent {
   protected readonly salonesService = inject(SalonesService);

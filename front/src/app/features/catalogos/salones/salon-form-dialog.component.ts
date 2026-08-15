@@ -80,6 +80,26 @@ import { SalonesService } from './salones.service';
       </form>
     </p-dialog>
   `,
+  styles: `
+    .salon-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .salon-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .salon-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class SalonFormDialogComponent {
   readonly visible = model(false);

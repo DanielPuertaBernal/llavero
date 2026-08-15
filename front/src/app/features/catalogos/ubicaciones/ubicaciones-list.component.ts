@@ -106,6 +106,15 @@ import { UbicacionesService } from './ubicaciones.service';
 
     <app-ubicacion-form-dialog [(visible)]="formDialogVisible" [ubicacion]="ubicacionEditando()" />
   `,
+  styles: `
+    .ubicaciones-list__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class UbicacionesListComponent {
   protected readonly ubicacionesService = inject(UbicacionesService);

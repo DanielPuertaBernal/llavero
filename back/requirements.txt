@@ -24,3 +24,9 @@ cryptography==50.0.0
 # — es la opción recomendada para un proyecto nuevo sin ya tener requests
 # como dependencia existente.
 httpx==0.28.1
+# Habilita CORS: el frontend (Angular, ng serve en localhost:4200) y el
+# backend (Django, localhost:8080) corren en orígenes distintos en
+# desarrollo, y el navegador bloquea el fetch cross-origin sin las
+# cabeceras Access-Control-Allow-* que este middleware agrega — ver
+# CORS_ALLOWED_ORIGINS en settings.py.
+django-cors-headers==4.9.0

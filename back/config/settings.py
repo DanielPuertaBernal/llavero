@@ -62,9 +62,18 @@ SCHEDULER_API_KEY = env("SCHEDULER_API_KEY", default="")
 # la migración simplemente no crea ningún usuario, no falla el migrate.
 SUPERUSUARIO_EMAIL = env("SUPERUSUARIO_EMAIL", default="")
 
+# Orígenes autorizados a llamar la API vía CORS (ver corsheaders más abajo).
+# El frontend (Angular) sirve desde un origen distinto al backend en
+# cualquier entorno (ng serve en :4200 en desarrollo; dominio propio en
+# producción) — sin esto, el navegador bloquea el fetch aunque la request
+# en sí sea válida. Default a localhost:4200 (convención de `ng serve`) para
+# que el proyecto funcione out-of-the-box en desarrollo.
+CORS_ALLOWED_ORIGINS = env.list("CORS_ALLOWED_ORIGINS", default=["http://localhost:4200"])
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
+    "corsheaders",
     "catalogos",
     "equipos",
     "usuarios",
@@ -116,6 +125,10 @@ NINJA_JWT = {
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
+    # Debe ir antes de CommonMiddleware (requisito de django-cors-headers:
+    # las cabeceras Access-Control-Allow-* tienen que agregarse antes de que
+    # CommonMiddleware procese la response).
+    "corsheaders.middleware.CorsMiddleware",
     "django.middleware.common.CommonMiddleware",
 ]
 

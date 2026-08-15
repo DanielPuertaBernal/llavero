@@ -1,5 +1,11 @@
 import { Component, computed, inject, model, output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  type AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  type ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -29,12 +35,17 @@ import type { ReservaInput } from './reservas.models';
  * sin zona): `toISOString()` los convertiría a UTC y en Colombia (UTC-5)
  * mandaría el día anterior y las horas corridas 5 posiciones.
  *
- * Ninguna regla de negocio se replica acá: que la franja sea válida
- * (`hora_inicio < hora_fin`), que el salón y el solicitante existan, y sobre
- * todo el SOLAPAMIENTO con otra reserva ya aprobada son todas del backend.
- * La lista cargada en el navegador puede estar desactualizada frente a otra
- * pestaña, así que un chequeo cliente sería una adivinanza. El 400 se muestra
- * tal cual (ver reservas-error.util.ts).
+ * Ninguna regla de negocio se replica acá: que el salón y el solicitante
+ * existan, y sobre todo el SOLAPAMIENTO con otra reserva ya aprobada son
+ * todas del backend. La lista cargada en el navegador puede estar
+ * desactualizada frente a otra pestaña, así que un chequeo cliente sería una
+ * adivinanza. El 400 se muestra tal cual (ver reservas-error.util.ts).
+ *
+ * Excepción puntual — `hora_inicio < hora_fin` SÍ se valida acá
+ * (`horaFinPosteriorAHoraInicio`), pero es una validación de FORMA pura de
+ * cliente (¿la franja tiene sentido como rango?), no la de solapamiento: no
+ * necesita estado del servidor y evita un 400 obvio antes de que el operador
+ * llegue a enviar el formulario.
  */
 @Component({
   selector: 'app-reserva-form-dialog',
@@ -114,6 +125,11 @@ import type { ReservaInput } from './reservas.models';
             hourFormat="24"
             placeholder="HH:MM"
           />
+          @if (form.errors?.['horaFinAntesQueInicio']) {
+            <small class="reserva-form-dialog__error">
+              La hora de fin debe ser posterior a la hora de inicio.
+            </small>
+          }
         </div>
 
         <div class="reserva-form-dialog__campo">
@@ -159,14 +175,17 @@ export class ReservaFormDialogComponent {
   // `Validators.required` rechaza). Fecha y horas son `Date | null` porque eso
   // es lo que `p-datepicker` escribe en el control; `null` = sin elegir.
   // `motivo` arranca en `''` y se omite del payload si queda en blanco.
-  protected readonly form = this.fb.nonNullable.group({
-    salon_id: ['', Validators.required],
-    solicitante_id: ['', Validators.required],
-    fecha: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-    hora_inicio: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-    hora_fin: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-    motivo: [''],
-  });
+  protected readonly form = this.fb.nonNullable.group(
+    {
+      salon_id: ['', Validators.required],
+      solicitante_id: ['', Validators.required],
+      fecha: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+      hora_inicio: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+      hora_fin: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+      motivo: ['', Validators.maxLength(255)],
+    },
+    { validators: horaFinPosteriorAHoraInicio },
+  );
 
   protected readonly guardando = computed(() => this.reservasService.crear.isPending());
 
@@ -235,4 +254,17 @@ function aHoraIso(hora: Date): string {
 
 function dosDigitos(valor: number): string {
   return String(valor).padStart(2, '0');
+}
+
+/** Cross-field validator de FORMA pura (ver la nota del docblock del
+ * componente): solo exige que la franja tenga sentido como rango cuando
+ * ambas horas están elegidas. No repite la regla de SOLAPAMIENTO, que
+ * necesita estado del servidor y sigue siendo del backend. */
+function horaFinPosteriorAHoraInicio(control: AbstractControl): ValidationErrors | null {
+  const horaInicio = control.get('hora_inicio')?.value as Date | null;
+  const horaFin = control.get('hora_fin')?.value as Date | null;
+  if (!horaInicio || !horaFin) {
+    return null;
+  }
+  return horaFin > horaInicio ? null : { horaFinAntesQueInicio: true };
 }

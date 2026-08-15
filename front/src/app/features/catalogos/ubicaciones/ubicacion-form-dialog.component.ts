@@ -82,7 +82,7 @@ export class UbicacionFormDialogComponent {
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
     permite_prestamo_llaves: [true],
     permite_devolucion_llaves: [true],
     permite_prestamo_equipos: [false],

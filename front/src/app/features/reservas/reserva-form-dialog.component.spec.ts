@@ -163,14 +163,11 @@ describe('ReservaFormDialogComponent', () => {
     await vi.waitFor(() => expect(fixture.componentInstance.visible()).toBe(false));
   });
 
-  it('deja la validación de la franja al backend y muestra su 400', async () => {
+  it('invalida en cliente cuando la hora de fin no es posterior a la de inicio', async () => {
     const fixture = TestBed.createComponent(ReservaFormDialogComponent);
     await cederMicrotask();
     responderCargaInicial(httpMock);
     fixture.detectChanges();
-
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
 
     const component = fixture.componentInstance as unknown as FormDialogInternals;
     component.form.setValue({
@@ -182,29 +179,17 @@ describe('ReservaFormDialogComponent', () => {
       motivo: '',
     });
 
-    // `hora_inicio < hora_fin` la valida `service.crear_reserva` y responde
-    // 400 con `detail`: el formulario no replica la regla, la envía.
-    expect(component.form.valid).toBe(true);
+    // Validación de FORMA pura de cliente (`horaFinPosteriorAHoraInicio`):
+    // no reemplaza la de SOLAPAMIENTO, que sigue siendo del backend (ver el
+    // test de abajo que sí llega a mandar el POST).
+    expect(component.form.valid).toBe(false);
+    expect(component.form.errors?.['horaFinAntesQueInicio']).toBe(true);
 
+    // No debería mandarse ninguna petición con una franja inválida.
     fixture.componentInstance.visible.set(true);
     component.guardar();
     await cederMicrotask();
-
-    httpMock
-      .expectOne({ method: 'POST', url: `${BASE_URL}/` })
-      .flush(
-        { detail: 'hora_inicio (10:00:00) debe ser anterior a hora_fin (08:00:00)' },
-        { status: 400, statusText: 'Bad Request' },
-      );
-
-    await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('debe ser anterior a hora_fin'),
-        }),
-      ),
-    );
+    httpMock.expectNone({ method: 'POST', url: `${BASE_URL}/` });
   });
 
   it('muestra el mensaje del backend tal cual cuando la reserva es rechazada con 400', async () => {

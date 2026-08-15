@@ -1,5 +1,11 @@
 import { Component, computed, inject, model, output } from '@angular/core';
-import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
+import {
+  type AbstractControl,
+  FormBuilder,
+  ReactiveFormsModule,
+  type ValidationErrors,
+  Validators,
+} from '@angular/forms';
 import { MessageService } from 'primeng/api';
 import { ButtonModule } from 'primeng/button';
 import { DatePickerModule } from 'primeng/datepicker';
@@ -40,10 +46,16 @@ import { OPCIONES_DIA_SEMANA, type FranjaInput, type GrupoReservaSemestralInput 
  * zona (`time` en el schema) — mismo criterio (y misma razón, UTC-5 en
  * Colombia) que `ReservaFormDialogComponent.aHoraIso`.
  *
- * Ninguna regla de negocio se replica acá: que `hora_inicio < hora_fin`, que
- * las tres FKs existan, y sobre todo el SOLAPAMIENTO con otra reserva
- * semestral o con una `Programacion` ya programada son todas del backend. El
- * 400 se muestra tal cual (ver reservas-semestrales-error.util.ts).
+ * Ninguna regla de negocio se replica acá: que las tres FKs existan, y sobre
+ * todo el SOLAPAMIENTO con otra reserva semestral o con una `Programacion`
+ * ya programada son todas del backend. El 400 se muestra tal cual (ver
+ * reservas-semestrales-error.util.ts).
+ *
+ * Excepción puntual — `hora_inicio < hora_fin` SÍ se valida acá, por franja
+ * (`horaFinPosteriorAHoraInicio` en `crearFranjaControl`), pero es una
+ * validación de FORMA pura de cliente (¿la franja tiene sentido como rango?),
+ * no la de solapamiento: no necesita estado del servidor y evita un 400 obvio
+ * antes de enviar.
  *
  * Nota de alcance — no hay control para `creado_manualmente`: el schema del
  * backend le da default `true`, y este formulario es la única vía HUMANA de
@@ -141,6 +153,11 @@ import { OPCIONES_DIA_SEMANA, type FranjaInput, type GrupoReservaSemestralInput 
                 (onClick)="quitarFranja(i)"
                 [ariaLabel]="'Quitar franja ' + (i + 1)"
               />
+              @if (franja.errors?.['horaFinAntesQueInicio']) {
+                <small class="reserva-semestral-form-dialog__error">
+                  La hora de fin debe ser posterior a la hora de inicio.
+                </small>
+              }
             </div>
           }
 
@@ -200,11 +217,14 @@ export class ReservaSemestralFormDialogComponent {
   protected readonly guardando = computed(() => this.reservasSemestralesService.crear.isPending());
 
   private crearFranjaControl() {
-    return this.fb.nonNullable.group({
-      dia: ['', Validators.required],
-      hora_inicio: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-      hora_fin: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-    });
+    return this.fb.nonNullable.group(
+      {
+        dia: ['', Validators.required],
+        hora_inicio: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+        hora_fin: this.fb.nonNullable.control<Date | null>(null, Validators.required),
+      },
+      { validators: horaFinPosteriorAHoraInicio },
+    );
   }
 
   protected agregarFranja(): void {
@@ -280,4 +300,17 @@ function aHoraIso(hora: Date): string {
 
 function dosDigitos(valor: number): string {
   return String(valor).padStart(2, '0');
+}
+
+/** Cross-field validator de FORMA pura (ver la nota del docblock del
+ * componente): solo exige que la franja tenga sentido como rango cuando
+ * ambas horas están elegidas. No repite la regla de SOLAPAMIENTO, que
+ * necesita estado del servidor y sigue siendo del backend. */
+function horaFinPosteriorAHoraInicio(control: AbstractControl): ValidationErrors | null {
+  const horaInicio = control.get('hora_inicio')?.value as Date | null;
+  const horaFin = control.get('hora_fin')?.value as Date | null;
+  if (!horaInicio || !horaFin) {
+    return null;
+  }
+  return horaFin > horaInicio ? null : { horaFinAntesQueInicio: true };
 }

@@ -93,7 +93,7 @@ export class SalonFormDialogComponent {
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
+    nombre: ['', [Validators.required, Validators.maxLength(30)]],
     bloque_id: ['', Validators.required],
     tipo_silleteria_id: ['', Validators.required],
     cantidad_sillas: [0, [Validators.required, Validators.min(0)]],

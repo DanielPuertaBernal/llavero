@@ -121,6 +121,38 @@ import { ETIQUETAS_CATEGORIA_NOVEDAD, type Novedad } from './novedades.models';
       </footer>
     </p-dialog>
   `,
+  styles: `
+    .novedad-cierre-dialog__resumen {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-2) var(--space-4);
+      margin: 0 0 var(--space-4);
+    }
+
+    .novedad-cierre-dialog__resumen dd {
+      margin: 0;
+    }
+
+    .novedad-cierre-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+
+    .novedad-cierre-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .novedad-cierre-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+  `,
 })
 export class NovedadCierreDialogComponent {
   readonly visible = model(false);

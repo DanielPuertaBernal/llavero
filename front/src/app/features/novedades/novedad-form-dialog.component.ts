@@ -96,6 +96,26 @@ import { OPCIONES_CATEGORIA_NOVEDAD, type CategoriaNovedad } from './novedades.m
       </form>
     </p-dialog>
   `,
+  styles: `
+    .novedad-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .novedad-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .novedad-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class NovedadFormDialogComponent {
   readonly visible = model(false);

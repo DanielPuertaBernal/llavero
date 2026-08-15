@@ -51,10 +51,10 @@ pytest -v
 ## Arranque en desarrollo
 
 ```bash
-python manage.py runserver
+python manage.py runserver 8080
 ```
 
-La API queda montada en `http://localhost:8000/api/` (una única instancia de `NinjaAPI`, con el router de cada uno de los 17 módulos agregado ahí — `auth`, `catalogos`, `equipos`, `usuarios`, `comunidad`, `programacion`, `monitores`, `novedades`, `reservas`, `reservas-semestrales`, `llaves`, `configuracion`, `notificaciones`, `prestamos`, `nfc`, `scheduler`; ver `config/urls.py` para la lista completa y actualizada de routers montados). Documentación interactiva autogenerada en `http://localhost:8000/api/docs`.
+La API queda montada en `http://localhost:8080/api/` (una única instancia de `NinjaAPI`, con el router de cada uno de los 17 módulos agregado ahí — `auth`, `catalogos`, `equipos`, `usuarios`, `comunidad`, `programacion`, `monitores`, `novedades`, `reservas`, `reservas-semestrales`, `llaves`, `configuracion`, `notificaciones`, `prestamos`, `nfc`, `scheduler`; ver `config/urls.py` para la lista completa y actualizada de routers montados). Documentación interactiva autogenerada en `http://localhost:8080/api/docs`.
 
 ## Despliegue del scheduler externo
 

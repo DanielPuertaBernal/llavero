@@ -153,6 +153,15 @@ const SEVERIDAD_ESTADO: Record<EstadoLlave, 'info' | 'danger' | 'success'> = {
     <app-llave-entrega-dialog [(visible)]="entregaDialogVisible" />
     <app-llave-devolucion-dialog [(visible)]="devolucionDialogVisible" [llave]="llaveADevolver()" />
   `,
+  styles: `
+    .llaves-list__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class LlavesListComponent {
   protected readonly llavesService = inject(LlavesService);

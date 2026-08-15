@@ -75,6 +75,11 @@ const BASE_URL = `${environment.apiBaseUrl}/monitores`;
       </ng-template>
     </p-table>
   `,
+  styles: `
+    .monitor-clases-docente__estado {
+      margin: 0 0 var(--space-2);
+    }
+  `,
 })
 export class MonitorClasesDocenteComponent {
   /** Requerido: sin monitoría esta vista no tiene nada que mostrar. */

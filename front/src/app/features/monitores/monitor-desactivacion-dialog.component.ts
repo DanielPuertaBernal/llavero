@@ -97,6 +97,25 @@ import { ETIQUETAS_DIA_SEMANA, type Monitor } from './monitores.models';
       </footer>
     </p-dialog>
   `,
+  styles: `
+    .monitor-desactivacion-dialog__resumen {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-2) var(--space-4);
+      margin: 0 0 var(--space-4);
+    }
+
+    .monitor-desactivacion-dialog__resumen dd {
+      margin: 0;
+    }
+
+    .monitor-desactivacion-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+  `,
 })
 export class MonitorDesactivacionDialogComponent {
   readonly visible = model(false);

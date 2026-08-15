@@ -177,6 +177,15 @@ import {
       [monitor]="monitoriaADesactivar()"
     />
   `,
+  styles: `
+    .monitores-list__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class MonitoresListComponent {
   protected readonly monitoresService = inject(MonitoresService);

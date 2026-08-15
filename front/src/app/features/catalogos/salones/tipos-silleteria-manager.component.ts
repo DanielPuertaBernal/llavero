@@ -98,11 +98,11 @@ export class TiposSilleteriaManagerComponent {
   protected readonly editandoId = signal<string | null>(null);
 
   protected readonly formNuevo = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
+    nombre: ['', [Validators.required, Validators.maxLength(50)]],
   });
 
   protected readonly formEdicion = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
+    nombre: ['', [Validators.required, Validators.maxLength(50)]],
   });
 
   protected agregar(): void {

@@ -102,11 +102,11 @@ export class BloquesManagerComponent {
   protected readonly editandoId = signal<string | null>(null);
 
   protected readonly formNuevo = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
   });
 
   protected readonly formEdicion = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
+    nombre: ['', [Validators.required, Validators.maxLength(100)]],
   });
 
   protected agregar(): void {

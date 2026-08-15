@@ -123,6 +123,34 @@ const SEVERIDAD_ORIGEN: Record<Origen, 'info' | 'success' | 'warn'> = {
       </ul>
     }
   `,
+  styles: `
+    .disponibilidad-vista__header {
+      display: flex;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .disponibilidad-vista__lista {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      list-style: none;
+      margin: 0;
+      padding: 0;
+    }
+
+    .disponibilidad-vista__item {
+      display: flex;
+      align-items: center;
+      gap: var(--space-3);
+      padding: var(--space-2) 0;
+    }
+
+    .disponibilidad-vista__titulo {
+      flex: 1;
+    }
+  `,
 })
 export class DisponibilidadVistaComponent {
   protected readonly disponibilidadService = inject(DisponibilidadService);

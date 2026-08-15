@@ -80,6 +80,15 @@ import type { Persona } from './comunidad.models';
       </ng-template>
     </p-table>
   `,
+  styles: `
+    .comunidad-list__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class ComunidadListComponent {
   protected readonly comunidadService = inject(ComunidadService);

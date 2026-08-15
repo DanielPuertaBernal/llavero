@@ -71,6 +71,31 @@ import { UbicacionesService } from './ubicaciones.service';
       </form>
     </p-dialog>
   `,
+  styles: `
+    .ubicacion-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .ubicacion-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .ubicacion-form-dialog__checkbox {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .ubicacion-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class UbicacionFormDialogComponent {
   readonly visible = model(false);

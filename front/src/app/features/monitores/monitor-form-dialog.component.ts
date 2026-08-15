@@ -148,10 +148,10 @@ export class MonitorFormDialogComponent {
   protected readonly form = this.fb.nonNullable.group({
     docente_titular_id: ['', Validators.required],
     monitor_delegado_id: ['', Validators.required],
-    materia: ['', Validators.required],
-    aula: [''],
+    materia: ['', [Validators.required, Validators.maxLength(150)]],
+    aula: ['', Validators.maxLength(30)],
     dia: this.fb.nonNullable.control<DiaSemana | null>(null),
-    horario: [''],
+    horario: ['', Validators.maxLength(30)],
   });
 
   protected readonly guardando = computed(() => this.monitoresService.crear.isPending());

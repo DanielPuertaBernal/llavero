@@ -197,6 +197,15 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
 
     <app-usuario-form-dialog [(visible)]="formDialogVisible" [usuario]="usuarioEditando()" />
   `,
+  styles: `
+    .usuarios-list__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class UsuariosListComponent {
   protected readonly usuariosService = inject(UsuariosService);

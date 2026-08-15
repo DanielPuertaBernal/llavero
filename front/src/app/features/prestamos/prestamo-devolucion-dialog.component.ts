@@ -150,6 +150,37 @@ import type { DevolucionInput, Prestamo } from './prestamos.models';
       </form>
     </p-dialog>
   `,
+  styles: `
+    .prestamo-devolucion-dialog__resumen {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-2) var(--space-4);
+      margin: 0 0 var(--space-4);
+    }
+
+    .prestamo-devolucion-dialog__resumen dd {
+      margin: 0;
+    }
+
+    .prestamo-devolucion-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .prestamo-devolucion-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .prestamo-devolucion-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class PrestamoDevolucionDialogComponent {
   readonly visible = model(false);

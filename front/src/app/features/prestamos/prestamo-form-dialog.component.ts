@@ -117,6 +117,26 @@ import { PrestamosService } from './prestamos.service';
       </form>
     </p-dialog>
   `,
+  styles: `
+    .prestamo-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .prestamo-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .prestamo-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class PrestamoFormDialogComponent {
   readonly visible = model(false);

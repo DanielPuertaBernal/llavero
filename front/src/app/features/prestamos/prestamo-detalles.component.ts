@@ -114,6 +114,22 @@ const SEVERIDAD_ESTADO_EQUIPO: Record<EstadoDetalleEquipo, 'info' | 'success'> =
       </p-table>
     </section>
   `,
+  styles: `
+    .prestamo-detalles__estado {
+      margin: 0 0 var(--space-2);
+    }
+
+    .prestamo-detalles__seccion {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      margin-bottom: var(--space-6);
+    }
+
+    .prestamo-detalles__seccion:last-child {
+      margin-bottom: 0;
+    }
+  `,
 })
 export class PrestamoDetallesComponent {
   /** Requerido: sin préstamo esta vista no tiene nada que mostrar. */

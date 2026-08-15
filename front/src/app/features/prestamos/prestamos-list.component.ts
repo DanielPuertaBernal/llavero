@@ -171,6 +171,15 @@ const SEVERIDAD_ESTADO: Record<EstadoPrestamo, 'info' | 'warn' | 'success'> = {
       [prestamo]="prestamoADevolver()"
     />
   `,
+  styles: `
+    .prestamos-list__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class PrestamosListComponent {
   protected readonly prestamosService = inject(PrestamosService);

@@ -165,7 +165,7 @@ export class ReservaFormDialogComponent {
     fecha: this.fb.nonNullable.control<Date | null>(null, Validators.required),
     hora_inicio: this.fb.nonNullable.control<Date | null>(null, Validators.required),
     hora_fin: this.fb.nonNullable.control<Date | null>(null, Validators.required),
-    motivo: [''],
+    motivo: ['', Validators.maxLength(255)],
   });
 
   protected readonly guardando = computed(() => this.reservasService.crear.isPending());

@@ -152,6 +152,19 @@ import { ETIQUETAS_DIA_SEMANA, formatearHora, type ReservaSemestral } from './re
       [franjas]="grupoACancelar()"
     />
   `,
+  styles: `
+    .reservas-semestrales-list__header {
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+
+    .reservas-semestrales-list__grupo-header {
+      padding: var(--space-2) var(--space-4);
+    }
+  `,
 })
 export class ReservasSemestralesListComponent {
   protected readonly reservasSemestralesService = inject(ReservasSemestralesService);

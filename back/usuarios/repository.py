@@ -55,7 +55,14 @@ def obtener_usuario_por_id(usuario_id):
 
 
 def obtener_usuario_por_email(email_institucional: str):
-    return Usuario.objects.filter(email_institucional=email_institucional).first()
+    """Búsqueda case-insensitive (`iexact`): el email que llega del
+    id_token de Microsoft puede variar en capitalización del dominio
+    respecto al que quedó almacenado (ver usuarios.domain.normalizar_email
+    y su docstring), y esta es la única función de lectura por email de
+    todo el módulo — cubrir la comparación acá alcanza sin duplicar la
+    normalización en cada caller.
+    """
+    return Usuario.objects.filter(email_institucional__iexact=email_institucional).first()
 
 
 def vincular_oid_microsoft(usuario_id, oid_microsoft: str):

@@ -37,14 +37,24 @@ def test_seed_crea_el_usuario_admin_con_el_email_configurado():
 
 @override_settings(SUPERUSUARIO_EMAIL="")
 def test_seed_no_crea_nada_si_la_variable_esta_vacia():
+    # No se compara contra una lista vacía: al construir la base de test,
+    # pytest-django corre TODAS las migraciones (incluida esta, con el
+    # SUPERUSUARIO_EMAIL real del .env si está configurado), así que puede
+    # haber usuarios base ya sembrados por esa corrida inicial. Lo que
+    # importa acá es que esta llamada puntual, con la variable vacía, no
+    # agrega ninguno nuevo — se compara por delta, no por total absoluto.
+    cantidad_antes = len(repository.listar_usuarios())
+
     _seed_module.sembrar_superusuario_inicial(django_apps, None)
 
-    assert repository.listar_usuarios() == []
+    assert len(repository.listar_usuarios()) == cantidad_antes
 
 
-@override_settings(SUPERUSUARIO_EMAIL="admin@uco.edu.co")
+@override_settings(SUPERUSUARIO_EMAIL="admin-idempotencia@uco.edu.co")
 def test_seed_es_idempotente():
+    cantidad_antes = len(repository.listar_usuarios())
+
     _seed_module.sembrar_superusuario_inicial(django_apps, None)
     _seed_module.sembrar_superusuario_inicial(django_apps, None)
 
-    assert len(repository.listar_usuarios()) == 1
+    assert len(repository.listar_usuarios()) == cantidad_antes + 1

@@ -140,6 +140,16 @@ def test_obtener_usuario_por_email_inexistente_devuelve_none():
     assert repository.obtener_usuario_por_email("no-existe@uco.edu.co") is None
 
 
+def test_obtener_usuario_por_email_es_case_insensitive():
+    # El id_token de Microsoft puede devolver el email con distinta
+    # capitalización de dominio (ej. @UCO.EDU.CO) que la almacenada.
+    rol = _rol()
+    ubicacion = _ubicacion()
+    creado = repository.crear_usuario("Ana Pérez", "ana.perez@uco.edu.co", rol.id, ubicacion.id)
+
+    assert repository.obtener_usuario_por_email("ANA.PEREZ@UCO.EDU.CO").id == creado.id
+
+
 # ------------------------------------------------------------------
 # vincular_oid_microsoft
 # ------------------------------------------------------------------

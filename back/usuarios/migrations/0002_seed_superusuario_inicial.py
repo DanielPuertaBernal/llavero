@@ -9,11 +9,14 @@
 from django.conf import settings
 from django.db import migrations
 
+from usuarios.domain import normalizar_email
+
 
 def sembrar_superusuario_inicial(apps, schema_editor):
     email = settings.SUPERUSUARIO_EMAIL
     if not email:
         return
+    email = normalizar_email(email)
 
     Rol = apps.get_model("catalogos", "Rol")
     Ubicacion = apps.get_model("catalogos", "Ubicacion")
@@ -37,6 +40,7 @@ def revertir_seed(apps, schema_editor):
     email = settings.SUPERUSUARIO_EMAIL
     if not email:
         return
+    email = normalizar_email(email)
 
     Usuario = apps.get_model("usuarios", "Usuario")
     Usuario.objects.filter(email_institucional=email, oid_microsoft__isnull=True).delete()

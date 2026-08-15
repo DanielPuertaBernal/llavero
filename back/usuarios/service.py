@@ -74,7 +74,7 @@ def crear_usuario(
     if catalogos_service.obtener_ubicacion(ubicacion_id) is None:
         raise ValueError(f"No existe una ubicacion con id {ubicacion_id}")
     return repository.crear_usuario(
-        nombre, email_institucional, rol_id, ubicacion_id, activo=activo
+        nombre, domain.normalizar_email(email_institucional), rol_id, ubicacion_id, activo=activo
     )
 
 
@@ -152,7 +152,11 @@ def actualizar_usuario(
     return repository.actualizar_usuario(
         usuario_id,
         nombre=nombre,
-        email_institucional=email_institucional,
+        email_institucional=(
+            domain.normalizar_email(email_institucional)
+            if email_institucional is not None
+            else None
+        ),
         rol_id=rol_id,
         ubicacion_id=ubicacion_id,
     )

@@ -49,3 +49,17 @@ def validar_desactivacion(usuario_objetivo_id, usuario_actual_id) -> None:
     """
     if str(usuario_objetivo_id) == str(usuario_actual_id):
         raise AutodesactivacionError("Un usuario no puede desactivarse a sí mismo")
+
+
+def normalizar_email(email: str) -> str:
+    """Normaliza un email institucional para comparación/almacenamiento
+    consistente: recorta espacios y pasa a minúsculas.
+
+    Necesario porque el email que llega del id_token de Microsoft puede
+    variar en capitalización del dominio (ej. `usuario@UCO.EDU.CO` vs
+    `usuario@uco.edu.co` según cómo esté configurado el tenant/la cuenta)
+    y `email_institucional` es una columna UNIQUE case-sensitive por
+    defecto en Postgres — sin esta normalización, dos capitalizaciones
+    distintas del mismo email se tratarían como usuarios distintos.
+    """
+    return email.strip().lower()

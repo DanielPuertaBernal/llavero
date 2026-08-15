@@ -7,7 +7,7 @@ probar una función de decisión.
 
 import pytest
 
-from usuarios.domain import AutodesactivacionError, validar_desactivacion
+from usuarios.domain import AutodesactivacionError, normalizar_email, validar_desactivacion
 
 
 def test_validar_desactivacion_permite_desactivar_a_otro_usuario():
@@ -35,3 +35,11 @@ def test_validar_desactivacion_compara_por_valor_no_por_identidad_de_objeto():
 
     with pytest.raises(AutodesactivacionError):
         validar_desactivacion(usuario_id, str(usuario_id))
+
+
+def test_normalizar_email_pasa_a_minusculas():
+    assert normalizar_email("Usuario@UCO.EDU.CO") == "usuario@uco.edu.co"
+
+
+def test_normalizar_email_recorta_espacios():
+    assert normalizar_email("  usuario@uco.edu.co  ") == "usuario@uco.edu.co"

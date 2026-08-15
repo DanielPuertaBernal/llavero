@@ -66,6 +66,15 @@ def test_crear_usuario_con_referencias_validas_delega_al_repository():
     assert usuario.oid_microsoft is None
 
 
+def test_crear_usuario_normaliza_el_email_a_minusculas():
+    rol = _rol()
+    ubicacion = _ubicacion()
+
+    usuario = service.crear_usuario("Ana Pérez", "Ana.Perez@UCO.EDU.CO", rol.id, ubicacion.id)
+
+    assert usuario.email_institucional == "ana.perez@uco.edu.co"
+
+
 # ------------------------------------------------------------------
 # obtener_*
 # ------------------------------------------------------------------

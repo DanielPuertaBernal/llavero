@@ -59,15 +59,17 @@ interface TarjetaKpi {
 
     <section class="dashboard-resumen__kpis">
       @for (tarjeta of tarjetas(); track tarjeta.titulo) {
-        <p-card [header]="tarjeta.titulo" [routerLink]="tarjeta.routerLink" class="dashboard-resumen__kpi">
-          @if (tarjeta.error) {
-            <p role="alert">{{ mensajeErrorKpi }}</p>
-          } @else if (tarjeta.cargando) {
-            <p>Cargando…</p>
-          } @else {
-            <p class="dashboard-resumen__kpi-valor">{{ tarjeta.valor }}</p>
-          }
-        </p-card>
+        <a [routerLink]="tarjeta.routerLink" class="dashboard-resumen__kpi">
+          <p-card [header]="tarjeta.titulo">
+            @if (tarjeta.error) {
+              <p role="alert">{{ mensajeErrorKpi }}</p>
+            } @else if (tarjeta.cargando) {
+              <p>Cargando…</p>
+            } @else {
+              <p class="dashboard-resumen__kpi-valor">{{ tarjeta.valor }}</p>
+            }
+          </p-card>
+        </a>
       }
     </section>
 
@@ -83,41 +85,41 @@ interface TarjetaKpi {
 
       @if (dashboardService.actividadReciente.isError()) {
         <p role="alert">No se pudo cargar la actividad reciente. Intenta de nuevo.</p>
+      } @else {
+        <p-table [value]="dashboardService.ultimosEventos()" [loading]="cargandoActividad()">
+          <ng-template #header>
+            <tr>
+              <th>Fecha y hora</th>
+              <th>Tipo de recurso</th>
+              <th>Tipo de evento</th>
+              <th>Procesado por</th>
+            </tr>
+          </ng-template>
+          <ng-template #body let-evento>
+            <tr>
+              <td>{{ evento.fecha_hora | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <p-tag
+                  [severity]="severidadRecurso(evento.tipo_recurso)"
+                  [value]="etiquetaRecurso(evento.tipo_recurso)"
+                />
+              </td>
+              <td>
+                <p-tag
+                  [severity]="severidadEvento(evento.tipo_evento)"
+                  [value]="etiquetaEvento(evento.tipo_evento)"
+                />
+              </td>
+              <td>{{ lookups.nombreUsuario(evento.procesado_por_id) }}</td>
+            </tr>
+          </ng-template>
+          <ng-template #emptymessage>
+            <tr>
+              <td colspan="4">No hay actividad reciente para mostrar.</td>
+            </tr>
+          </ng-template>
+        </p-table>
       }
-
-      <p-table [value]="dashboardService.ultimosEventos()" [loading]="cargandoActividad()">
-        <ng-template #header>
-          <tr>
-            <th>Fecha y hora</th>
-            <th>Tipo de recurso</th>
-            <th>Tipo de evento</th>
-            <th>Procesado por</th>
-          </tr>
-        </ng-template>
-        <ng-template #body let-evento>
-          <tr>
-            <td>{{ evento.fecha_hora | date: 'dd/MM/yyyy HH:mm' }}</td>
-            <td>
-              <p-tag
-                [severity]="severidadRecurso(evento.tipo_recurso)"
-                [value]="etiquetaRecurso(evento.tipo_recurso)"
-              />
-            </td>
-            <td>
-              <p-tag
-                [severity]="severidadEvento(evento.tipo_evento)"
-                [value]="etiquetaEvento(evento.tipo_evento)"
-              />
-            </td>
-            <td>{{ lookups.nombreUsuario(evento.procesado_por_id) }}</td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="4">No hay actividad reciente para mostrar.</td>
-          </tr>
-        </ng-template>
-      </p-table>
     </section>
   `,
 })

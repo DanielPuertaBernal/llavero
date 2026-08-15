@@ -169,4 +169,59 @@ describe('DashboardResumenComponent', () => {
     expect(fixture.nativeElement.querySelectorAll('button').length).toBe(0);
     httpMock.verify();
   });
+
+  it('las tarjetas KPI son enlaces <a> reales con href, focuseables por teclado', async () => {
+    const httpMock = configurarTestBed(usuarioAdmin);
+    const fixture = TestBed.createComponent(DashboardResumenComponent);
+    await cederMicrotask();
+    fixture.detectChanges();
+
+    flushRolYKpis(httpMock);
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      httpMock.expectOne(`${API}/historial/`).flush([]);
+    });
+    httpMock.expectOne(`${API}/usuarios/`).flush([]);
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      const enlaceKpi = fixture.nativeElement.querySelector('a[href="/llaves"]');
+      expect(enlaceKpi).toBeTruthy();
+    });
+
+    const enlacesKpi = fixture.nativeElement.querySelectorAll('.dashboard-resumen__kpi');
+    expect(enlacesKpi.length).toBe(5);
+    enlacesKpi.forEach((enlace: HTMLElement) => {
+      expect(enlace.tagName).toBe('A');
+      expect(enlace.hasAttribute('href')).toBe(true);
+    });
+    httpMock.verify();
+  });
+
+  it('cuando falla la actividad reciente, oculta la tabla (no muestra error + "sin datos" a la vez)', async () => {
+    const httpMock = configurarTestBed(usuarioAdmin);
+    const fixture = TestBed.createComponent(DashboardResumenComponent);
+    await cederMicrotask();
+    fixture.detectChanges();
+
+    flushRolYKpis(httpMock);
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      httpMock
+        .expectOne(`${API}/historial/`)
+        .flush({ detail: 'error' }, { status: 500, statusText: 'Server Error' });
+    });
+    httpMock.expectOne(`${API}/usuarios/`).flush([]);
+
+    await vi.waitFor(() => {
+      fixture.detectChanges();
+      expect(fixture.nativeElement.textContent).toContain(
+        'No se pudo cargar la actividad reciente. Intenta de nuevo.',
+      );
+    });
+
+    expect(fixture.nativeElement.querySelector('p-table')).toBeNull();
+    expect(fixture.nativeElement.textContent).not.toContain('No hay actividad reciente para mostrar.');
+    httpMock.verify();
+  });
 });

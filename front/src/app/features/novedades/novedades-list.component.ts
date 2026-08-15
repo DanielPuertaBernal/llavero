@@ -146,6 +146,15 @@ import {
     <app-novedad-form-dialog [(visible)]="formDialogVisible" />
     <app-novedad-cierre-dialog [(visible)]="cierreDialogVisible" [novedad]="novedadACerrar()" />
   `,
+  styles: `
+    .novedades-list__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class NovedadesListComponent {
   protected readonly novedadesService = inject(NovedadesService);

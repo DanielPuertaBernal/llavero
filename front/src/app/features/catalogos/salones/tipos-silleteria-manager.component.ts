@@ -88,6 +88,14 @@ import { TiposSilleteriaService } from '../tipos-silleteria/tipos-silleteria.ser
       <p role="alert">No se pudieron cargar los tipos de silletería. Intenta de nuevo.</p>
     }
   `,
+  styles: `
+    .tipos-silleteria-manager__form-nuevo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class TiposSilleteriaManagerComponent {
   protected readonly tiposSilleteriaService = inject(TiposSilleteriaService);

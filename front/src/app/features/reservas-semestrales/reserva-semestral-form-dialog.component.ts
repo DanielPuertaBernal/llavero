@@ -188,6 +188,45 @@ import { OPCIONES_DIA_SEMANA, type FranjaInput, type GrupoReservaSemestralInput 
       </form>
     </p-dialog>
   `,
+  styles: `
+    .reserva-semestral-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .reserva-semestral-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .reserva-semestral-form-dialog__franjas {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+      padding: var(--space-4);
+      margin: 0;
+    }
+
+    .reserva-semestral-form-dialog__franjas legend {
+      padding: 0 var(--space-2);
+    }
+
+    .reserva-semestral-form-dialog__franja {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-2);
+    }
+
+    .reserva-semestral-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class ReservaSemestralFormDialogComponent {
   readonly visible = model(false);

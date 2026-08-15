@@ -97,6 +97,25 @@ import {
       </footer>
     </p-dialog>
   `,
+  styles: `
+    .reserva-cancelacion-dialog__resumen {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-2) var(--space-4);
+      margin: 0 0 var(--space-4);
+    }
+
+    .reserva-cancelacion-dialog__resumen dd {
+      margin: 0;
+    }
+
+    .reserva-cancelacion-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+  `,
 })
 export class ReservaCancelacionDialogComponent {
   readonly visible = model(false);

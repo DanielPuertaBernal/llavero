@@ -99,6 +99,33 @@ import { ETIQUETAS_DIA_SEMANA, formatearHora, type ReservaSemestral } from './re
       </footer>
     </p-dialog>
   `,
+  styles: `
+    .reserva-semestral-cancelacion-dialog__resumen {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-2) var(--space-4);
+      margin: 0 0 var(--space-4);
+    }
+
+    .reserva-semestral-cancelacion-dialog__resumen dd {
+      margin: 0;
+    }
+
+    .reserva-semestral-cancelacion-dialog__franjas {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-1);
+      margin: var(--space-2) 0;
+      padding-left: var(--space-4);
+    }
+
+    .reserva-semestral-cancelacion-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-4);
+    }
+  `,
 })
 export class ReservaSemestralCancelacionDialogComponent {
   readonly visible = model(false);

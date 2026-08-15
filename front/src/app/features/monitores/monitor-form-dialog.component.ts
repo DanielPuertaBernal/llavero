@@ -147,6 +147,26 @@ const HORARIO_REGEX = /^([01]\d|2[0-3]):[0-5]\d - ([01]\d|2[0-3]):[0-5]\d$/;
       </form>
     </p-dialog>
   `,
+  styles: `
+    .monitor-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .monitor-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .monitor-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class MonitorFormDialogComponent {
   readonly visible = model(false);

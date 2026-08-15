@@ -147,6 +147,31 @@ const MENSAJE_FALLBACK_EDICION =
       </form>
     </p-dialog>
   `,
+  styles: `
+    .usuario-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .usuario-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .usuario-form-dialog__checkbox {
+      flex-direction: row;
+      align-items: center;
+    }
+
+    .usuario-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class UsuarioFormDialogComponent {
   readonly visible = model(false);

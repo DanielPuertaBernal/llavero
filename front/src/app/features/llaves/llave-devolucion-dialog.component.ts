@@ -119,6 +119,37 @@ import { OPCIONES_TIPO_ENTREGA_LLAVE, type Llave, type TipoEntregaLlave } from '
       </form>
     </p-dialog>
   `,
+  styles: `
+    .llave-devolucion-dialog__resumen {
+      display: grid;
+      grid-template-columns: auto 1fr;
+      gap: var(--space-2) var(--space-4);
+      margin: 0 0 var(--space-4);
+    }
+
+    .llave-devolucion-dialog__resumen dd {
+      margin: 0;
+    }
+
+    .llave-devolucion-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .llave-devolucion-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .llave-devolucion-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class LlaveDevolucionDialogComponent {
   readonly visible = model(false);

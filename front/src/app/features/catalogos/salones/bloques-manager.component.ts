@@ -92,6 +92,14 @@ import { BloquesService } from '../bloques/bloques.service';
       <p role="alert">No se pudieron cargar los bloques. Intenta de nuevo.</p>
     }
   `,
+  styles: `
+    .bloques-manager__form-nuevo {
+      display: flex;
+      align-items: center;
+      gap: var(--space-2);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class BloquesManagerComponent {
   protected readonly bloquesService = inject(BloquesService);

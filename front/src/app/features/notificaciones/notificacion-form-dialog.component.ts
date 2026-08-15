@@ -172,10 +172,10 @@ export class NotificacionFormDialogComponent {
       const asuntoControl = this.form.controls.asunto;
       const mensajeControl = this.form.controls.mensaje;
       if (this.modo() === 'manual') {
-        asuntoControl.setValidators([Validators.required]);
+        asuntoControl.setValidators([Validators.required, Validators.maxLength(200)]);
         mensajeControl.setValidators([Validators.required]);
       } else {
-        asuntoControl.clearValidators();
+        asuntoControl.setValidators([Validators.maxLength(200)]);
         mensajeControl.clearValidators();
       }
       asuntoControl.updateValueAndValidity({ emitEvent: false });

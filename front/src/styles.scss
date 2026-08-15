@@ -104,6 +104,107 @@ html {
   --mdc-text-button-container-height: 40px;
 }
 
+// Encabezado de página — patrón consistente en toda vista de lista/detalle
+// (ver DOC/5. Identidad Visual/Mockups/00-especificacion-visual.md,
+// "Estructura de layout estándar"): título h1 + descripción corta, seguido
+// del `<header>` propio de cada feature con su fila de filtros/acción
+// principal. Antes cada `*-list.component.ts` arrancaba directo con el
+// `<header>` de filtros, sin ningún título — comparado con AulaSync
+// (`ProgramacionPage.jsx` y páginas similares) faltaba el ancla visual de
+// "en qué pantalla estoy" que sí tienen todas sus páginas.
+.uco-page-header__title {
+  margin: 0 0 var(--space-1) 0;
+  font-family: Montserrat, sans-serif;
+  font-size: 22px;
+  font-weight: 700;
+  color: #1a1a1a;
+}
+
+.uco-page-header__desc {
+  margin: 0 0 var(--space-4) 0;
+  font-family: Montserrat, sans-serif;
+  font-size: 13px;
+  color: #6b7280;
+}
+
+// Tabla HTML simple — fuente única de verdad (ver "Tabla — fila de
+// encabezado"/"fila de datos" en la especificación visual). Antes CADA
+// `*-list.component.ts` (llaves, prestamos, usuarios, salones, ubicaciones,
+// historial, monitores, notificaciones, novedades, comunidad,
+// reservas-semestrales) declaraba una copia casi idéntica de estas reglas en
+// su propio `styles:`, con pequeñas inconsistencias de padding (`10px` vs
+// `var(--space-2) var(--space-3)` vs `0.5rem 0.75rem`) y sin hover de fila.
+// Se consolida acá y se retira la copia de cada componente — al ser estilos
+// globales (sin el atributo `_ngcontent-*` de encapsulación de Angular) esto
+// solo funciona si el componente YA NO trae su propia regla con el mismo
+// selector (esa tendría más especificidad y ganaría igual).
+.tabla-simple {
+  width: 100%;
+  border-collapse: collapse;
+  background: #ffffff;
+  border: 1px solid #e2e5e4;
+  border-radius: var(--radius-md);
+  overflow: hidden;
+}
+
+.tabla-simple th {
+  background: #f5f7f6;
+  border-bottom: 1px solid #e2e5e4;
+  font-family: Montserrat, sans-serif;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  color: #6b7280;
+  text-align: left;
+  padding: 10px 12px;
+}
+
+.tabla-simple td {
+  border-bottom: 1px solid #e2e5e4;
+  font-family: Montserrat, sans-serif;
+  font-size: 13px;
+  color: #1a1a1a;
+  padding: 10px 12px;
+}
+
+.tabla-simple tbody tr {
+  transition: background-color var(--transition-fast);
+}
+
+.tabla-simple tbody tr:hover {
+  background-color: #f5f7f6;
+}
+
+.tabla-simple tbody tr:last-child td {
+  border-bottom: none;
+}
+
+.tabla-simple__estado-vacio,
+.tabla-simple-simple__estado-vacio {
+  text-align: center;
+  font-family: Montserrat, sans-serif;
+  font-style: italic;
+  color: #6b7280;
+  padding: 24px;
+}
+
+.tabla-simple__estado-vacio-icono,
+.tabla-simple-simple__estado-vacio-icono {
+  color: #9ca3af;
+  font-size: 32px;
+  width: 32px;
+  height: 32px;
+  margin-bottom: 4px;
+}
+
+// Hover de fila para las vistas que sí usan `mat-table` (ej. `reservas-list`)
+// en vez de la tabla-simple HTML — mismo tratamiento visual, consistente con
+// `.tabla-simple tbody tr:hover` de arriba.
+.mat-mdc-table .mat-mdc-row:hover {
+  background-color: #f5f7f6;
+}
+
 body {
   // Default the application to a light color theme. This can be changed to
   // `dark` to enable the dark color theme, or to `light dark` to defer to the

@@ -86,6 +86,9 @@ import {
     MonitorClasesDocenteComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Monitores</h1>
+    <p class="uco-page-header__desc">Delegaciones de docente titular a monitor por materia.</p>
+
     <header class="monitores-list__header">
       <mat-form-field appearance="outline" class="monitores-list__buscador">
         <mat-label>Buscar</mat-label>
@@ -123,7 +126,11 @@ import {
     }
 
     @if (!cargando() && monitoriasFiltradas().length === 0) {
-      <p class="monitores-list__vacio">No hay monitorías que coincidan con el filtro.</p>
+      <p class="monitores-list__vacio">
+        <mat-icon class="monitores-list__vacio-icono">supervisor_account</mat-icon>
+        <br />
+        No hay monitorías que coincidan con el filtro.
+      </p>
     } @else {
       <table class="tabla-simple">
         <thead>
@@ -211,35 +218,19 @@ import {
       min-width: 10rem;
     }
 
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #1a1a1a;
-      text-align: left;
-      padding: 0.5rem 0.75rem;
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 0.875rem;
-      color: #1a1a1a;
-      padding: 0.5rem 0.75rem;
-    }
-
     .monitores-list__vacio {
       text-align: center;
       color: #6b7280;
       font-style: italic;
       padding: var(--space-4, 1rem);
+    }
+
+    .monitores-list__vacio-icono {
+      color: #9ca3af;
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 4px;
     }
 
     .badge {

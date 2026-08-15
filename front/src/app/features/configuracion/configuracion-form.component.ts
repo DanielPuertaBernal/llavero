@@ -2,6 +2,7 @@ import { Component, computed, effect, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 import { MatSelectModule } from '@angular/material/select';
@@ -42,6 +43,7 @@ import type { ConfiguracionInput } from './configuracion.models';
     ReactiveFormsModule,
     MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatInputModule,
     MatProgressSpinnerModule,
     MatSelectModule,
@@ -105,7 +107,10 @@ import type { ConfiguracionInput } from './configuracion.models';
             @if (guardando()) {
               <mat-spinner diameter="18" />
             } @else {
-              Guardar
+              <ng-container>
+                <mat-icon>save</mat-icon>
+                Guardar
+              </ng-container>
             }
           </button>
         </footer>

@@ -105,6 +105,9 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
     UsuarioFormDialogComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Usuarios</h1>
+    <p class="uco-page-header__desc">Padrón de operadores de la aplicación.</p>
+
     <header class="usuarios-list__header">
       <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Buscar</mat-label>
@@ -159,7 +162,11 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
           </tr>
         } @else if (usuariosFiltrados().length === 0) {
           <tr>
-            <td colspan="7" class="tabla-simple__estado-vacio">No hay usuarios que coincidan con el filtro.</td>
+            <td colspan="7" class="tabla-simple__estado-vacio">
+              <mat-icon class="tabla-simple__estado-vacio-icono">people</mat-icon>
+              <br />
+              No hay usuarios que coincidan con el filtro.
+            </td>
           </tr>
         } @else {
           @for (usuario of usuariosFiltrados(); track usuario.id) {
@@ -219,39 +226,6 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
       align-items: center;
       gap: var(--space-4);
       margin-bottom: var(--space-4);
-    }
-
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: 10px;
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      padding: 10px;
-    }
-
-    .tabla-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
-      padding: 24px;
     }
 
     .boton-peligro {

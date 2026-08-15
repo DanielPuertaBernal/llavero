@@ -42,6 +42,9 @@ import type { Persona } from './comunidad.models';
   standalone: true,
   imports: [MatFormFieldModule, MatIconModule, MatInputModule],
   template: `
+    <h1 class="uco-page-header__title">Comunidad</h1>
+    <p class="uco-page-header__desc">Directorio de personas de la universidad.</p>
+
     <header class="comunidad-list__header">
       <mat-form-field appearance="outline" subscriptSizing="dynamic" class="comunidad-list__buscador">
         <mat-icon matPrefix>search</mat-icon>
@@ -85,7 +88,11 @@ import type { Persona } from './comunidad.models';
             </tr>
           } @empty {
             <tr>
-              <td colspan="7" class="tabla-simple-simple__estado-vacio">No hay personas que coincidan con el filtro.</td>
+              <td colspan="7" class="tabla-simple-simple__estado-vacio">
+                <mat-icon class="tabla-simple-simple__estado-vacio-icono">groups</mat-icon>
+                <br />
+                No hay personas que coincidan con el filtro.
+              </td>
             </tr>
           }
         </tbody>
@@ -106,38 +113,6 @@ import type { Persona } from './comunidad.models';
       max-width: 28rem;
     }
 
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
-    }
   `,
 })
 export class ComunidadListComponent {

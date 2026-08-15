@@ -31,6 +31,9 @@ import { UbicacionesService } from './ubicaciones.service';
   standalone: true,
   imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, UbicacionFormDialogComponent],
   template: `
+    <h1 class="uco-page-header__title">Ubicaciones</h1>
+    <p class="uco-page-header__desc">Catálogo de ubicaciones y sus permisos de préstamo/devolución.</p>
+
     <header class="ubicaciones-list__header">
       <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Buscar</mat-label>
@@ -69,7 +72,11 @@ import { UbicacionesService } from './ubicaciones.service';
           </tr>
         } @else if (ubicacionesFiltradas().length === 0) {
           <tr>
-            <td colspan="5" class="tabla-simple__estado-vacio">No hay ubicaciones registradas.</td>
+            <td colspan="5" class="tabla-simple__estado-vacio">
+              <mat-icon class="tabla-simple__estado-vacio-icono">place</mat-icon>
+              <br />
+              No hay ubicaciones registradas.
+            </td>
           </tr>
         } @else {
           @for (ubicacion of ubicacionesFiltradas(); track ubicacion.id) {
@@ -119,39 +126,6 @@ import { UbicacionesService } from './ubicaciones.service';
       justify-content: space-between;
       gap: var(--space-4);
       margin-bottom: var(--space-4);
-    }
-
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: 10px;
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      padding: 10px;
-    }
-
-    .tabla-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
-      padding: 24px;
     }
 
     .boton-peligro {

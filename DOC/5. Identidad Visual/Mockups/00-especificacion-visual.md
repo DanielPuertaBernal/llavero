@@ -296,6 +296,166 @@ rojo de AulaSync. Mapeo exacto a la tabla de Paleta de arriba:
 | `danger` | Peligro/mora | `#e28210` | `#e28210` al 12% de opacidad |
 | `neutral` | Cancelado | `#1d3475` | `#1d3475` al 12% de opacidad |
 
+## Uplift de layout (título de página, tabla-simple consolidada, skeleton wireado)
+
+Segunda pasada de uplift, más profunda que la de radios/sombras/iconos de
+arriba: iba dirigida a resolver que la UI "seguía viéndose fea" incluso con
+esos tokens ya aplicados — el problema real era de LAYOUT (cada
+`*-list.component.ts` repetía su propio CSS de tabla, sin título de página,
+sin hover de fila, sin skeleton), no solo de color/radio.
+
+### Encabezado de página (`.uco-page-header__title`/`__desc`)
+
+Toda vista de lista/detalle en `front/src/app/features/*` arranca ahora con
+un `<h1 class="uco-page-header__title">` + `<p class="uco-page-header__desc">`
+antes de su propio `<header>` de filtros/acción principal (definidos en
+`front/src/styles.scss`, no en cada componente) — mismo patrón que
+`ProgramacionPage.jsx` de AulaSync (título + descripción corta + fila de
+acciones), que antes faltaba por completo: cada vista arrancaba directo con
+la fila de filtros, sin ningún ancla de "en qué pantalla estoy".
+
+### `.tabla-simple` — fuente única de verdad
+
+Antes de este uplift, CADA `*-list.component.ts` (llaves, prestamos,
+usuarios, salones, ubicaciones, historial, monitores, notificaciones,
+novedades, comunidad, reservas-semestrales, dashboard) declaraba su propia
+copia casi idéntica de `.tabla-simple`/`.tabla-simple__estado-vacio` en su
+`styles:` inline, con pequeñas inconsistencias de padding
+(`10px` vs `var(--space-2) var(--space-3)` vs `0.5rem 0.75rem`) y sin hover
+de fila. Se consolidó en `front/src/styles.scss` (una sola definición
+global) y se retiró la copia de cada componente. La versión consolidada
+agrega:
+
+- Encabezado de tabla en mayúsculas, `letter-spacing: 0.04em`, color
+  `#6b7280` sobre fondo `#f5f7f6` (antes: texto negro `#1a1a1a`, sin
+  tracking).
+- Hover de fila (`background-color: #f5f7f6` con `--transition-fast`) —
+  antes las filas no tenían ningún feedback visual al pasar el mouse.
+- Borde exterior + radio `--radius-md` en la tabla completa (antes: sin
+  borde exterior, cada celda con su propio borde suelto).
+- Mismo hover aplicado a `.mat-mdc-table .mat-mdc-row` para la única vista
+  que usa `mat-table` real (`reservas-list`), no solo la tabla-simple HTML.
+
+Nota — dos alias de clase de estado vacío (`tabla-simple__estado-vacio` y
+`tabla-simple-simple__estado-vacio`, este último por una errata de copia en
+`comunidad`/`notificaciones`/`novedades`/dashboard) siguen ambos soportados
+en la regla global: no se renombraron en cada componente para no tocar
+templates más de lo necesario, pero cualquier vista nueva debe usar el
+nombre correcto (`tabla-simple__estado-vacio`, sin duplicar "simple").
+
+### Skeleton wireado
+
+`SkeletonComponent` (`<app-skeleton>`) pasó de "creado pero sin uso real" a
+estar wireado en las 3 vistas de mayor tráfico (`llaves-list`,
+`prestamos-list`, `reservas-list`) y en el panel de dashboard
+(`dashboard-resumen`, tarjetas KPI + tabla de actividad reciente):
+reemplaza el texto plano "Cargando..." por `variant="row"` repetido (5
+filas, aproximando el conteo real esperado) mientras
+`query.isPending()` es verdadero, y `variant="text"`/`variant="card"` en
+las tarjetas KPI. El resto de vistas de menor tráfico mantiene el texto
+"Cargando..."/"Cargando X…" tal cual — no se wireó ahí para mantener el
+alcance acotado, no es una limitación técnica del componente.
+
+## Uplift estructural II (tarjeta de perfil del sidebar, agenda de reserva, tarjetas de programación)
+
+Tercera pasada de uplift, reconciliada contra CAPTURAS REALES de AulaSync
+(no descripción, screenshots concretos) que mostraban 3 patrones que
+`front/` no tenía. Igual criterio que el uplift de radios/elevación de
+arriba: solo estructura/layout, la paleta HEX sigue siendo exclusivamente
+la de la tabla de Paleta.
+
+### Tarjeta de perfil en el sidebar
+
+`front/src/app/core/shell/shell.component.ts` agrega, ARRIBA de los grupos
+de navegación (antes de "GESTIÓN DE LLAVES") y separada por un divisor de
+1px (`.shell__perfil-divisor`): un bloque `.shell__perfil` con, de arriba a
+abajo:
+
+- Avatar cuadrado-redondeado (`--radius-md`) con las iniciales del usuario
+  (hasta 2, derivadas de `AuthService.currentUser().nombre`), fondo verde
+  institucional tenue (`rgba(255,255,255,0.18)` sobre el verde de fondo del
+  sidebar).
+- Nombre del usuario, bold, blanco (`AuthService.currentUser().nombre`).
+- Subtítulo pequeño y tenue: el correo institucional
+  (`emailInstitucional`) — el schema de `UsuarioAutenticado` no trae un
+  nombre de organización/unidad propio, así que se usa el dato real
+  disponible más parecido en vez de inventar un texto fijo.
+- Píldora de rol (`.shell__perfil-rol`, fondo `#024426`, texto claro): el
+  NOMBRE legible del rol, resuelto vía `resolverNombreRol()`
+  (`core/auth/rol-resolver.ts`, ya existente y reusado tal cual — el mismo
+  resolutor que usa `rol.guard.ts`/`historial.service.ts` contra
+  `GET /api/catalogos/roles`), no un enum fijo en el cliente.
+
+Colapso del sidebar (68px): igual criterio que los labels de ítem de
+navegación — `.shell__perfil-datos` se desvanece con
+`opacity`/`max-width` (`var(--transition-layout)`), nunca `display:none`;
+el avatar se mantiene visible solo-ícono.
+
+### Reserva individual — layout de dos columnas + agenda de disponibilidad
+
+`front/src/app/features/reservas/reserva-form-dialog.component.ts`: el
+panel del diálogo pasa de una columna a un grid de dos
+(`.reserva-form-dialog__layout`, `minmax(0,1fr) minmax(260px,320px)`,
+colapsa a una columna bajo 720px). Columna izquierda: los mismos campos de
+siempre (solicitante, salón, fecha, horas, motivo) más un
+`mat-checkbox` "Entrega de llave al momento" — **NO existe
+`entrega_llave_momento` en `ReservaIndividualIn`** (ver
+`back/reservas/controller.py`), así que este toggle es SOLO de UI por
+ahora (no viaja en el payload), documentado con un TODO en el propio
+template.
+
+Columna derecha: `<app-reserva-agenda-disponibilidad>`
+(`reserva-agenda-disponibilidad.component.ts`, nuevo), un panel "Agenda de
+disponibilidad" — grilla de slots de 1h (ventana 06:00–22:00, sin contrato
+de horario de operación en el backend) coloreada contra las ocupaciones
+reales del salón+fecha elegidos, con leyenda de estados al pie:
+
+| Estado | Color | Paleta |
+|---|---|---|
+| Disponible | Verde | éxito (`#008b50`) |
+| Seleccionado | Turquesa | info (`#04b5ac`) |
+| Clase (programación académica) | Amarillo | atención (`#ffca00`) |
+| Semestral | Naranja | peligro (`#e28210`) |
+| Reserva (individual) | Azul | neutro (`#1d3475`) |
+
+Clic en un slot "Disponible" prellena `hora_inicio`/`hora_fin` del
+formulario (`onSlotElegido()`). Los datos de ocupación NO reusan
+`DisponibilidadService` de `features/disponibilidad` — ninguna feature
+importa el TypeScript de otra (ver `front/README.md`) — sino una copia
+local mínima (`reserva-disponibilidad.service.ts`/`.models.ts`) que golpea
+el mismo endpoint público `GET /api/disponibilidad/salon/{salon_id}`,
+mismo criterio de duplicación deliberada que ya usa `disponibilidad`
+contra `reservas`.
+
+### Programación académica (feature nueva)
+
+`front/src/app/features/programacion/` — el backend
+(`GET /semestres`, `POST /importar`, ver
+`back/programacion/controller.py`) ya existía sin frontend propio. Página
+nueva en `/programacion` (nav "Programación" en el grupo Catálogos):
+
+- Encabezado `.uco-page-header__title` (ícono `calendar_month` + título) +
+  `__desc` con conteo real ("N semestres cargados").
+- Botón "Importar Excel" arriba a la derecha: abre un `<input type="file">`
+  oculto, sube el `.xlsx` vía `POST /api/programacion/importar`
+  (multipart) y muestra el resultado (creadas, creadas sin docente, filas
+  omitidas con motivo) en un `Swal.fire()` propio — incluye una lista
+  desplazable de omitidas, mismos colores institucionales que
+  `NotificationService`/`ConfirmService` (no se introdujo un componente de
+  diálogo de resultado genérico nuevo para un caso de uso único).
+- Semestres como tarjetas border-first (`--radius-lg`, `--border-surface`):
+  código en verde bold, píldora "`N` registros" (conteo REAL, calculado en
+  el cliente agrupando `GET /api/programacion/` por `semestre_id` — el
+  backend no expone ese agregado), fecha inicio/fin.
+- Botones de editar/eliminar en la esquina superior derecha de cada
+  tarjeta: se muestran **deshabilitados con tooltip** ("no disponible: el
+  backend no expone..."), porque `Semestre` no tiene PATCH ni DELETE en el
+  backend — no se llama a ningún endpoint inexistente.
+- La línea "cargado el ... por ..." del mockup de referencia de AulaSync
+  **no se implementó**: el backend no guarda metadata de auditoría de la
+  carga (ni fecha de importación ni usuario), y esta feature no inventa
+  esos datos.
+
 ## Inventario de archivos de este directorio
 
 | Archivo | Contenido | Responsable |

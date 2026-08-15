@@ -1,5 +1,6 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 
 import { HistorialLookupsService } from './historial-lookups.service';
 import { HistorialService } from './historial.service';
@@ -44,8 +45,11 @@ import type { EventoHistorial, TipoEvento, TipoRecurso } from './historial.model
 @Component({
   selector: 'app-historial-list',
   standalone: true,
-  imports: [CommonModule],
+  imports: [CommonModule, MatIconModule],
   template: `
+    <h1 class="uco-page-header__title">Historial</h1>
+    <p class="uco-page-header__desc">Registro de entregas y devoluciones de llaves y equipos.</p>
+
     @if (historialService.esPortero()) {
       <span class="badge badge--info">Mostrando solo tus registros</span>
     }
@@ -72,6 +76,8 @@ import type { EventoHistorial, TipoEvento, TipoRecurso } from './historial.model
         } @else if (eventos().length === 0) {
           <tr>
             <td colspan="5" class="tabla-simple__estado-vacio">
+              <mat-icon class="tabla-simple__estado-vacio-icono">history</mat-icon>
+              <br />
               No hay eventos de historial para mostrar.
             </td>
           </tr>
@@ -98,39 +104,6 @@ import type { EventoHistorial, TipoEvento, TipoRecurso } from './historial.model
     </table>
   `,
   styles: `
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: 10px;
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      padding: 10px;
-    }
-
-    .tabla-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
-      padding: 24px;
-    }
-
     .badge {
       display: inline-block;
       border-radius: 999px;

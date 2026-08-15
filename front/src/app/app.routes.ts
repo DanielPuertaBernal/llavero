@@ -238,6 +238,18 @@ export const routes: Routes = [
             (m) => m.HistorialListComponent,
           ),
       },
+      // Décimocuarta feature real (`programacion`, ver
+      // `src/app/features/programacion/`): el backend (`GET /semestres`,
+      // `POST /importar`, ver back/programacion/controller.py) ya existía
+      // sin frontend propio. Una sola vista: carga masiva de la
+      // programación académica vía Excel y lista de semestres ya cargados.
+      {
+        path: 'programacion',
+        loadComponent: () =>
+          import('./features/programacion/programacion-list.component').then(
+            (m) => m.ProgramacionListComponent,
+          ),
+      },
       // El redirect raíz vive DENTRO del árbol de hijas del shell (no como
       // hermano de nivel superior): así entra en la misma rama protegida
       // por el único `authGuard` de arriba y termina resolviendo dentro del

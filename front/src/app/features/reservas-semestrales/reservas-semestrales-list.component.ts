@@ -85,6 +85,9 @@ interface GrupoFilas {
     ReservaSemestralCancelacionDialogComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Reservas semestrales</h1>
+    <p class="uco-page-header__desc">Franjas horarias recurrentes de salones.</p>
+
     <header class="reservas-semestrales-list__header">
       <mat-form-field appearance="outline" class="reservas-semestrales-list__buscador">
         <mat-label>Buscar</mat-label>
@@ -109,6 +112,8 @@ interface GrupoFilas {
 
     @if (!cargando() && grupos().length === 0) {
       <p class="reservas-semestrales-list__vacio">
+        <mat-icon class="reservas-semestrales-list__vacio-icono">date_range</mat-icon>
+        <br />
         No hay reservas semestrales registradas para este filtro.
       </p>
     } @else {
@@ -177,30 +182,6 @@ interface GrupoFilas {
       min-width: 20rem;
     }
 
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 0.75rem;
-      font-weight: 600;
-      color: #1a1a1a;
-      text-align: left;
-      padding: 0.5rem 0.75rem;
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 0.875rem;
-      color: #1a1a1a;
-      padding: 0.5rem 0.75rem;
-    }
-
     .reservas-semestrales-list__grupo-header td {
       background: #f5f7f6;
       padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
@@ -211,6 +192,14 @@ interface GrupoFilas {
       color: #6b7280;
       font-style: italic;
       padding: var(--space-4, 1rem);
+    }
+
+    .reservas-semestrales-list__vacio-icono {
+      color: #9ca3af;
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 4px;
     }
 
     .badge {

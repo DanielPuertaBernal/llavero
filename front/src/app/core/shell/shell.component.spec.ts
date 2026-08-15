@@ -1,3 +1,5 @@
+import { provideHttpClient } from '@angular/common/http';
+import { provideHttpClientTesting } from '@angular/common/http/testing';
 import { Component } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
 import { provideRouter } from '@angular/router';
@@ -42,6 +44,8 @@ describe('ShellComponent', () => {
     await TestBed.configureTestingModule({
       imports: [ShellComponent],
       providers: [
+        provideHttpClient(),
+        provideHttpClientTesting(),
         provideRouter([{ path: 'dashboard', component: RutaHijaDePruebaComponent }]),
         { provide: AuthService, useValue: authServiceStub },
       ],

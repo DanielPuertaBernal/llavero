@@ -7,6 +7,7 @@ import { MatIconModule } from '@angular/material/icon';
 import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 
+import { SkeletonComponent } from '../../core/shared/skeleton.component';
 import { LlaveDevolucionDialogComponent } from './llave-devolucion-dialog.component';
 import { LlaveEntregaDialogComponent } from './llave-entrega-dialog.component';
 import { LlavesLookupsService } from './llaves-lookups.service';
@@ -75,8 +76,12 @@ const CLASE_BADGE_ESTADO: Record<EstadoLlave, string> = {
     MatSelectModule,
     LlaveEntregaDialogComponent,
     LlaveDevolucionDialogComponent,
+    SkeletonComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Llaves</h1>
+    <p class="uco-page-header__desc">Préstamos y devoluciones de llaves de salones.</p>
+
     <header class="llaves-list__header">
       <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Buscar</mat-label>
@@ -112,6 +117,13 @@ const CLASE_BADGE_ESTADO: Record<EstadoLlave, string> = {
       <p role="alert">No se pudieron cargar las llaves. Intenta de nuevo.</p>
     }
 
+    @if (cargando()) {
+      <div class="llaves-list__skeleton" aria-hidden="true">
+        @for (fila of [1, 2, 3, 4, 5]; track fila) {
+          <app-skeleton variant="row" />
+        }
+      </div>
+    } @else {
     <table class="tabla-simple">
       <thead>
         <tr>
@@ -126,13 +138,11 @@ const CLASE_BADGE_ESTADO: Record<EstadoLlave, string> = {
         </tr>
       </thead>
       <tbody>
-        @if (cargando()) {
-          <tr>
-            <td colspan="8" class="tabla-simple__estado-vacio">Cargando...</td>
-          </tr>
-        } @else if (llavesFiltradas().length === 0) {
+        @if (llavesFiltradas().length === 0) {
           <tr>
             <td colspan="8" class="tabla-simple__estado-vacio">
+              <mat-icon class="tabla-simple__estado-vacio-icono">inbox</mat-icon>
+              <br />
               No hay llaves registradas para este filtro.
             </td>
           </tr>
@@ -166,6 +176,7 @@ const CLASE_BADGE_ESTADO: Record<EstadoLlave, string> = {
         }
       </tbody>
     </table>
+    }
 
     <app-llave-entrega-dialog [(visible)]="entregaDialogVisible" />
     <app-llave-devolucion-dialog [(visible)]="devolucionDialogVisible" [llave]="llaveADevolver()" />
@@ -179,37 +190,11 @@ const CLASE_BADGE_ESTADO: Record<EstadoLlave, string> = {
       margin-bottom: var(--space-4);
     }
 
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
+    .llaves-list__skeleton {
+      border: 1px solid #e2e5e4;
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
       background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: 10px;
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      padding: 10px;
-    }
-
-    .tabla-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
-      padding: 24px;
     }
 
     .badge {

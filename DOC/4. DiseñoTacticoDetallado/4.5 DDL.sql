@@ -178,7 +178,7 @@ CREATE TABLE semestre (
 CREATE TABLE programacion (
     id            UUID PRIMARY KEY,
     salon_id      UUID NOT NULL REFERENCES salon(id),
-    docente_id    UUID NOT NULL REFERENCES comunidad(id),
+    docente_id    UUID REFERENCES comunidad(id), -- nullable: Excel puede traer salon+dia+horario sin docente confirmado aun (ver programacion/model.py)
     semestre_id   UUID NOT NULL REFERENCES semestre(id),
     dia           dia_semana NOT NULL,
     hora_inicio   TIME NOT NULL,

@@ -63,7 +63,11 @@ import { BloquesService } from '../bloques/bloques.service';
           </tr>
         } @else if ((bloquesService.bloques.data() ?? []).length === 0) {
           <tr>
-            <td colspan="2" class="tabla-simple__estado-vacio">No hay bloques registrados.</td>
+            <td colspan="2" class="tabla-simple__estado-vacio">
+              <mat-icon class="tabla-simple__estado-vacio-icono">apartment</mat-icon>
+              <br />
+              No hay bloques registrados.
+            </td>
           </tr>
         } @else {
           @for (bloque of bloquesService.bloques.data() ?? []; track bloque.id) {
@@ -158,6 +162,14 @@ import { BloquesService } from '../bloques/bloques.service';
       font-style: italic;
       color: #6b7280;
       padding: 24px;
+    }
+
+    .tabla-simple__estado-vacio-icono {
+      color: #9ca3af;
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 4px;
     }
 
     .boton-peligro {

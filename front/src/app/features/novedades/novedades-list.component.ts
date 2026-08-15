@@ -76,6 +76,9 @@ import {
     NovedadCierreDialogComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Novedades</h1>
+    <p class="uco-page-header__desc">Incidentes reportados sobre llaves o equipos.</p>
+
     <header class="novedades-list__header">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Estado</mat-label>
@@ -108,6 +111,7 @@ import {
       </mat-form-field>
 
       <button mat-raised-button color="primary" type="button" (click)="abrirCrear()">
+        <mat-icon>add</mat-icon>
         Nueva novedad
       </button>
     </header>
@@ -152,6 +156,8 @@ import {
           } @empty {
             <tr>
               <td colspan="5" class="tabla-simple-simple__estado-vacio">
+                <mat-icon class="tabla-simple-simple__estado-vacio-icono">report_problem</mat-icon>
+                <br />
                 No hay novedades que coincidan con el filtro.
               </td>
             </tr>
@@ -170,39 +176,6 @@ import {
       align-items: center;
       gap: var(--space-4);
       margin-bottom: var(--space-4);
-    }
-
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
     }
 
     .badge {

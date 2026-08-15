@@ -2,7 +2,9 @@ import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
 import { RouterLink } from '@angular/router';
 import { MatCardModule } from '@angular/material/card';
+import { MatIconModule } from '@angular/material/icon';
 
+import { SkeletonComponent } from '../../core/shared/skeleton.component';
 import { DashboardLookupsService } from './dashboard-lookups.service';
 import { DashboardService } from './dashboard.service';
 import type { TipoEvento, TipoRecurso } from './dashboard.models';
@@ -17,6 +19,7 @@ import type { TipoEvento, TipoRecurso } from './dashboard.models';
 
 interface TarjetaKpi {
   titulo: string;
+  icono: string;
   valor: number | null;
   cargando: boolean;
   error: boolean;
@@ -61,26 +64,33 @@ interface TarjetaKpi {
 @Component({
   selector: 'app-dashboard-resumen',
   standalone: true,
-  imports: [CommonModule, RouterLink, MatCardModule],
+  imports: [CommonModule, RouterLink, MatCardModule, MatIconModule, SkeletonComponent],
   template: `
-    <h1>Panel de resumen</h1>
+    <h1 class="uco-page-header__title">Panel de resumen</h1>
+    <p class="uco-page-header__desc">Indicadores clave y actividad reciente de todo el sistema.</p>
 
     <section class="dashboard-resumen__kpis">
       @for (tarjeta of tarjetas(); track tarjeta.titulo) {
         <a [routerLink]="tarjeta.routerLink" class="dashboard-resumen__kpi">
           <mat-card appearance="outlined" class="dashboard-resumen__kpi-card">
-            <mat-card-header>
-              <mat-card-title class="dashboard-resumen__kpi-titulo">{{ tarjeta.titulo }}</mat-card-title>
-            </mat-card-header>
-            <mat-card-content>
-              @if (tarjeta.error) {
-                <p role="alert" class="dashboard-resumen__kpi-error">{{ mensajeErrorKpi }}</p>
-              } @else if (tarjeta.cargando) {
-                <p class="dashboard-resumen__kpi-cargando">Cargando…</p>
-              } @else {
-                <p class="dashboard-resumen__kpi-valor">{{ tarjeta.valor }}</p>
-              }
-            </mat-card-content>
+            @if (tarjeta.cargando) {
+              <mat-card-content>
+                <app-skeleton variant="text" />
+                <app-skeleton variant="card" />
+              </mat-card-content>
+            } @else {
+              <mat-card-header>
+                <mat-icon class="dashboard-resumen__kpi-icono">{{ tarjeta.icono }}</mat-icon>
+                <mat-card-title class="dashboard-resumen__kpi-titulo">{{ tarjeta.titulo }}</mat-card-title>
+              </mat-card-header>
+              <mat-card-content>
+                @if (tarjeta.error) {
+                  <p role="alert" class="dashboard-resumen__kpi-error">{{ mensajeErrorKpi }}</p>
+                } @else {
+                  <p class="dashboard-resumen__kpi-valor">{{ tarjeta.valor }}</p>
+                }
+              </mat-card-content>
+            }
           </mat-card>
         </a>
       }
@@ -99,7 +109,11 @@ interface TarjetaKpi {
       @if (dashboardService.actividadReciente.isError()) {
         <p role="alert">No se pudo cargar la actividad reciente. Intenta de nuevo.</p>
       } @else if (cargandoActividad()) {
-        <p>Cargando actividad reciente…</p>
+        <div class="dashboard-resumen__actividad-skeleton" aria-hidden="true">
+          @for (fila of [1, 2, 3, 4, 5]; track fila) {
+            <app-skeleton variant="row" />
+          }
+        </div>
       } @else {
         <table class="tabla-simple">
           <thead>
@@ -128,7 +142,11 @@ interface TarjetaKpi {
               </tr>
             } @empty {
               <tr>
-                <td colspan="4" class="tabla-simple-simple__estado-vacio">No hay actividad reciente para mostrar.</td>
+                <td colspan="4" class="tabla-simple-simple__estado-vacio">
+                  <mat-icon class="tabla-simple-simple__estado-vacio-icono">history</mat-icon>
+                  <br />
+                  No hay actividad reciente para mostrar.
+                </td>
               </tr>
             }
           </tbody>
@@ -153,13 +171,18 @@ interface TarjetaKpi {
     .dashboard-resumen__kpi-card {
       background: #f5f7f6 !important;
       border: 1px solid #e2e5e4 !important;
-      border-radius: 10px !important;
-      transition: box-shadow 0.15s ease;
+      border-radius: var(--radius-lg) !important;
+      transition: box-shadow var(--transition-fast);
     }
 
     .dashboard-resumen__kpi:hover .dashboard-resumen__kpi-card,
     .dashboard-resumen__kpi:focus-visible .dashboard-resumen__kpi-card {
-      box-shadow: 0 4px 12px rgba(26, 26, 26, 0.12);
+      box-shadow: var(--shadow-elevated);
+    }
+
+    .dashboard-resumen__kpi-icono {
+      color: #008b50;
+      margin-right: 8px;
     }
 
     .dashboard-resumen__kpi-titulo {
@@ -194,37 +217,11 @@ interface TarjetaKpi {
       margin-bottom: var(--space-4);
     }
 
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
+    .dashboard-resumen__actividad-skeleton {
+      border: 1px solid #e2e5e4;
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
       background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
     }
 
     .badge {
@@ -265,6 +262,7 @@ export class DashboardResumenComponent {
   protected readonly tarjetas = computed<TarjetaKpi[]>(() => [
     {
       titulo: 'Llaves fuera',
+      icono: 'vpn_key',
       valor: this.dashboardService.llavesFuera(),
       cargando: this.dashboardService.llaves.isPending(),
       error: this.dashboardService.llaves.isError(),
@@ -272,6 +270,7 @@ export class DashboardResumenComponent {
     },
     {
       titulo: 'Préstamos activos',
+      icono: 'assignment',
       valor: this.dashboardService.prestamosActivos(),
       cargando: this.dashboardService.prestamos.isPending(),
       error: this.dashboardService.prestamos.isError(),
@@ -279,6 +278,7 @@ export class DashboardResumenComponent {
     },
     {
       titulo: 'Novedades abiertas',
+      icono: 'report_problem',
       valor: this.dashboardService.novedadesAbiertas(),
       cargando: this.dashboardService.novedades.isPending(),
       error: this.dashboardService.novedades.isError(),
@@ -286,6 +286,7 @@ export class DashboardResumenComponent {
     },
     {
       titulo: 'Notificaciones fallidas',
+      icono: 'notifications',
       valor: this.dashboardService.notificacionesFallidas(),
       cargando: this.dashboardService.notificaciones.isPending(),
       error: this.dashboardService.notificaciones.isError(),
@@ -293,6 +294,7 @@ export class DashboardResumenComponent {
     },
     {
       titulo: 'Reservas de hoy',
+      icono: 'event',
       valor: this.dashboardService.reservasDeHoy(),
       cargando: this.dashboardService.reservas.isPending(),
       error: this.dashboardService.reservas.isError(),

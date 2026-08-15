@@ -52,6 +52,9 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
     TiposSilleteriaManagerComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Salones</h1>
+    <p class="uco-page-header__desc">Catálogo de salones, con su bloque y tipo de silletería.</p>
+
     <header class="salones-list__header">
       <mat-form-field subscriptSizing="dynamic" appearance="outline">
         <mat-label>Buscar</mat-label>
@@ -101,7 +104,11 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
           </tr>
         } @else if (salonesFiltrados().length === 0) {
           <tr>
-            <td colspan="6" class="tabla-simple__estado-vacio">No hay salones registrados.</td>
+            <td colspan="6" class="tabla-simple__estado-vacio">
+              <mat-icon class="tabla-simple__estado-vacio-icono">meeting_room</mat-icon>
+              <br />
+              No hay salones registrados.
+            </td>
           </tr>
         } @else {
           @for (salon of salonesFiltrados(); track salon.id) {
@@ -194,39 +201,6 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
       gap: var(--space-2);
     }
 
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: 10px;
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      padding: 10px;
-    }
-
-    .tabla-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
-      padding: 24px;
-    }
-
     .boton-peligro {
       color: #e28210;
     }
@@ -243,8 +217,8 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
 
     .dialogo__panel {
       background: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      border-radius: var(--radius-lg);
+      box-shadow: var(--shadow-elevated);
       width: 32rem;
       max-width: 92vw;
       max-height: 90vh;

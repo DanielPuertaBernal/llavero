@@ -1,5 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, input } from '@angular/core';
+import { MatIconModule } from '@angular/material/icon';
 import { injectQuery } from '@tanstack/angular-query-experimental';
 import { firstValueFrom } from 'rxjs';
 
@@ -36,7 +37,7 @@ const BASE_URL = `${environment.apiBaseUrl}/monitores`;
 @Component({
   selector: 'app-monitor-clases-docente',
   standalone: true,
-  imports: [],
+  imports: [MatIconModule],
   template: `
     @if (clases.isPending()) {
       <p class="monitor-clases-docente__estado">Cargando las clases del docente titular...</p>
@@ -70,6 +71,8 @@ const BASE_URL = `${environment.apiBaseUrl}/monitores`;
         } @empty {
           <tr>
             <td colspan="5" class="tabla-simple__estado-vacio">
+              <mat-icon class="tabla-simple__estado-vacio-icono">event_available</mat-icon>
+              <br />
               Este docente titular no tiene clases programadas.
             </td>
           </tr>
@@ -108,6 +111,14 @@ const BASE_URL = `${environment.apiBaseUrl}/monitores`;
       text-align: center;
       color: #6b7280;
       font-style: italic;
+    }
+
+    .tabla-simple__estado-vacio-icono {
+      color: #9ca3af;
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 4px;
     }
   `,
 })

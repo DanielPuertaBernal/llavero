@@ -2,6 +2,7 @@ import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
 import { MatButtonModule } from '@angular/material/button';
 import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
 import { MatSelectModule } from '@angular/material/select';
 
 import {
@@ -80,10 +81,14 @@ const CLASE_BADGE_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, string> = {
     FormsModule,
     MatButtonModule,
     MatFormFieldModule,
+    MatIconModule,
     MatSelectModule,
     NotificacionFormDialogComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Notificaciones</h1>
+    <p class="uco-page-header__desc">Mensajes enviados a personas de la comunidad.</p>
+
     <header class="notificaciones-list__header">
       <mat-form-field appearance="outline" subscriptSizing="dynamic">
         <mat-label>Tipo</mat-label>
@@ -114,9 +119,11 @@ const CLASE_BADGE_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, string> = {
       </mat-form-field>
 
       <button mat-stroked-button type="button" (click)="abrirRecordatorio()">
+        <mat-icon>notifications</mat-icon>
         Enviar recordatorio
       </button>
       <button mat-raised-button color="primary" type="button" (click)="abrirEnvioManual()">
+        <mat-icon>send</mat-icon>
         Enviar notificación
       </button>
     </header>
@@ -157,6 +164,7 @@ const CLASE_BADGE_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, string> = {
                     (click)="abrirReenvio(notificacion)"
                     aria-label="Reenviar notificación"
                   >
+                    <mat-icon>refresh</mat-icon>
                     Reenviar
                   </button>
                 }
@@ -165,6 +173,8 @@ const CLASE_BADGE_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, string> = {
           } @empty {
             <tr>
               <td colspan="6" class="tabla-simple-simple__estado-vacio">
+                <mat-icon class="tabla-simple-simple__estado-vacio-icono">notifications</mat-icon>
+                <br />
                 No hay notificaciones registradas para este filtro.
               </td>
             </tr>
@@ -186,39 +196,6 @@ const CLASE_BADGE_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, string> = {
       align-items: center;
       gap: var(--space-4);
       margin-bottom: var(--space-4);
-    }
-
-    .tabla-simple {
-      width: 100%;
-      border-collapse: collapse;
-      background: #ffffff;
-    }
-
-    .tabla-simple th {
-      background: #f5f7f6;
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 12px;
-      font-weight: 700;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple td {
-      border: 1px solid #e2e5e4;
-      font-family: Montserrat, sans-serif;
-      font-size: 13px;
-      color: #1a1a1a;
-      text-align: left;
-      padding: var(--space-2) var(--space-3);
-    }
-
-    .tabla-simple-simple__estado-vacio {
-      text-align: center;
-      font-family: Montserrat, sans-serif;
-      font-style: italic;
-      color: #6b7280;
     }
 
     .badge {

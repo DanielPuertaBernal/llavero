@@ -1,4 +1,5 @@
-import { Component, inject, signal } from '@angular/core';
+import { HttpClient } from '@angular/common/http';
+import { Component, computed, effect, inject, signal } from '@angular/core';
 import { RouterLink, RouterLinkActive, RouterOutlet } from '@angular/router';
 import { MatIconModule } from '@angular/material/icon';
 import { MatListModule } from '@angular/material/list';
@@ -8,10 +9,11 @@ import { MatButtonModule } from '@angular/material/button';
 import { MatTooltipModule } from '@angular/material/tooltip';
 
 import { AuthService } from '../auth/auth.service';
+import { resolverNombreRol } from '../auth/rol-resolver';
 
 interface GrupoNav {
   titulo: string;
-  items: { label: string; ruta: string }[];
+  items: { label: string; ruta: string; icono: string }[];
 }
 
 /**
@@ -78,6 +80,20 @@ interface GrupoNav {
           </span>
         </a>
 
+        <div class="shell__perfil" [class.shell__perfil--colapsado]="colapsado()">
+          <div class="shell__perfil-avatar">{{ iniciales() }}</div>
+          <div class="shell__perfil-datos" [class.shell__perfil-datos--colapsado]="colapsado()">
+            <span class="shell__perfil-nombre">{{ authService.currentUser()?.nombre ?? '—' }}</span>
+            <span class="shell__perfil-subtitulo">{{
+              authService.currentUser()?.emailInstitucional ?? ''
+            }}</span>
+            @if (rolNombre()) {
+              <span class="shell__perfil-rol">{{ rolNombre() }}</span>
+            }
+          </div>
+        </div>
+        <div class="shell__perfil-divisor"></div>
+
         @for (grupo of grupos; track grupo.titulo) {
           <div class="shell__grupo-titulo" [class.shell__grupo-titulo--colapsado]="colapsado()">
             {{ grupo.titulo }}
@@ -95,6 +111,7 @@ interface GrupoNav {
               [attr.title]="colapsado() ? item.label : null"
               [attr.aria-label]="colapsado() ? item.label : null"
             >
+              <mat-icon matListItemIcon>{{ item.icono }}</mat-icon>
               <span matListItemTitle class="shell__item-label" [class.shell__item-label--colapsado]="colapsado()">
                 {{ item.label }}
               </span>
@@ -158,6 +175,89 @@ interface GrupoNav {
       color: #ffffff;
       border-radius: var(--radius-md);
       transition: background-color var(--transition-fast);
+    }
+
+    .shell__perfil {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      padding: 12px 16px;
+      overflow: hidden;
+      transition: padding var(--transition-layout);
+    }
+
+    .shell__perfil--colapsado {
+      padding: 12px 8px;
+      justify-content: center;
+    }
+
+    .shell__perfil-avatar {
+      flex: 0 0 auto;
+      width: 36px;
+      height: 36px;
+      border-radius: var(--radius-md);
+      background: rgba(255, 255, 255, 0.18);
+      color: #ffffff;
+      font-family: Montserrat, sans-serif;
+      font-weight: 700;
+      font-size: 13px;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+    }
+
+    .shell__perfil-datos {
+      display: flex;
+      flex-direction: column;
+      gap: 4px;
+      overflow: hidden;
+      max-width: 170px;
+      opacity: 1;
+      transition:
+        opacity var(--transition-layout),
+        max-width var(--transition-layout);
+    }
+
+    .shell__perfil-datos--colapsado {
+      opacity: 0;
+      max-width: 0;
+    }
+
+    .shell__perfil-nombre {
+      color: #ffffff;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      font-weight: 700;
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .shell__perfil-subtitulo {
+      color: rgba(255, 255, 255, 0.65);
+      font-family: Montserrat, sans-serif;
+      font-size: var(--font-size-xs);
+      white-space: nowrap;
+      overflow: hidden;
+      text-overflow: ellipsis;
+    }
+
+    .shell__perfil-rol {
+      align-self: flex-start;
+      background: #024426;
+      color: #e6f5ee;
+      font-family: Poppins, sans-serif;
+      font-size: var(--font-size-2xs);
+      font-weight: 600;
+      padding: 2px 8px;
+      border-radius: 9999px;
+      white-space: nowrap;
+    }
+
+    .shell__perfil-divisor {
+      height: 1px;
+      margin: 4px 16px 8px;
+      background: rgba(255, 255, 255, 0.2);
     }
 
     .shell__grupo-titulo {
@@ -273,50 +373,78 @@ interface GrupoNav {
 })
 export class ShellComponent {
   protected readonly authService = inject(AuthService);
+  private readonly http = inject(HttpClient);
   protected readonly colapsado = signal(false);
+
+  /** Nombre legible del rol del usuario logueado, ver rol-resolver.ts. */
+  protected readonly rolNombre = signal<string | null>(null);
+
+  protected readonly iniciales = computed(() => {
+    const nombre = this.authService.currentUser()?.nombre?.trim();
+    if (!nombre) {
+      return '—';
+    }
+    const partes = nombre.split(/\s+/);
+    const primeras = partes.slice(0, 2).map((parte) => parte[0]?.toUpperCase() ?? '');
+    return primeras.join('') || '—';
+  });
+
+  constructor() {
+    effect(() => {
+      const rolId = this.authService.currentUser()?.rolId;
+      if (!rolId) {
+        this.rolNombre.set(null);
+        return;
+      }
+      void resolverNombreRol(this.http, rolId)
+        .then((nombre) => this.rolNombre.set(nombre))
+        .catch(() => this.rolNombre.set(null));
+    });
+  }
 
   protected readonly grupos: GrupoNav[] = [
     {
       titulo: 'Gestión de llaves',
       items: [
-        { label: 'Llaves', ruta: '/llaves' },
-        { label: 'Préstamos', ruta: '/prestamos' },
-        { label: 'Disponibilidad', ruta: '/disponibilidad' },
+        { label: 'Llaves', ruta: '/llaves', icono: 'vpn_key' },
+        { label: 'Préstamos', ruta: '/prestamos', icono: 'assignment' },
+        { label: 'Disponibilidad', ruta: '/disponibilidad', icono: 'event_available' },
       ],
     },
     {
       titulo: 'Reservas',
       items: [
-        { label: 'Reservas', ruta: '/reservas' },
-        { label: 'Reservas semestrales', ruta: '/reservas-semestrales' },
+        { label: 'Reservas', ruta: '/reservas', icono: 'event' },
+        { label: 'Reservas semestrales', ruta: '/reservas-semestrales', icono: 'date_range' },
       ],
     },
     {
       titulo: 'Catálogos',
       items: [
-        { label: 'Salones', ruta: '/catalogos/salones' },
-        { label: 'Ubicaciones', ruta: '/catalogos/ubicaciones' },
+        { label: 'Salones', ruta: '/catalogos/salones', icono: 'meeting_room' },
+        { label: 'Ubicaciones', ruta: '/catalogos/ubicaciones', icono: 'place' },
+        { label: 'Programación', ruta: '/programacion', icono: 'calendar_month' },
       ],
     },
     {
       titulo: 'Personas',
       items: [
-        { label: 'Usuarios', ruta: '/usuarios' },
-        { label: 'Comunidad', ruta: '/comunidad' },
-        { label: 'Monitores', ruta: '/monitores' },
+        { label: 'Usuarios', ruta: '/usuarios', icono: 'people' },
+        { label: 'Comunidad', ruta: '/comunidad', icono: 'groups' },
+        { label: 'Monitores', ruta: '/monitores', icono: 'supervisor_account' },
       ],
     },
     {
       titulo: 'Seguimiento',
       items: [
-        { label: 'Novedades', ruta: '/novedades' },
-        { label: 'Notificaciones', ruta: '/notificaciones' },
-        { label: 'Historial', ruta: '/historial' },
+        { label: 'Novedades', ruta: '/novedades', icono: 'report_problem' },
+        { label: 'Notificaciones', ruta: '/notificaciones', icono: 'notifications' },
+        { label: 'Historial', ruta: '/historial', icono: 'history' },
       ],
     },
     {
       titulo: 'Sistema',
-      items: [{ label: 'Configuración', ruta: '/configuracion' }],
+      items: [{ label: 'Configuración', ruta: '/configuracion', icono: 'settings' }],
     },
   ];
 

@@ -197,7 +197,13 @@ export class LlaveEntregaDialogComponent {
     tipo_entrega: ['', Validators.required],
     usuario_entrega_id: ['', Validators.required],
     ubicacion_entrega_id: ['', Validators.required],
-    reserva_id: [''],
+    // `reserva_id` es un `uuid.UUID` en el backend (`LlaveIn.reserva_id`, ver
+    // back/llaves/controller.py) pero acá se escribe a mano en vez de
+    // elegirse de un selector (no hay endpoint de búsqueda de reservas para
+    // alimentar uno) — el `pattern` valida la FORMA de un UUID antes de
+    // pagar el viaje de red; sigue siendo opcional (`Validators.pattern` no
+    // rechaza `''`).
+    reserva_id: ['', Validators.pattern(/^[0-9a-fA-F]{8}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{4}-[0-9a-fA-F]{12}$/)],
   });
 
   private readonly origenSeleccionado = toSignal(this.form.controls.origen.valueChanges, {

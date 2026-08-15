@@ -11,6 +11,11 @@ import { MonitoresLookupsService } from './monitores-lookups.service';
 import { MonitoresService } from './monitores.service';
 import { OPCIONES_DIA_SEMANA, type DiaSemana, type MonitorInput } from './monitores.models';
 
+/** `HH:MM - HH:MM` en 24 horas (00-23 / 00-59), separador " - " como sugiere
+ * el placeholder. Solo valida forma, no que la hora de inicio sea menor a la
+ * de fin (ver la nota del docblock del componente). */
+const HORARIO_REGEX = /^([01]\d|2[0-3]):[0-5]\d - ([01]\d|2[0-3]):[0-5]\d$/;
+
 /**
  * Diálogo de registro de una MONITORÍA (`POST /api/monitores/`, schema
  * `MonitorIn` — ver back/monitores/controller.py). Es el único "crear" de la
@@ -37,6 +42,14 @@ import { OPCIONES_DIA_SEMANA, type DiaSemana, type MonitorInput } from './monito
  * (`domain.validar_docente_distinto_de_monitor`) lo decide el backend, y su
  * 400 se muestra tal cual (ver monitores-error.util.ts) — el formulario NO
  * compara los dos selectores entre sí antes de enviar.
+ *
+ * Nota — `horario` es texto libre en el backend (`str | None`, sin
+ * estructura), pero el placeholder sugiere un formato ("Ej. 14:00 - 16:00")
+ * que el `Validators.pattern` de acá exige cuando el campo no está vacío:
+ * valida la FORMA (`HH:MM - HH:MM`, 24 horas) para atajar errores de tipeo
+ * obvios antes de guardar; no compara que la hora de inicio sea menor a la
+ * de fin porque el campo ni siquiera son dos controles reales, es un solo
+ * string libre.
  */
 @Component({
   selector: 'app-monitor-form-dialog',
@@ -109,6 +122,11 @@ import { OPCIONES_DIA_SEMANA, type DiaSemana, type MonitorInput } from './monito
             formControlName="horario"
             placeholder="Ej. 14:00 - 16:00"
           />
+          @if (form.controls.horario.errors?.['pattern']) {
+            <small class="monitor-form-dialog__error">
+              Formato esperado: HH:MM - HH:MM, en 24 horas (ej. 14:00 - 16:00).
+            </small>
+          }
         </div>
 
         <footer class="monitor-form-dialog__acciones">
@@ -151,7 +169,7 @@ export class MonitorFormDialogComponent {
     materia: ['', [Validators.required, Validators.maxLength(150)]],
     aula: ['', Validators.maxLength(30)],
     dia: this.fb.nonNullable.control<DiaSemana | null>(null),
-    horario: ['', Validators.maxLength(30)],
+    horario: ['', [Validators.maxLength(30), Validators.pattern(HORARIO_REGEX)]],
   });
 
   protected readonly guardando = computed(() => this.monitoresService.crear.isPending());

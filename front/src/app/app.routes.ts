@@ -3,7 +3,6 @@ import { Routes } from '@angular/router';
 import { AuthCallbackComponent } from './core/auth/auth-callback.component';
 import { authGuard } from './core/auth/auth.guard';
 import { crearGuardaDeRol } from './core/auth/rol.guard';
-import { DashboardPlaceholderComponent } from './dashboard-placeholder/dashboard-placeholder.component';
 
 // Todas las features protegidas viven como hijas de `ShellComponent` (ver
 // `core/shell/shell.component.ts`): un solo `authGuard` acá arriba en vez
@@ -23,7 +22,28 @@ export const routes: Routes = [
     loadComponent: () => import('./core/shell/shell.component').then((m) => m.ShellComponent),
     canActivate: [authGuard],
     children: [
-      { path: 'dashboard', component: DashboardPlaceholderComponent },
+      // Decimocuarta y última feature real (`dashboard`, ver
+      // `src/app/features/dashboard/`): reemplaza a
+      // `DashboardPlaceholderComponent` (solo prueba del flujo de auth
+      // end-to-end, ver su docblock ya retirado). Panel de resumen de SOLO
+      // LECTURA (mismo criterio que `disponibilidad`/`comunidad`/
+      // `historial`): combina, client-side, los `GET /` ya expuestos por
+      // `llaves`, `prestamos`, `novedades`, `notificaciones`, `reservas` e
+      // `historial` -- no hay ningún `back/dashboard/` propio (ver la nota
+      // de alcance completa en `features/dashboard/dashboard.models.ts`).
+      // Es la ruta raíz del shell (ver el redirect al final de este
+      // arreglo), así que cualquier usuario autenticado aterriza aquí
+      // primero, sin `crearGuardaDeRol(...)`: ningún rol queda excluido de
+      // los cinco KPI agregados (ver la nota de diseño en
+      // `dashboard.service.ts` sobre por qué solo la tarjeta de actividad
+      // reciente respeta RF28, no los KPI).
+      {
+        path: 'dashboard',
+        loadComponent: () =>
+          import('./features/dashboard/dashboard-resumen.component').then(
+            (m) => m.DashboardResumenComponent,
+          ),
+      },
       // Primera feature real (`catalogos`, ver `src/app/features/catalogos/`):
       // dos rutas hermanas (Salones/Ubicaciones son vistas independientes, no
       // una jerarquía padre-hijo) cargadas de forma perezosa con

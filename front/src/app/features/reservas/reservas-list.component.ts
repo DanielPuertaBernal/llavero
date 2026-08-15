@@ -180,6 +180,15 @@ const SEVERIDAD_ESTADO: Record<EstadoReserva, 'info' | 'success' | 'secondary' |
       [reserva]="reservaACancelar()"
     />
   `,
+  styles: `
+    .reservas-list__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class ReservasListComponent {
   protected readonly reservasService = inject(ReservasService);

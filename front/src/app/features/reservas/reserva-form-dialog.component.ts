@@ -145,6 +145,26 @@ import type { ReservaInput } from './reservas.models';
       </form>
     </p-dialog>
   `,
+  styles: `
+    .reserva-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .reserva-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .reserva-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class ReservaFormDialogComponent {
   readonly visible = model(false);

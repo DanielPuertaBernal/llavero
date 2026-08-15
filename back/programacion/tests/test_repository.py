@@ -113,6 +113,24 @@ def test_crear_programacion_lo_persiste_con_sus_fks():
     assert programacion.materia == "Cálculo I"
 
 
+def test_crear_programacion_con_docente_id_none_lo_persiste_sin_docente():
+    salon = _salon()
+    semestre = _semestre()
+
+    programacion = repository.crear_programacion(
+        salon.id,
+        None,
+        semestre.id,
+        DiaSemana.LUNES,
+        datetime.time(8, 0),
+        datetime.time(10, 0),
+        "Cálculo I",
+    )
+
+    assert programacion.id is not None
+    assert programacion.docente_id is None
+
+
 def test_crear_programacion_con_dia_invalido_falla_por_check_constraint():
     salon = _salon()
     docente = _docente()

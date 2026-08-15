@@ -199,6 +199,31 @@ def test_construir_url_autorizacion_microsoft_incluye_los_parametros_esperados()
     assert "state=" in url
 
 
+def test_construir_url_autorizacion_microsoft_sin_login_hint_no_cambia():
+    # Regresión: sin login_hint, la URL debe seguir sin ese parámetro.
+    url = service.construir_url_autorizacion_microsoft(login_hint=None)
+
+    assert "login_hint" not in url
+
+
+def test_construir_url_autorizacion_microsoft_con_login_hint_lo_incluye():
+    url = service.construir_url_autorizacion_microsoft(login_hint="nombre@uco.edu.co")
+
+    assert "login_hint=nombre%40uco.edu.co" in url
+
+
+def test_construir_url_autorizacion_microsoft_con_login_hint_hostil_no_rompe_el_prefijo_pinneado():
+    # Threat matrix: el login_hint no debe poder inyectar un redirect_uri/host
+    # distinto — la URL sigue empezando por el prefijo pinneado del tenant.
+    login_hint_hostil = "x@uco.edu.co&redirect_uri=https://evil.example.com"
+
+    url = service.construir_url_autorizacion_microsoft(login_hint=login_hint_hostil)
+
+    assert url.startswith(
+        f"https://login.microsoftonline.com/{settings.AZURE_TENANT_ID}/oauth2/v2.0/authorize?"
+    )
+
+
 # ------------------------------------------------------------------
 # procesar_callback_microsoft (mockea _intercambiar_code_por_id_token —
 # mismo patrón que _resolver_clave_publica_microsoft: aísla la llamada de

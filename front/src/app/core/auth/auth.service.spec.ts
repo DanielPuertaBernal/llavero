@@ -47,7 +47,7 @@ describe('AuthService', () => {
   });
 
   describe('login', () => {
-    it('redirige el navegador a GET /api/auth/login', () => {
+    it('redirige el navegador a GET /api/auth/login sin argumento (regresión)', () => {
       // jsdom no permite `spyOn(window.location, 'assign')` directamente
       // (la propiedad no es reconfigurable) — se reemplaza el objeto
       // `location` completo por uno propio con un `assign` espiable.
@@ -61,6 +61,21 @@ describe('AuthService', () => {
       service.login();
 
       expect(assignMock).toHaveBeenCalledWith(LOGIN_URL);
+
+      Object.defineProperty(window, 'location', { value: locationOriginal, configurable: true });
+    });
+
+    it('redirige con login_hint cuando se pasa un email', () => {
+      const assignMock = vi.fn();
+      const locationOriginal = window.location;
+      Object.defineProperty(window, 'location', {
+        value: { ...locationOriginal, assign: assignMock },
+        configurable: true,
+      });
+
+      service.login('nombre@uco.edu.co');
+
+      expect(assignMock).toHaveBeenCalledWith(`${LOGIN_URL}?login_hint=nombre%40uco.edu.co`);
 
       Object.defineProperty(window, 'location', { value: locationOriginal, configurable: true });
     });

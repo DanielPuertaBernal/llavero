@@ -44,6 +44,14 @@ function responderCargaInicial(httpMock: HttpTestingController): void {
   httpMock.expectOne(`${API}/catalogos/salones`).flush([salonDto]);
 }
 
+/** El panel de agenda (`ReservaDisponibilidadService`) dispara su propia
+ * consulta en cuanto salón+fecha quedan ambos elegidos en el formulario. */
+function responderAgenda(httpMock: HttpTestingController, fecha = '2026-08-20'): void {
+  httpMock
+    .expectOne(`${API}/disponibilidad/salon/sa-1?fecha=${fecha}`)
+    .flush({ salon_id: 'sa-1', ocupaciones: [], conflictos: [] });
+}
+
 /** Franja del 20/08/2026 de 08:00 a 10:00, en hora LOCAL — es lo que produce
  * `p-datepicker`, y lo que el componente debe serializar sin pasar por UTC. */
 const fecha20Agosto = new Date(2026, 7, 20);
@@ -104,6 +112,8 @@ describe('ReservaFormDialogComponent', () => {
     const emitidos: number[] = [];
     fixture.componentInstance.guardado.subscribe(() => emitidos.push(1));
 
+    await cederMicrotask();
+    responderAgenda(httpMock);
     fixture.componentInstance.visible.set(true);
     component.guardar();
     await cederMicrotask();
@@ -147,6 +157,8 @@ describe('ReservaFormDialogComponent', () => {
       // Solo espacios: sigue siendo "sin motivo".
       motivo: '   ',
     });
+    await cederMicrotask();
+    responderAgenda(httpMock);
     fixture.componentInstance.visible.set(true);
     component.guardar();
     await cederMicrotask();
@@ -185,6 +197,8 @@ describe('ReservaFormDialogComponent', () => {
     expect(component.form.errors?.['horaFinAntesQueInicio']).toBe(true);
 
     // No debería mandarse ninguna petición con una franja inválida.
+    await cederMicrotask();
+    responderAgenda(httpMock);
     fixture.componentInstance.visible.set(true);
     component.guardar();
     await cederMicrotask();
@@ -209,6 +223,8 @@ describe('ReservaFormDialogComponent', () => {
       hora_fin: hora10,
       motivo: '',
     });
+    await cederMicrotask();
+    responderAgenda(httpMock);
     fixture.componentInstance.visible.set(true);
     component.guardar();
     await cederMicrotask();

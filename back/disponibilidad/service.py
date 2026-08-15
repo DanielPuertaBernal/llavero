@@ -126,7 +126,10 @@ def _ocupacion_programacion(p, dia: str) -> dict:
         "hora_inicio": p.hora_inicio.isoformat(),
         "hora_fin": p.hora_fin.isoformat(),
         "titulo": p.materia,
-        "responsable_id": str(p.docente_id),
+        # `p.docente_id` puede ser None (ver programacion.model.Programacion.
+        # docente, null=True: clase con salon/dia/horario confirmados pero
+        # docente aun sin asignar) — no forzar str(None) == "None".
+        "responsable_id": str(p.docente_id) if p.docente_id is not None else None,
         "estado": None,
     }
 

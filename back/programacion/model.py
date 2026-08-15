@@ -31,10 +31,29 @@ mismo patrón ya establecido en `comunidad.model.Comunidad` con
 acá para declarar la columna, pero eso no habilita a
 `programacion.repository`/`service` a importar `catalogos.model`/
 `comunidad.model` directamente. La validación de que `salon_id` exista
-pasa por `catalogos.service.obtener_salon`, y la de `docente_id` por
-`comunidad.service.obtener_persona` (ver `service.py`). `semestre_id` no
-cruza módulos: se valida contra este mismo módulo
-(`repository.obtener_semestre_por_id`).
+pasa por `catalogos.service.obtener_salon`, y la de `docente_id` (cuando
+no es `None`, ver nota siguiente) por `comunidad.service.obtener_persona`
+(ver `service.py`). `semestre_id` no cruza módulos: se valida contra este
+mismo módulo (`repository.obtener_semestre_por_id`).
+
+Nota de diseño — `docente` con `null=True, blank=True` (divergencia
+deliberada del DDL original, que lo declaraba `NOT NULL`): un Excel real
+de programación (ver `excel_import.py`/AulaSync `programacion.service.js`,
+comentario "Si tiene salón pero sin docente asignado, se incluye con
+valor por defecto") a veces trae filas con `salon`/`dia`/`horario` ya
+confirmados pero SIN un docente todavía asignado (el proceso de asignación
+docente-materia de la facultad suele cerrarse después de que el salón y
+el horario ya están fijados). Si `docente_id` siguiera siendo `NOT NULL`,
+la única opción sería descartar esa fila del import — perdiendo el
+registro de que ese salón/horario YA está ocupado. Eso es un riesgo real:
+una `ReservaIndividual`/`ReservaSemestral` que se cree después contra ese
+mismo salón/día/horario (antes de que el docente se confirme y la fila se
+reimporte) no chocaría contra nada en `programacion`, permitiendo un
+doble-booking del salón que el propio RF15 (validación cruzada de las 3
+fuentes) existe para evitar. Por eso se prefiere crear la fila con
+`docente_id=None` (bloqueando el salón/horario desde ya) y permitir
+asignar el docente después vía edición manual, en vez de perder la franja
+por completo.
 
 Nota de diseño — `dia_semana`: el DDL lo declara como tipo ENUM nativo de
 Postgres. Igual que `equipos.model.EstadoEquipo` (ver ese módulo para el
@@ -86,7 +105,13 @@ class Semestre(models.Model):
 class Programacion(models.Model):
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
     salon = models.ForeignKey(Salon, on_delete=models.PROTECT, db_column="salon_id")
-    docente = models.ForeignKey(Comunidad, on_delete=models.PROTECT, db_column="docente_id")
+    docente = models.ForeignKey(
+        Comunidad,
+        on_delete=models.PROTECT,
+        db_column="docente_id",
+        null=True,
+        blank=True,
+    )
     semestre = models.ForeignKey(Semestre, on_delete=models.PROTECT, db_column="semestre_id")
     dia = models.CharField(max_length=10, choices=DiaSemana.choices)
     hora_inicio = models.TimeField()

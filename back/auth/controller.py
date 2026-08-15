@@ -82,8 +82,10 @@ class UsuarioAutenticadoOut(Schema):
 
 
 @router.get("/login")
-def login(request):
-    return HttpResponseRedirect(service.construir_url_autorizacion_microsoft())
+def login(request, login_hint: str | None = None):
+    return HttpResponseRedirect(
+        service.construir_url_autorizacion_microsoft(login_hint=login_hint)
+    )
 
 
 @router.get("/callback")

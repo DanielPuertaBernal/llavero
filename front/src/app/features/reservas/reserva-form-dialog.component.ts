@@ -1,13 +1,16 @@
-import { Component, computed, inject, model, output } from '@angular/core';
+import { Component, computed, effect, inject, model, output } from '@angular/core';
+import { toSignal } from '@angular/core/rxjs-interop';
 import {
   type AbstractControl,
   FormBuilder,
+  FormsModule,
   ReactiveFormsModule,
   type ValidationErrors,
   Validators,
 } from '@angular/forms';
 import { MatAutocompleteModule } from '@angular/material/autocomplete';
 import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
 import { provideNativeDateAdapter } from '@angular/material/core';
 import { MatDatepickerModule } from '@angular/material/datepicker';
 import { MatDialogModule } from '@angular/material/dialog';
@@ -18,6 +21,8 @@ import { MatTimepickerModule } from '@angular/material/timepicker';
 
 import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './reservas-error.util';
+import { ReservaAgendaDisponibilidadComponent } from './reserva-agenda-disponibilidad.component';
+import { ReservaDisponibilidadService } from './reserva-disponibilidad.service';
 import { ReservasLookupsService } from './reservas-lookups.service';
 import { ReservasService } from './reservas.service';
 import type { ReservaInput } from './reservas.models';
@@ -70,6 +75,7 @@ import type { ReservaInput } from './reservas.models';
   imports: [
     MatDialogModule,
     ReactiveFormsModule,
+    FormsModule,
     MatFormFieldModule,
     MatSelectModule,
     MatAutocompleteModule,
@@ -77,6 +83,8 @@ import type { ReservaInput } from './reservas.models';
     MatTimepickerModule,
     MatInputModule,
     MatButtonModule,
+    MatCheckboxModule,
+    ReservaAgendaDisponibilidadComponent,
   ],
   providers: [provideNativeDateAdapter()],
   template: `
@@ -85,93 +93,111 @@ import type { ReservaInput } from './reservas.models';
         <div class="dialogo__panel" role="dialog" aria-modal="true" aria-label="Registrar reserva">
           <h2 mat-dialog-title>Registrar reserva</h2>
           <mat-dialog-content>
-            <form [formGroup]="form" (ngSubmit)="guardar()" class="reserva-form-dialog__form">
-              <mat-form-field appearance="outline">
-                <mat-label>Solicitante</mat-label>
-                <input
-                  type="text"
-                  matInput
-                  id="reserva-solicitante"
-                  formControlName="solicitante_id"
-                  [matAutocomplete]="autoSolicitante"
-                  placeholder="Busca quién solicita la reserva"
-                />
-                <mat-autocomplete
-                  #autoSolicitante="matAutocomplete"
-                  [displayWith]="etiquetaPersona"
-                >
-                  @for (opcion of lookups.opcionesPersonas(); track opcion.value) {
-                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+            <div class="reserva-form-dialog__layout">
+              <form [formGroup]="form" (ngSubmit)="guardar()" class="reserva-form-dialog__form">
+                <mat-form-field appearance="outline">
+                  <mat-label>Solicitante</mat-label>
+                  <input
+                    type="text"
+                    matInput
+                    id="reserva-solicitante"
+                    formControlName="solicitante_id"
+                    [matAutocomplete]="autoSolicitante"
+                    placeholder="Busca quién solicita la reserva (por documento o nombre)"
+                  />
+                  <mat-autocomplete
+                    #autoSolicitante="matAutocomplete"
+                    [displayWith]="etiquetaPersona"
+                  >
+                    @for (opcion of lookups.opcionesPersonas(); track opcion.value) {
+                      <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                    }
+                  </mat-autocomplete>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Salón</mat-label>
+                  <mat-select id="reserva-salon" formControlName="salon_id" placeholder="Selecciona el salón">
+                    @for (salon of lookups.listaSalones(); track salon.id) {
+                      <mat-option [value]="salon.id">{{ salon.nombre }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Fecha</mat-label>
+                  <input matInput id="reserva-fecha" formControlName="fecha" [matDatepicker]="pickerFecha" />
+                  <mat-datepicker-toggle matIconSuffix [for]="pickerFecha" />
+                  <mat-datepicker #pickerFecha />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Hora de inicio</mat-label>
+                  <input
+                    matInput
+                    id="reserva-hora-inicio"
+                    formControlName="hora_inicio"
+                    [matTimepicker]="pickerInicio"
+                  />
+                  <mat-timepicker-toggle matIconSuffix [for]="pickerInicio" />
+                  <mat-timepicker #pickerInicio interval="15m" />
+                </mat-form-field>
+
+                <mat-form-field appearance="outline">
+                  <mat-label>Hora de fin</mat-label>
+                  <input
+                    matInput
+                    id="reserva-hora-fin"
+                    formControlName="hora_fin"
+                    [matTimepicker]="pickerFin"
+                  />
+                  <mat-timepicker-toggle matIconSuffix [for]="pickerFin" />
+                  <mat-timepicker #pickerFin interval="15m" />
+                  @if (form.errors?.['horaFinAntesQueInicio']) {
+                    <mat-error>La hora de fin debe ser posterior a la hora de inicio.</mat-error>
                   }
-                </mat-autocomplete>
-              </mat-form-field>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Salón</mat-label>
-                <mat-select id="reserva-salon" formControlName="salon_id" placeholder="Selecciona el salón">
-                  @for (salon of lookups.listaSalones(); track salon.id) {
-                    <mat-option [value]="salon.id">{{ salon.nombre }}</mat-option>
-                  }
-                </mat-select>
-              </mat-form-field>
+                <mat-form-field appearance="outline">
+                  <mat-label>Motivo (opcional)</mat-label>
+                  <textarea
+                    matInput
+                    id="reserva-motivo"
+                    formControlName="motivo"
+                    rows="2"
+                    placeholder="Para qué se usará el salón"
+                  ></textarea>
+                </mat-form-field>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Fecha</mat-label>
-                <input matInput id="reserva-fecha" formControlName="fecha" [matDatepicker]="pickerFecha" />
-                <mat-datepicker-toggle matIconSuffix [for]="pickerFecha" />
-                <mat-datepicker #pickerFecha />
-              </mat-form-field>
+                <!-- TODO: entrega_llave_momento no existe en ReservaIndividualIn
+                     (ver back/reservas/controller.py) -- este toggle es SOLO de UI
+                     por ahora (no se envía en el payload). Si se agrega el campo al
+                     backend, incluirlo en guardar() sin más cambios de UI. -->
+                <mat-checkbox [(ngModel)]="entregaLlaveAlMomento" [ngModelOptions]="{ standalone: true }">
+                  Entrega de llave al momento
+                </mat-checkbox>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Hora de inicio</mat-label>
-                <input
-                  matInput
-                  id="reserva-hora-inicio"
-                  formControlName="hora_inicio"
-                  [matTimepicker]="pickerInicio"
-                />
-                <mat-timepicker-toggle matIconSuffix [for]="pickerInicio" />
-                <mat-timepicker #pickerInicio interval="15m" />
-              </mat-form-field>
+                <mat-dialog-actions align="end">
+                  <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+                  <button
+                    mat-raised-button
+                    color="primary"
+                    type="submit"
+                    [disabled]="form.invalid || guardando()"
+                  >
+                    {{ guardando() ? 'Registrando...' : 'Registrar reserva' }}
+                  </button>
+                </mat-dialog-actions>
+              </form>
 
-              <mat-form-field appearance="outline">
-                <mat-label>Hora de fin</mat-label>
-                <input
-                  matInput
-                  id="reserva-hora-fin"
-                  formControlName="hora_fin"
-                  [matTimepicker]="pickerFin"
-                />
-                <mat-timepicker-toggle matIconSuffix [for]="pickerFin" />
-                <mat-timepicker #pickerFin interval="15m" />
-                @if (form.errors?.['horaFinAntesQueInicio']) {
-                  <mat-error>La hora de fin debe ser posterior a la hora de inicio.</mat-error>
-                }
-              </mat-form-field>
-
-              <mat-form-field appearance="outline">
-                <mat-label>Motivo (opcional)</mat-label>
-                <textarea
-                  matInput
-                  id="reserva-motivo"
-                  formControlName="motivo"
-                  rows="2"
-                  placeholder="Para qué se usará el salón"
-                ></textarea>
-              </mat-form-field>
-
-              <mat-dialog-actions align="end">
-                <button mat-button type="button" (click)="cancelar()">Cancelar</button>
-                <button
-                  mat-raised-button
-                  color="primary"
-                  type="submit"
-                  [disabled]="form.invalid || guardando()"
-                >
-                  {{ guardando() ? 'Registrando...' : 'Registrar reserva' }}
-                </button>
-              </mat-dialog-actions>
-            </form>
+              <app-reserva-agenda-disponibilidad
+                [salonSeleccionado]="!!form.controls.salon_id.value && !!form.controls.fecha.value"
+                [cargando]="disponibilidadService.agenda.isPending()"
+                [ocupaciones]="disponibilidadService.agenda.data()?.ocupaciones ?? []"
+                [rangoSeleccionadoMin]="rangoSeleccionadoMin()"
+                (slotElegido)="onSlotElegido($event)"
+              />
+            </div>
           </mat-dialog-content>
         </div>
       </div>
@@ -190,13 +216,26 @@ import type { ReservaInput } from './reservas.models';
 
     .dialogo__panel {
       background: #ffffff;
-      border-radius: 10px;
-      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
-      width: 32rem;
-      max-width: 90vw;
+      border-radius: var(--radius-lg, 12px);
+      box-shadow: var(--shadow-elevated, 0 10px 40px rgba(0, 0, 0, 0.2));
+      width: 56rem;
+      max-width: 95vw;
       max-height: 90vh;
       overflow-y: auto;
       padding: var(--space-4, 1rem);
+    }
+
+    .reserva-form-dialog__layout {
+      display: grid;
+      grid-template-columns: minmax(0, 1fr) minmax(260px, 320px);
+      gap: var(--space-4, 1rem);
+      align-items: start;
+    }
+
+    @media (max-width: 720px) {
+      .reserva-form-dialog__layout {
+        grid-template-columns: 1fr;
+      }
     }
 
     .reserva-form-dialog__form {
@@ -211,9 +250,13 @@ export class ReservaFormDialogComponent {
   readonly guardado = output<void>();
 
   protected readonly lookups = inject(ReservasLookupsService);
+  protected readonly disponibilidadService = inject(ReservaDisponibilidadService);
   private readonly reservasService = inject(ReservasService);
   private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
+
+  /** UI-only, ver el TODO junto al `mat-checkbox` en el template. */
+  protected entregaLlaveAlMomento = false;
 
   // Los dos ids son `string` (`''` = "sin seleccionar", que
   // `Validators.required` rechaza). Fecha y horas son `Date | null` porque eso
@@ -236,6 +279,62 @@ export class ReservaFormDialogComponent {
 
   protected readonly etiquetaPersona = (personaId: string): string =>
     this.lookups.opcionesPersonas().find((opcion) => opcion.value === personaId)?.label ?? '';
+
+  // Refleja los valores del formulario reactivo como signals para alimentar
+  // el panel de agenda (`ReservaDisponibilidadService` es reactivo a
+  // signals, no a `FormGroup.valueChanges` directamente).
+  private readonly salonIdValue = toSignal(this.form.controls.salon_id.valueChanges, {
+    initialValue: this.form.controls.salon_id.value,
+  });
+  private readonly fechaValue = toSignal(this.form.controls.fecha.valueChanges, {
+    initialValue: this.form.controls.fecha.value,
+  });
+  private readonly horaInicioValue = toSignal(this.form.controls.hora_inicio.valueChanges, {
+    initialValue: this.form.controls.hora_inicio.value,
+  });
+  private readonly horaFinValue = toSignal(this.form.controls.hora_fin.valueChanges, {
+    initialValue: this.form.controls.hora_fin.value,
+  });
+
+  /** Rango horario elegido actualmente, en minutos desde medianoche (para
+   * pintar "seleccionado" en el panel de agenda). `null` mientras falte
+   * alguna de las dos horas. */
+  protected readonly rangoSeleccionadoMin = computed(() => {
+    const inicio = this.horaInicioValue();
+    const fin = this.horaFinValue();
+    if (!inicio || !fin) {
+      return null;
+    }
+    return {
+      inicio: inicio.getHours() * 60 + inicio.getMinutes(),
+      fin: fin.getHours() * 60 + fin.getMinutes(),
+    };
+  });
+
+  constructor() {
+    // Alimenta `ReservaDisponibilidadService` con salón+fecha del propio
+    // formulario en curso — ver el docblock de `ReservaAgendaDisponibilidadComponent`.
+    effect(() => {
+      this.disponibilidadService.salonId.set(this.salonIdValue() || null);
+      const fecha = this.fechaValue();
+      this.disponibilidadService.fecha.set(fecha ? aFechaIso(fecha) : null);
+    });
+  }
+
+  /** Clic en un slot libre del panel de agenda: prellena hora_inicio/hora_fin
+   * combinando la fecha ya elegida con la hora del slot (mismo criterio de
+   * componentes LOCALES que el resto del diálogo, ver docblock de arriba). */
+  protected onSlotElegido(rango: { inicioMin: number; finMin: number }): void {
+    const fecha = this.form.controls.fecha.value;
+    if (!fecha) {
+      return;
+    }
+    const horaInicio = new Date(fecha);
+    horaInicio.setHours(Math.floor(rango.inicioMin / 60), rango.inicioMin % 60, 0, 0);
+    const horaFin = new Date(fecha);
+    horaFin.setHours(Math.floor(rango.finMin / 60), rango.finMin % 60, 0, 0);
+    this.form.patchValue({ hora_inicio: horaInicio, hora_fin: horaFin });
+  }
 
   protected guardar(): void {
     if (this.form.invalid) {
@@ -271,6 +370,7 @@ export class ReservaFormDialogComponent {
           hora_fin: null,
           motivo: '',
         });
+        this.entregaLlaveAlMomento = false;
         this.guardado.emit();
         this.notificationService.success('Reserva registrada');
       },

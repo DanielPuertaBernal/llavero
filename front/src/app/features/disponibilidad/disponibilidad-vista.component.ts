@@ -110,13 +110,21 @@ const CLASE_BADGE_ORIGEN: Record<Origen, string> = {
     </header>
 
     @if (!disponibilidadService.salonId()) {
-      <p>Selecciona un salón para consultar su disponibilidad.</p>
+      <p class="disponibilidad-vista__vacio">
+        <mat-icon class="disponibilidad-vista__vacio-icono">meeting_room</mat-icon>
+        <br />
+        Selecciona un salón para consultar su disponibilidad.
+      </p>
     } @else if (disponibilidadService.disponibilidad.isError()) {
       <p role="alert">{{ mensajeError() }}</p>
     } @else if (disponibilidadService.disponibilidad.isPending()) {
       <p>Cargando disponibilidad...</p>
     } @else if (ocupacionesOrdenadas().length === 0) {
-      <p>No hay ocupaciones registradas para este salón en esta fecha.</p>
+      <p class="disponibilidad-vista__vacio">
+        <mat-icon class="disponibilidad-vista__vacio-icono">event_available</mat-icon>
+        <br />
+        No hay ocupaciones registradas para este salón en esta fecha.
+      </p>
     } @else {
       <ul class="disponibilidad-vista__lista">
         @for (ocupacion of ocupacionesOrdenadas(); track ocupacion.id) {
@@ -168,6 +176,21 @@ const CLASE_BADGE_ORIGEN: Record<Origen, string> = {
 
     .disponibilidad-vista__titulo {
       flex: 1;
+    }
+
+    .disponibilidad-vista__vacio {
+      text-align: center;
+      color: #6b7280;
+      font-style: italic;
+      padding: var(--space-4);
+    }
+
+    .disponibilidad-vista__vacio-icono {
+      color: #9ca3af;
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 4px;
     }
 
     .badge {

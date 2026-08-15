@@ -215,10 +215,19 @@ def _validar_state(state: str) -> None:
         raise ValueError(_CREDENCIALES_INVALIDAS) from exc
 
 
-def construir_url_autorizacion_microsoft() -> str:
+def construir_url_autorizacion_microsoft(login_hint: str | None = None) -> str:
     """Arma la URL de autorización de Microsoft (Authorization Code,
     `response_mode=query`) para `GET /login`, con un `state` nuevo de un
-    solo uso."""
+    solo uso.
+
+    `login_hint` (opcional) prellena el email en el formulario de login de
+    Microsoft — viene de la pantalla propia `/login` del frontend (ver
+    login-institucional). Se agrega tal cual a `params` (sin validar ni
+    sanitizar acá) y `urlencode` ya lo escapa como cualquier otro valor del
+    querystring, así que no hay forma de que inyecte otro parámetro o
+    cambie el host/tenant pinneado en `base_url`. La validación de dominio
+    institucional es solo UX del frontend — acá no se duplica.
+    """
     params = {
         "client_id": settings.AZURE_CLIENT_ID,
         "redirect_uri": settings.AZURE_REDIRECT_URI,
@@ -227,6 +236,8 @@ def construir_url_autorizacion_microsoft() -> str:
         "scope": "openid profile email",
         "state": generar_state(),
     }
+    if login_hint:
+        params["login_hint"] = login_hint
     base_url = _AUTHORIZE_URL_TEMPLATE.format(tenant_id=settings.AZURE_TENANT_ID)
     return f"{base_url}?{urlencode(params)}"
 

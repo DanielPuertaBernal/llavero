@@ -47,13 +47,18 @@ def listar_programaciones():
 
 def crear_programacion(
     salon_id,
-    docente_id,
-    semestre_id,
-    dia: str,
-    hora_inicio,
-    hora_fin,
-    materia: str,
+    docente_id=None,
+    semestre_id=None,
+    dia: str = None,
+    hora_inicio=None,
+    hora_fin=None,
+    materia: str = None,
 ) -> Programacion:
+    """`docente_id=None` es un valor válido (ver `model.Programacion.docente`
+    con `null=True`) — el resto de defaults en esta firma existen
+    únicamente para permitir que `docente_id` tenga un default sin
+    reordenar los parámetros posicionales (ver nota de diseño en
+    `service.crear_programacion`)."""
     return Programacion.objects.create(
         salon_id=salon_id,
         docente_id=docente_id,

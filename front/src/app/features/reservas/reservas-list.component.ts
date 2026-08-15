@@ -7,6 +7,7 @@ import { MatInputModule } from '@angular/material/input';
 import { MatSelectModule } from '@angular/material/select';
 import { MatTableModule } from '@angular/material/table';
 
+import { SkeletonComponent } from '../../core/shared/skeleton.component';
 import { ReservaCancelacionDialogComponent } from './reserva-cancelacion-dialog.component';
 import { ReservaFormDialogComponent } from './reserva-form-dialog.component';
 import { ReservasLookupsService } from './reservas-lookups.service';
@@ -95,8 +96,12 @@ const CLASE_BADGE_ESTADO: Record<EstadoReserva, string> = {
     MatSelectModule,
     ReservaFormDialogComponent,
     ReservaCancelacionDialogComponent,
+    SkeletonComponent,
   ],
   template: `
+    <h1 class="uco-page-header__title">Reservas</h1>
+    <p class="uco-page-header__desc">Reservas individuales de salones.</p>
+
     <header class="reservas-list__header">
       <mat-form-field appearance="outline" class="reservas-list__buscador">
         <mat-label>Buscar</mat-label>
@@ -148,6 +153,13 @@ const CLASE_BADGE_ESTADO: Record<EstadoReserva, string> = {
       <p role="alert">No se pudieron cargar las reservas. Intenta de nuevo.</p>
     }
 
+    @if (cargando()) {
+      <div class="reservas-list__skeleton" aria-hidden="true">
+        @for (fila of [1, 2, 3, 4, 5]; track fila) {
+          <app-skeleton variant="row" />
+        }
+      </div>
+    } @else {
     <table mat-table [dataSource]="filtradas()" class="reservas-list__tabla">
       <ng-container matColumnDef="salon">
         <th mat-header-cell *matHeaderCellDef>Salón</th>
@@ -203,8 +215,13 @@ const CLASE_BADGE_ESTADO: Record<EstadoReserva, string> = {
       <tr mat-row *matRowDef="let row; columns: columnas"></tr>
     </table>
 
-    @if (!cargando() && filtradas().length === 0) {
-      <p class="reservas-list__vacio">No hay reservas registradas para este filtro.</p>
+    @if (filtradas().length === 0) {
+      <p class="reservas-list__vacio">
+        <mat-icon class="reservas-list__vacio-icono">event</mat-icon>
+        <br />
+        No hay reservas registradas para este filtro.
+      </p>
+    }
     }
 
     <app-reserva-form-dialog [(visible)]="formDialogVisible" />
@@ -234,11 +251,26 @@ const CLASE_BADGE_ESTADO: Record<EstadoReserva, string> = {
       width: 100%;
     }
 
+    .reservas-list__skeleton {
+      border: 1px solid #e2e5e4;
+      border-radius: var(--radius-md);
+      padding: var(--space-3);
+      background: #ffffff;
+    }
+
     .reservas-list__vacio {
       text-align: center;
       color: #6b7280;
       font-style: italic;
       padding: var(--space-4, 1rem);
+    }
+
+    .reservas-list__vacio-icono {
+      color: #9ca3af;
+      font-size: 32px;
+      width: 32px;
+      height: 32px;
+      margin-bottom: 4px;
     }
 
     .badge {

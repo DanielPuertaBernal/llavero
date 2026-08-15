@@ -48,9 +48,17 @@ export class AuthService {
   readonly isAuthenticated = computed(() => this.accessTokenSignal() !== null);
   readonly currentUser = computed(() => this.currentUserSignal());
 
-  /** Redirige el navegador al login federado (backend, no MSAL). */
-  login(): void {
-    window.location.assign(`${environment.apiBaseUrl}/auth/login`);
+  /**
+   * Redirige el navegador al login federado (backend, no MSAL). Si se pasa
+   * `email` (institucional, validado en `LoginComponent`), se agrega como
+   * `login_hint` en la query string para prellenar el formulario de
+   * Microsoft — sin `email`, la URL queda igual que siempre (regresión).
+   */
+  login(email?: string): void {
+    const url = email
+      ? `${environment.apiBaseUrl}/auth/login?login_hint=${encodeURIComponent(email)}`
+      : `${environment.apiBaseUrl}/auth/login`;
+    window.location.assign(url);
   }
 
   /**

@@ -30,3 +30,7 @@ httpx==0.28.1
 # cabeceras Access-Control-Allow-* que este middleware agrega — ver
 # CORS_ALLOWED_ORIGINS en settings.py.
 django-cors-headers==4.9.0
+# Lee el .xlsx subido en `POST /programacion/importar` (carga masiva de
+# programación desde Excel, ver programacion/excel_import.py) — solo
+# parseo de celdas, no se usa ningún otro feature de la librería.
+openpyxl==3.1.5

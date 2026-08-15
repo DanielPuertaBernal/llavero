@@ -159,6 +159,15 @@ const SEVERIDAD_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, 'success' | 'dange
       [precarga]="notificacionAReenviar()"
     />
   `,
+  styles: `
+    .notificaciones-list__header {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: var(--space-4);
+      margin-bottom: var(--space-4);
+    }
+  `,
 })
 export class NotificacionesListComponent {
   protected readonly notificacionesService = inject(NotificacionesService);

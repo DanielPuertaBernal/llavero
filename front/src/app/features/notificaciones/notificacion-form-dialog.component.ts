@@ -141,6 +141,26 @@ export interface NotificacionPrecarga {
       </form>
     </p-dialog>
   `,
+  styles: `
+    .notificacion-form-dialog__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+    }
+
+    .notificacion-form-dialog__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .notificacion-form-dialog__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class NotificacionFormDialogComponent {
   readonly visible = model(false);

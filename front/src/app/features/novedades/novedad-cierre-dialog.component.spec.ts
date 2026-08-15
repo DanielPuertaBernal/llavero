@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { environment } from '../../../environments/environment';
 import { NovedadCierreDialogComponent } from './novedad-cierre-dialog.component';
 import type { Novedad } from './novedades.models';
@@ -59,7 +59,6 @@ describe('NovedadCierreDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -193,8 +192,8 @@ describe('NovedadCierreDialogComponent', () => {
     fixture.componentInstance.visible.set(true);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as CierreDialogInternals;
     component.form.setValue({ solucion: 'Se reemplazó la llave' });
@@ -209,11 +208,9 @@ describe('NovedadCierreDialogComponent', () => {
       );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'La solución no puede estar vacía',
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        'La solución no puede estar vacía',
       ),
     );
     expect(fixture.componentInstance.visible()).toBe(true);

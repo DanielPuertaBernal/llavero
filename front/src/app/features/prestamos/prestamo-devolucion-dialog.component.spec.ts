@@ -1,10 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../core/shared/notification.service';
 import { PrestamoDevolucionDialogComponent } from './prestamo-devolucion-dialog.component';
 import { PrestamoDetallesService } from './prestamo-detalles.service';
 import type { Prestamo } from './prestamos.models';
@@ -109,7 +109,6 @@ describe('PrestamoDevolucionDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -264,8 +263,8 @@ describe('PrestamoDevolucionDialogComponent', () => {
     await cederMicrotask();
     responderDetalles(httpMock);
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as DevolucionDialogInternals;
     component.form.setValue({
@@ -282,8 +281,9 @@ describe('PrestamoDevolucionDialogComponent', () => {
       .flush({ detail: 'El equipo ya fue devuelto' }, { status: 400, statusText: 'Bad Request' });
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'error', detail: 'El equipo ya fue devuelto' }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo registrar la devolución',
+        'El equipo ya fue devuelto',
       ),
     );
     expect(fixture.componentInstance.visible()).toBe(true);

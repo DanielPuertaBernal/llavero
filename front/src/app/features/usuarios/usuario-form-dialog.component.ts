@@ -1,12 +1,14 @@
 import { Component, computed, effect, inject, input, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './usuarios-error.util';
 import { UsuariosLookupsService } from './usuarios-lookups.service';
 import { UsuariosService } from './usuarios.service';
@@ -47,7 +49,7 @@ const MENSAJE_FALLBACK_EDICION =
  * con éxito y el usuario seguiría activo. Por eso se oculta, y el estado se
  * cambia desde las acciones de la lista (ver `UsuariosListComponent`).
  *
- * `rol_id` y `ubicacion_id` se eligen con un `p-select` alimentado por
+ * `rol_id` y `ubicacion_id` se eligen con un `mat-select` alimentado por
  * `UsuariosLookupsService`, nunca pegando un UUID a mano.
  *
  * Nota de diseño — validación: `Validators.email` es una comprobación de
@@ -58,118 +60,131 @@ const MENSAJE_FALLBACK_EDICION =
  * usuarios-error.util.ts). Que el `rol_id`/`ubicacion_id` existan tampoco
  * se revalida: los selectores ya solo ofrecen ids del propio catálogo, y el
  * backend es la autoridad final.
+ *
+ * Migrado de PrimeNG (`p-dialog`) a Angular Material: se mantiene el mismo
+ * patrón de visibilidad (`model<boolean>`) para no romper la API pública
+ * del componente (`app-usuario-form-dialog [(visible)]="..."` en
+ * `usuarios-list.component.ts`); la implementación interna usa las
+ * directivas reales de `MatDialogModule` dentro de un overlay condicional,
+ * mismo criterio que los diálogos de `catalogos`.
  */
 @Component({
   selector: 'app-usuario-form-dialog',
   standalone: true,
   imports: [
-    DialogModule,
     ReactiveFormsModule,
-    InputTextModule,
-    SelectModule,
-    CheckboxModule,
-    ButtonModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
   ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      [header]="usuario() ? 'Editar usuario' : 'Nuevo usuario'"
-      [modal]="true"
-      [style]="{ width: '30rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="usuario-form-dialog__form">
-        <div class="usuario-form-dialog__campo">
-          <label for="usuario-nombre">Nombre</label>
-          <input pInputText id="usuario-nombre" formControlName="nombre" />
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="usuario-form-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="usuario-form-titulo">
+            {{ usuario() ? 'Editar usuario' : 'Nuevo usuario' }}
+          </h2>
+
+          <mat-dialog-content>
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="usuario-form-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Nombre</mat-label>
+                <input matInput id="usuario-nombre" formControlName="nombre" />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Correo institucional</mat-label>
+                <input
+                  matInput
+                  id="usuario-email"
+                  type="email"
+                  formControlName="email_institucional"
+                  placeholder="nombre@uco.edu.co"
+                />
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Rol</mat-label>
+                <mat-select id="usuario-rol" formControlName="rol_id" placeholder="Selecciona un rol">
+                  @for (opcion of lookups.opcionesRoles(); track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Ubicación</mat-label>
+                <mat-select id="usuario-ubicacion" formControlName="ubicacion_id" placeholder="Selecciona una ubicación">
+                  @for (opcion of lookups.opcionesUbicaciones(); track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <!-- Solo en creación: UsuarioPatch no acepta activo (ver el
+                   docblock). En edición, el estado se cambia desde la lista. -->
+              @if (!usuario()) {
+                <mat-checkbox formControlName="activo" id="usuario-activo">Usuario activo</mat-checkbox>
+              }
+            </form>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="cancelar()">Cancelar</button>
+            <button
+              type="submit"
+              mat-raised-button
+              color="primary"
+              [disabled]="form.invalid || guardando()"
+              (click)="guardar()"
+            >
+              @if (guardando()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                {{ usuario() ? 'Guardar cambios' : 'Crear usuario' }}
+              }
+            </button>
+          </mat-dialog-actions>
         </div>
-
-        <div class="usuario-form-dialog__campo">
-          <label for="usuario-email">Correo institucional</label>
-          <input
-            pInputText
-            id="usuario-email"
-            type="email"
-            formControlName="email_institucional"
-            placeholder="nombre@uco.edu.co"
-          />
-        </div>
-
-        <div class="usuario-form-dialog__campo">
-          <label for="usuario-rol">Rol</label>
-          <p-select
-            id="usuario-rol"
-            formControlName="rol_id"
-            [options]="lookups.opcionesRoles()"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona un rol"
-          />
-        </div>
-
-        <div class="usuario-form-dialog__campo">
-          <label for="usuario-ubicacion">Ubicación</label>
-          <p-select
-            id="usuario-ubicacion"
-            formControlName="ubicacion_id"
-            [options]="lookups.opcionesUbicaciones()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona una ubicación"
-          />
-        </div>
-
-        <!-- Solo en creación: UsuarioPatch no acepta activo (ver el
-             docblock). En edición, el estado se cambia desde la lista. -->
-        @if (!usuario()) {
-          <div class="usuario-form-dialog__campo usuario-form-dialog__checkbox">
-            <p-checkbox formControlName="activo" [binary]="true" inputId="usuario-activo" />
-            <label for="usuario-activo">Usuario activo</label>
-          </div>
-        }
-
-        <footer class="usuario-form-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            [label]="usuario() ? 'Guardar cambios' : 'Crear usuario'"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 30rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
+
     .usuario-form-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .usuario-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
       gap: var(--space-2);
-    }
-
-    .usuario-form-dialog__checkbox {
-      flex-direction: row;
-      align-items: center;
-    }
-
-    .usuario-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
     }
   `,
 })
@@ -181,7 +196,7 @@ export class UsuarioFormDialogComponent {
 
   protected readonly lookups = inject(UsuariosLookupsService);
   private readonly usuariosService = inject(UsuariosService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   // `rol_id`/`ubicacion_id` son UUID, así que viajan como `string`: `''`
@@ -236,14 +251,10 @@ export class UsuarioFormDialogComponent {
     // mensaje del backend junto a los datos que escribió para corregirlos
     // (típicamente, un correo institucional ya tomado).
     const onError = (error: unknown) =>
-      this.messageService.add({
-        severity: 'error',
-        summary: usuarioActual ? 'No se pudo actualizar el usuario' : 'No se pudo crear el usuario',
-        detail: extraerMensajeError(
-          error,
-          usuarioActual ? MENSAJE_FALLBACK_EDICION : 'Verifica los datos e intenta de nuevo.',
-        ),
-      });
+      this.notificationService.error(
+        usuarioActual ? 'No se pudo actualizar el usuario' : 'No se pudo crear el usuario',
+        extraerMensajeError(error, usuarioActual ? MENSAJE_FALLBACK_EDICION : 'Verifica los datos e intenta de nuevo.'),
+      );
 
     if (usuarioActual) {
       this.usuariosService.actualizar.mutate(
@@ -252,7 +263,7 @@ export class UsuarioFormDialogComponent {
           onSuccess: () => {
             this.visible.set(false);
             this.guardado.emit();
-            this.messageService.add({ severity: 'success', summary: 'Usuario actualizado' });
+            this.notificationService.success('Usuario actualizado');
           },
           onError,
         },
@@ -267,7 +278,7 @@ export class UsuarioFormDialogComponent {
           this.visible.set(false);
           this.form.reset();
           this.guardado.emit();
-          this.messageService.add({ severity: 'success', summary: 'Usuario creado' });
+          this.notificationService.success('Usuario creado');
         },
         onError,
       },

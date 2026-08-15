@@ -1,3 +1,124 @@
-/* You can add global styles to this file, and also import other style files */
+// Include theming for Angular Material with `mat.theme()`.
+// This Sass mixin will define CSS variables that are used for styling Angular Material
+// components according to the Material 3 design spec.
+// Learn more about theming and how to use it for your application's
+// custom components at https://material.angular.dev/guide/theming
+@use '@angular/material' as mat;
 @use './app/core/theme/spacing';
+@use './app/core/theme/elevation';
 
+html {
+  height: 100%;
+  @include mat.theme(
+    (
+      color: (
+        primary: mat.$green-palette,
+        tertiary: mat.$yellow-palette,
+      ),
+      typography: (
+        plain-family: Montserrat,
+        brand-family: Poppins,
+      ),
+      density: 0,
+    )
+  );
+
+  // Paleta institucional UCO — ver DOC/5. Identidad Visual/5.1 Manual de
+  // Marca UCO.md. Sobreescribe los system tokens M3 generados arriba con los
+  // HEX exactos de marca (mat.$green-palette/$yellow-palette solo aproximan).
+  --mat-sys-primary: #008b50;
+  --mat-sys-on-primary: #ffffff;
+  --mat-sys-tertiary: #ffca00;
+  --mat-sys-on-tertiary: #024426;
+  --mat-sys-surface: #ffffff;
+  --mat-sys-on-surface: #1a1a1a;
+  --mat-sys-on-surface-variant: #6b7280;
+  --mat-sys-surface-container: #f5f7f6;
+  --mat-sys-surface-container-high: #f5f7f6;
+  --mat-sys-outline: #e2e5e4;
+  --mat-sys-outline-variant: #e2e5e4;
+  --mat-sys-error: #e28210;
+  --mat-sys-on-error: #ffffff;
+
+  // Radios — ver `core/theme/_elevation.scss`. `corner-*` son los system
+  // tokens M3 que Angular Material usa para redondear card/dialog/botones/
+  // inputs; se mapean acá a la escala reconciliada del uplift estructural
+  // (sm: badges/chips, md: botones/inputs, lg: tarjetas/diálogos/modales).
+  --mat-sys-corner-small: var(--radius-sm);
+  --mat-sys-corner-medium: var(--radius-md);
+  --mat-sys-corner-large: var(--radius-lg);
+  --mat-sys-corner-extra-large: var(--radius-lg);
+}
+
+// Tarjetas — "border-first": borde de 1px en reposo, sin sombra (la sombra
+// elevada se reserva para diálogos/popovers/dropdowns).
+.mat-mdc-card {
+  --mdc-elevated-card-container-elevation: var(--shadow-none);
+  --mdc-elevated-card-container-shape: var(--radius-lg);
+  --mdc-outlined-card-container-shape: var(--radius-lg);
+  border: var(--border-surface);
+}
+
+// Diálogos y overlays (incluye popups de SweetAlert2 vía `swal2-popup`) —
+// esquinas lg + sombra elevada, nunca borde-only (superficies flotantes).
+.mat-mdc-dialog-container,
+.swal2-popup {
+  --mdc-dialog-container-shape: var(--radius-lg);
+  border-radius: var(--radius-lg) !important;
+  box-shadow: var(--shadow-elevated) !important;
+}
+
+.mat-mdc-form-field {
+  --mdc-outlined-text-field-container-shape: var(--radius-md);
+  --mdc-filled-text-field-container-shape: var(--radius-md);
+}
+
+.mat-mdc-button-base {
+  --mdc-filled-button-container-shape: var(--radius-md);
+  --mdc-outlined-button-container-shape: var(--radius-md);
+  --mdc-protected-button-container-shape: var(--radius-md);
+  --mdc-text-button-container-shape: var(--radius-md);
+  --mdc-filled-button-container-height: 36px;
+  --mdc-outlined-button-container-height: 36px;
+  --mdc-protected-button-container-height: 36px;
+  --mdc-text-button-container-height: 36px;
+  transition:
+    background-color var(--transition-fast),
+    color var(--transition-fast),
+    border-color var(--transition-fast);
+}
+
+// Escala de altura de botón (sm/default/lg) — usar junto a los selectores
+// de Angular Material, ej. `<button mat-flat-button class="uco-btn--sm">`.
+.uco-btn--sm {
+  --mdc-filled-button-container-height: 32px;
+  --mdc-outlined-button-container-height: 32px;
+  --mdc-protected-button-container-height: 32px;
+  --mdc-text-button-container-height: 32px;
+}
+
+.uco-btn--lg {
+  --mdc-filled-button-container-height: 40px;
+  --mdc-outlined-button-container-height: 40px;
+  --mdc-protected-button-container-height: 40px;
+  --mdc-text-button-container-height: 40px;
+}
+
+body {
+  // Default the application to a light color theme. This can be changed to
+  // `dark` to enable the dark color theme, or to `light dark` to defer to the
+  // user's system settings.
+  color-scheme: light;
+
+  // Set a default background, font and text colors for the application using
+  // Angular Material's system-level CSS variables. Learn more about these
+  // variables at https://material.angular.dev/guide/system-variables
+  background-color: var(--mat-sys-surface);
+  color: var(--mat-sys-on-surface);
+  font: var(--mat-sys-body-medium);
+
+  // Reset the user agent margin.
+  margin: 0;
+  height: 100%;
+}
+/* You can add global styles to this file, and also import other style files */

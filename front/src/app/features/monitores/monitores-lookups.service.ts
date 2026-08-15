@@ -13,7 +13,7 @@ const API = environment.apiBaseUrl;
  * Catálogo de apoyo que la feature `monitores` necesita para (a) resolver a
  * nombre legible las DOS FKs que `MonitorOut` devuelve como UUID crudo
  * (`docente_titular_id`, `monitor_delegado_id`) y (b) poblar los DOS
- * `p-select` del formulario de creación.
+ * autocompletados de personas del formulario de creación.
  *
  * Nota de diseño — un solo lookup para los dos roles: `docente_titular_id` y
  * `monitor_delegado_id` son dos FKs distintas a la MISMA tabla `Comunidad`
@@ -27,8 +27,8 @@ const API = environment.apiBaseUrl;
  * que ambos ids existan y sean distintos entre sí
  * (`domain.validar_docente_distinto_de_monitor`). El ROL es un dato de la
  * fila `Monitor`, no de la persona. `MonitorFormDialogComponent` reusa
- * `opcionesPersonas()` en los dos `p-select`, distinguidos solo por su
- * `<label>` ("Docente titular" / "Monitor delegado").
+ * `opcionesPersonas()` en los dos autocompletados, distinguidos solo por su
+ * `<mat-label>` ("Docente titular" / "Monitor delegado").
  *
  * Nota de arquitectura — esto NO viola la regla "una feature no importa
  * código de otra feature" (ver front/README.md): consumir
@@ -50,7 +50,7 @@ export class MonitoresLookupsService {
     queryFn: () => firstValueFrom(this.http.get<PersonaLookup[]>(`${API}/comunidad/`)),
   }));
 
-  // Opciones ya formateadas para los `p-select`. El documento desambigua
+  // Opciones ya formateadas para los selectores. El documento desambigua
   // homónimos, frecuentes en una comunidad universitaria grande — mismo
   // criterio que `ReservasLookupsService.opcionesPersonas`.
   readonly opcionesPersonas = computed(() =>

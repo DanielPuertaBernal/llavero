@@ -1,9 +1,12 @@
 import { HttpErrorResponse } from '@angular/common/http';
 import { Component, computed, inject, signal } from '@angular/core';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatDatepickerModule } from '@angular/material/datepicker';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 import { FormsModule } from '@angular/forms';
-import { DatePickerModule } from 'primeng/datepicker';
-import { SelectModule } from 'primeng/select';
-import { TagModule } from 'primeng/tag';
 
 import { DisponibilidadLookupsService } from './disponibilidad-lookups.service';
 import { DisponibilidadService } from './disponibilidad.service';
@@ -16,15 +19,15 @@ import {
 } from './disponibilidad.models';
 
 /**
- * Severidad de `p-tag` por origen de la ocupación — mismo criterio de
- * `SEVERIDAD_ESTADO` en `reservas-list.component.ts`, pero mapeando origen en
- * vez de estado: cada una de las tres fuentes que superpone RF14 necesita
- * distinguirse a simple vista en la lista.
+ * Clase de badge por origen de la ocupación — mismo criterio de
+ * `CLASE_BADGE_ESTADO` en el resto de las listas del proyecto, pero
+ * mapeando origen en vez de estado: cada una de las tres fuentes que
+ * superpone RF14 necesita distinguirse a simple vista en la lista.
  */
-const SEVERIDAD_ORIGEN: Record<Origen, 'info' | 'success' | 'warn'> = {
-  programacion: 'info',
-  reserva_semestral: 'warn',
-  reserva_individual: 'success',
+const CLASE_BADGE_ORIGEN: Record<Origen, string> = {
+  programacion: 'badge--info',
+  reserva_semestral: 'badge--atencion',
+  reserva_individual: 'badge--exito',
 };
 
 /**
@@ -36,17 +39,16 @@ const SEVERIDAD_ORIGEN: Record<Origen, 'info' | 'success' | 'warn'> = {
  *
  * Nota de diseño — sin librería de calendario/scheduler (ninguna está
  * instalada en el proyecto, y esta feature no agrega dependencias nuevas):
- * la vista es una lista simple ordenada por `hora_inicio`, con un `p-tag` de
- * severidad distinta por `origen` (mismo patrón que `severidadEstado` de
- * `reservas-list.component.ts`) y un `p-tag severity="danger"` adicional en
- * cada ocupación que aparece en `conflictos`. Una grilla de horario tipo
+ * la vista es una lista simple ordenada por `hora_inicio`, con un badge de
+ * color distinto por `origen` y un badge de peligro adicional en cada
+ * ocupación que aparece en `conflictos`. Una grilla de horario tipo
  * calendario sería más vistosa, pero el caso de uso central (RF14) es
  * detectar solapamientos, no visualizar huecos libres — una lista
  * cronológica con el conflicto resaltado responde esa pregunta con menos
  * código y sin depender de una librería no auditada para el proyecto.
  *
  * Nota de diseño — `fechaSeleccionada` es una señal LOCAL (`Date`, lo que
- * produce `p-datepicker`) separada de `DisponibilidadService.fecha`
+ * produce `mat-datepicker`) separada de `DisponibilidadService.fecha`
  * (`string | null`, lo que viaja por HTTP): mismo desacople que
  * `ReservaFormDialogComponent` hace con sus campos de fecha/hora, y por el
  * mismo motivo — `toISOString()` desplazaría el día en Colombia (UTC-5), así
@@ -57,34 +59,54 @@ const SEVERIDAD_ORIGEN: Record<Origen, 'info' | 'success' | 'warn'> = {
  * componente): es el caso de uso principal descrito en la tarea de esta
  * feature (elegir salón + fecha concreta), así que no tiene sentido arrancar
  * sin fecha y obligar a un clic extra.
+ *
+ * Migrado de PrimeNG a Angular Material: `p-select` -> `mat-select` (14
+ * salones es una lista corta, sin necesidad de autocomplete); `p-datepicker`
+ * -> `mat-datepicker` con `provideNativeDateAdapter()` (el componente es
+ * standalone, así que el adapter se declara acá en vez de en `app.config.ts`
+ * para no acoplar el resto de la app a `MatNativeDateModule`); `p-tag` ->
+ * badge propio (ver `CLASE_BADGE_ORIGEN`).
  */
 @Component({
   selector: 'app-disponibilidad-vista',
   standalone: true,
-  imports: [FormsModule, SelectModule, DatePickerModule, TagModule],
+  imports: [
+    FormsModule,
+    MatDatepickerModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
+  ],
+  providers: [provideNativeDateAdapter()],
   template: `
     <header class="disponibilidad-vista__header">
-      <p-select
-        [options]="lookups.opcionesSalones()"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="disponibilidadService.salonId()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onSalonChange($event)"
-        [filter]="true"
-        filterBy="label"
-        [showClear]="true"
-        ariaLabel="Selecciona un salón"
-        placeholder="Selecciona un salón"
-      />
-      <p-datepicker
-        [ngModel]="fechaSeleccionada()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onFechaChange($event)"
-        dateFormat="dd/mm/yy"
-        [showIcon]="true"
-        ariaLabel="Selecciona una fecha"
-      />
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Salón</mat-label>
+        <mat-select
+          [ngModel]="disponibilidadService.salonId()"
+          (ngModelChange)="onSalonChange($event)"
+          aria-label="Selecciona un salón"
+        >
+          <mat-option [value]="null">Selecciona un salón</mat-option>
+          @for (opcion of lookups.opcionesSalones(); track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Fecha</mat-label>
+        <input
+          matInput
+          [matDatepicker]="selectorFecha"
+          [ngModel]="fechaSeleccionada()"
+          (ngModelChange)="onFechaChange($event)"
+          aria-label="Selecciona una fecha"
+        />
+        <mat-datepicker-toggle matIconSuffix [for]="selectorFecha" />
+        <mat-datepicker #selectorFecha />
+      </mat-form-field>
     </header>
 
     @if (!disponibilidadService.salonId()) {
@@ -105,18 +127,15 @@ const SEVERIDAD_ORIGEN: Record<Origen, 'info' | 'success' | 'warn'> = {
             [attr.data-conflicto]="tieneConflicto(ocupacion.id)"
           >
             <span class="disponibilidad-vista__franja">{{ franja(ocupacion) }}</span>
-            <p-tag
-              [severity]="severidadOrigen(ocupacion.origen)"
-              [value]="etiquetaOrigen(ocupacion.origen)"
-            />
+            <span class="badge" [class]="claseBadgeOrigen(ocupacion.origen)">
+              {{ etiquetaOrigen(ocupacion.origen) }}
+            </span>
             <span class="disponibilidad-vista__titulo">{{ ocupacion.titulo }}</span>
             @if (tieneConflicto(ocupacion.id)) {
-              <p-tag
-                severity="danger"
-                value="Conflicto"
-                icon="pi pi-exclamation-triangle"
-                [ariaLabel]="'Conflicto de horario con otra ocupación'"
-              />
+              <span class="badge badge--peligro" aria-label="Conflicto de horario con otra ocupación">
+                <mat-icon inline>warning</mat-icon>
+                Conflicto
+              </span>
             }
           </li>
         }
@@ -149,6 +168,35 @@ const SEVERIDAD_ORIGEN: Record<Origen, 'info' | 'success' | 'warn'> = {
 
     .disponibilidad-vista__titulo {
       flex: 1;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 4px;
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--info {
+      background: #04b5ac;
+    }
+
+    .badge--atencion {
+      background: #ffca00;
+      color: #1a1a1a;
+    }
+
+    .badge--peligro {
+      background: #e28210;
     }
   `,
 })
@@ -203,8 +251,8 @@ export class DisponibilidadVistaComponent {
     return ETIQUETAS_ORIGEN[origen];
   }
 
-  protected severidadOrigen(origen: Origen): 'info' | 'success' | 'warn' {
-    return SEVERIDAD_ORIGEN[origen];
+  protected claseBadgeOrigen(origen: Origen): string {
+    return CLASE_BADGE_ORIGEN[origen];
   }
 
   protected tieneConflicto(ocupacionId: string): boolean {

@@ -1,14 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import { PrestamoDetallesComponent } from './prestamo-detalles.component';
 import { PrestamoDevolucionDialogComponent } from './prestamo-devolucion-dialog.component';
@@ -23,14 +20,14 @@ import {
 } from './prestamos.models';
 
 /**
- * Severidad de `p-tag` por estado del préstamo: uno activo es información
+ * Clase de badge por estado del préstamo: uno activo es información
  * neutra, uno parcialmente devuelto es una advertencia (quedan equipos
  * afuera), y uno completamente devuelto es el cierre exitoso del ciclo.
  */
-const SEVERIDAD_ESTADO: Record<EstadoPrestamo, 'info' | 'warn' | 'success'> = {
-  activo: 'info',
-  parcialmente_devuelto: 'warn',
-  completamente_devuelto: 'success',
+const CLASE_BADGE_ESTADO: Record<EstadoPrestamo, string> = {
+  activo: 'badge--info',
+  parcialmente_devuelto: 'badge--atencion',
+  completamente_devuelto: 'badge--exito',
 };
 
 /**
@@ -59,6 +56,11 @@ const SEVERIDAD_ESTADO: Record<EstadoPrestamo, 'info' | 'warn' | 'success'> = {
  * `app-prestamo-detalles`, que carga ese detalle bajo demanda: el listado
  * arranca con una sola petición y solo se paga el detalle de los préstamos
  * que el usuario realmente abre.
+ *
+ * Migrado de PrimeNG a Angular Material: la tabla usa HTML simple con el
+ * mismo patrón de fila expandible reimplementado a mano (un `Set<string>`
+ * de ids expandidos), ya que `mat-table` no trae un equivalente directo a
+ * `pRowToggler`/`expandedrow` de `p-table`.
  */
 @Component({
   selector: 'app-prestamos-list',
@@ -66,49 +68,53 @@ const SEVERIDAD_ESTADO: Record<EstadoPrestamo, 'info' | 'warn' | 'success'> = {
   imports: [
     DatePipe,
     FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    SelectModule,
-    TagModule,
-    ToastModule,
-    ConfirmDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
     PrestamoDetallesComponent,
     PrestamoFormDialogComponent,
     PrestamoDevolucionDialogComponent,
   ],
-  providers: [ConfirmationService, MessageService],
   template: `
-    <p-toast />
-    <p-confirmdialog />
-
     <header class="prestamos-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar por solicitante, prestamista o ubicación..."
-        aria-label="Buscar préstamo por solicitante, prestamista o ubicación"
-        (input)="onBusquedaChange($event)"
-      />
-      <p-select
-        [options]="opcionesEstado"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="prestamosService.filtroEstado()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onEstadoChange($event)"
-        ariaLabel="Filtrar por estado"
-        placeholder="Todos"
-      />
-      <p-button label="Registrar préstamo" icon="pi pi-plus" (onClick)="abrirFormulario()" />
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Buscar por solicitante, prestamista o ubicación..."
+          aria-label="Buscar préstamo por solicitante, prestamista o ubicación"
+          (input)="onBusquedaChange($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Estado</mat-label>
+        <mat-select
+          [ngModel]="prestamosService.filtroEstado()"
+          (ngModelChange)="onEstadoChange($event)"
+          aria-label="Filtrar por estado"
+        >
+          @for (opcion of opcionesEstado; track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button type="button" mat-raised-button color="primary" (click)="abrirFormulario()">
+        <mat-icon>add</mat-icon>
+        Registrar préstamo
+      </button>
     </header>
 
     @if (prestamosService.prestamos.isError()) {
       <p role="alert">No se pudieron cargar los préstamos. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="filtrados()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
+    <table class="tabla-simple">
+      <thead>
         <tr>
           <th></th>
           <th>Solicitante</th>
@@ -118,52 +124,63 @@ const SEVERIDAD_ESTADO: Record<EstadoPrestamo, 'info' | 'warn' | 'success'> = {
           <th>Estado</th>
           <th></th>
         </tr>
-      </ng-template>
-      <ng-template #body let-prestamo let-expanded="expanded">
-        <tr>
-          <td>
-            <p-button
-              type="button"
-              [pRowToggler]="prestamo"
-              [text]="true"
-              [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-              [ariaLabel]="'Ver detalle del préstamo'"
-            />
-          </td>
-          <td>{{ lookups.nombrePersona(prestamo.solicitante_id) }}</td>
-          <td>{{ lookups.nombreUsuario(prestamo.usuario_prestamista_id) }}</td>
-          <td>{{ lookups.nombreUbicacion(prestamo.ubicacion_id) }}</td>
-          <td>{{ prestamo.fecha_creacion | date: 'dd/MM/yyyy HH:mm' }}</td>
-          <td>
-            <p-tag
-              [severity]="severidadEstado(prestamo.estado)"
-              [value]="etiquetaEstado(prestamo.estado)"
-            />
-          </td>
-          <td>
-            <p-button
-              icon="pi pi-inbox"
-              [text]="true"
-              [disabled]="prestamo.estado === 'completamente_devuelto'"
-              (onClick)="abrirDevolucion(prestamo)"
-              [ariaLabel]="'Devolver equipos'"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #expandedrow let-prestamo>
-        <tr>
-          <td colspan="7">
-            <app-prestamo-detalles [prestamoId]="prestamo.id" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="7">No hay préstamos registrados para este filtro.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="7" class="tabla-simple__estado-vacio">Cargando...</td>
+          </tr>
+        } @else if (filtrados().length === 0) {
+          <tr>
+            <td colspan="7" class="tabla-simple__estado-vacio">
+              No hay préstamos registrados para este filtro.
+            </td>
+          </tr>
+        } @else {
+          @for (prestamo of filtrados(); track prestamo.id) {
+            <tr>
+              <td>
+                <button
+                  type="button"
+                  mat-icon-button
+                  (click)="alternarExpandido(prestamo.id)"
+                  aria-label="Ver detalle del préstamo"
+                >
+                  <mat-icon>{{ expandido(prestamo.id) ? 'expand_more' : 'chevron_right' }}</mat-icon>
+                </button>
+              </td>
+              <td>{{ lookups.nombrePersona(prestamo.solicitante_id) }}</td>
+              <td>{{ lookups.nombreUsuario(prestamo.usuario_prestamista_id) }}</td>
+              <td>{{ lookups.nombreUbicacion(prestamo.ubicacion_id) }}</td>
+              <td>{{ prestamo.fecha_creacion | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span class="badge" [class]="claseBadgeEstado(prestamo.estado)">
+                  {{ etiquetaEstado(prestamo.estado) }}
+                </span>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  mat-icon-button
+                  [disabled]="prestamo.estado === 'completamente_devuelto'"
+                  (click)="abrirDevolucion(prestamo)"
+                  aria-label="Devolver equipos"
+                >
+                  <mat-icon>inbox</mat-icon>
+                </button>
+              </td>
+            </tr>
+            @if (expandido(prestamo.id)) {
+              <tr>
+                <td colspan="7">
+                  <app-prestamo-detalles [prestamoId]="prestamo.id" />
+                </td>
+              </tr>
+            }
+          }
+        }
+      </tbody>
+    </table>
 
     <app-prestamo-form-dialog [(visible)]="formDialogVisible" />
     <app-prestamo-devolucion-dialog
@@ -178,6 +195,66 @@ const SEVERIDAD_ESTADO: Record<EstadoPrestamo, 'info' | 'warn' | 'success'> = {
       align-items: center;
       gap: var(--space-4);
       margin-bottom: var(--space-4);
+    }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 10px;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 10px;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+      padding: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--info {
+      background: #04b5ac;
+    }
+
+    .badge--atencion {
+      background: #ffca00;
+      color: #1a1a1a;
+    }
+
+    .badge--peligro {
+      background: #e28210;
     }
   `,
 })
@@ -194,6 +271,7 @@ export class PrestamosListComponent {
   protected readonly formDialogVisible = signal(false);
   protected readonly devolucionDialogVisible = signal(false);
   protected readonly prestamoADevolver = signal<Prestamo | null>(null);
+  private readonly idsExpandidos = signal<ReadonlySet<string>>(new Set());
 
   protected readonly cargando = computed(() => this.prestamosService.prestamos.isPending());
 
@@ -224,8 +302,22 @@ export class PrestamosListComponent {
     return ETIQUETAS_ESTADO_PRESTAMO[estado];
   }
 
-  protected severidadEstado(estado: EstadoPrestamo): 'info' | 'warn' | 'success' {
-    return SEVERIDAD_ESTADO[estado];
+  protected claseBadgeEstado(estado: EstadoPrestamo): string {
+    return CLASE_BADGE_ESTADO[estado];
+  }
+
+  protected expandido(id: string): boolean {
+    return this.idsExpandidos().has(id);
+  }
+
+  protected alternarExpandido(id: string): void {
+    const siguiente = new Set(this.idsExpandidos());
+    if (siguiente.has(id)) {
+      siguiente.delete(id);
+    } else {
+      siguiente.add(id);
+    }
+    this.idsExpandidos.set(siguiente);
   }
 
   protected abrirFormulario(): void {

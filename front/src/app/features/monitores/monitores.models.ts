@@ -62,7 +62,8 @@ export const ETIQUETAS_DIA_SEMANA: Record<DiaSemana, string> = {
   domingo: 'Domingo',
 };
 
-/** Forma que consume `p-select` de PrimeNG (`optionLabel`/`optionValue`). */
+/** Forma que consume `mat-select`/`mat-autocomplete` (`label` se muestra,
+ * `value` es lo que viaja). */
 export interface OpcionSelect<T> {
   label: string;
   value: T;

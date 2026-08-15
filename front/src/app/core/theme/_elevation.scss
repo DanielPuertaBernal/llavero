@@ -1,0 +1,39 @@
+// Escala de radios, elevación (sombra) y transiciones (tokens CSS) del
+// proyecto Llavero.
+//
+// Sigue la misma convención que `_spacing.scss` (custom properties en
+// `:root`, consumibles con `var(--token)` desde SCSS de componentes o
+// estilos inline). Valores reconciliados con el patrón estructural de
+// AulaSync (React/Tailwind) pero SIN tocar ningún HEX de marca — los
+// colores siguen viniendo de la paleta institucional ya aplicada en
+// `styles.scss` / `00-especificacion-visual.md`.
+//
+// NO agregar colores nuevos acá — este archivo es solo radio/sombra/
+// transición (ver `_spacing.scss` para spacing y `llavero-preset.ts` para
+// el resto de tokens del tema).
+:root {
+  // Radios — sm: badges/chips, md: botones/inputs, lg: tarjetas/diálogos/
+  // modales/popups de SweetAlert2.
+  --radius-sm: 4px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+
+  // Elevación — "border-first": las tarjetas en reposo usan borde de 1px,
+  // sin sombra. La sombra elevada se reserva para diálogos/popovers/
+  // dropdowns (superficies flotantes por encima del contenido).
+  --shadow-none: none;
+  --shadow-elevated: 0 8px 32px rgba(0, 0, 0, 0.16);
+  --border-surface: 1px solid #e2e5e4;
+
+  // Transiciones — 150ms para hover/cambios de color, 300ms ease-in-out
+  // para cambios de layout (ej. colapso del sidebar).
+  --transition-fast: 150ms ease;
+  --transition-layout: 300ms ease-in-out;
+
+  // Escala de tamaño de fuente UCO (ver 00-especificacion-visual.md):
+  // 22px títulos, 13px cuerpo, 12px encabezado de tabla, 11px badges.
+  // Faltaba un escalón xs/2xs para texto meta / labels de sección — se
+  // agrega acá porque no existía un archivo de tokens de tipografía previo.
+  --font-size-2xs: 10px;
+  --font-size-xs: 11px;
+}

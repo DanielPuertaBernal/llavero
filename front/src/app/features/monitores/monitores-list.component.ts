@@ -1,12 +1,10 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import { MonitorClasesDocenteComponent } from './monitor-clases-docente.component';
 import { MonitorDesactivacionDialogComponent } from './monitor-desactivacion-dialog.component';
@@ -33,7 +31,7 @@ import {
  * único botón, "Desactivar monitoría", y no hay editar.
  *
  * Nota de diseño — a diferencia de `UsuariosListComponent`, la desactivación
- * NO usa `ConfirmationService.confirm`: abre
+ * NO usa `ConfirmService.confirmar`: abre
  * `MonitorDesactivacionDialogComponent`, un diálogo propio que resume la
  * monitoría completa (docente titular, monitor delegado, materia, aula, día,
  * horario) antes de confirmar — mismo criterio que `reservas` con su
@@ -62,114 +60,133 @@ import {
  * `PrestamosListComponent` con `PrestamoDetallesComponent`. Da contexto real
  * del horario del docente titular sin abrir una ruta de detalle propia, y
  * solo se paga la consulta de las monitorías que el operador realmente
- * expande.
+ * expande. Se implementa con una tabla HTML simple (no `mat-table`, que no
+ * tiene un equivalente directo de fila expandible bajo demanda sin mantener
+ * la fila oculta en el DOM): un signal `expandidaId` guarda a lo sumo una
+ * fila expandida, y su detalle solo se renderiza (y por tanto solo dispara su
+ * consulta) cuando corresponde.
+ *
+ * Migración PrimeNG -> Angular Material: `p-table` -> tabla HTML simple (ver
+ * nota de diseño de arriba); `p-select` -> `mat-select`; `p-tag` -> badge
+ * propio; `p-toast`/`MessageService` -> `NotificationService` (los diálogos
+ * hijos ya migraron; esta vista no muta nada directamente).
  */
 @Component({
   selector: 'app-monitores-list',
   standalone: true,
   imports: [
     FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    SelectModule,
-    TagModule,
-    ToastModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
     MonitorFormDialogComponent,
     MonitorDesactivacionDialogComponent,
     MonitorClasesDocenteComponent,
   ],
-  providers: [MessageService],
   template: `
-    <p-toast />
-
     <header class="monitores-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar por materia..."
-        aria-label="Buscar monitoría por materia"
-        (input)="onBusquedaChange($event)"
-      />
-      <p-select
-        [options]="opcionesEstado"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="filtroEstado()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onEstadoChange($event)"
-        ariaLabel="Filtrar por estado"
-        placeholder="Todos"
-      />
-      <p-button label="Nueva monitoría" icon="pi pi-plus" (onClick)="abrirCrear()" />
+      <mat-form-field appearance="outline" class="monitores-list__buscador">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Materia..."
+          aria-label="Buscar monitoría por materia"
+          (input)="onBusquedaChange($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="monitores-list__filtro">
+        <mat-label>Estado</mat-label>
+        <mat-select
+          [ngModel]="filtroEstado()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="onEstadoChange($event)"
+          aria-label="Filtrar por estado"
+        >
+          @for (opcion of opcionesEstado; track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" type="button" (click)="abrirCrear()">
+        <mat-icon>add</mat-icon>
+        Nueva monitoría
+      </button>
     </header>
 
     @if (monitoresService.monitores.isError()) {
       <p role="alert">No se pudieron cargar las monitorías. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="monitoriasFiltradas()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
-        <tr>
-          <th></th>
-          <th>Docente titular</th>
-          <th>Monitor delegado</th>
-          <th>Materia</th>
-          <th>Aula</th>
-          <th>Día</th>
-          <th>Horario</th>
-          <th>Estado</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-monitoria let-expanded="expanded">
-        <tr>
-          <td>
-            <p-button
-              type="button"
-              [pRowToggler]="monitoria"
-              [text]="true"
-              [icon]="expanded ? 'pi pi-chevron-down' : 'pi pi-chevron-right'"
-              [ariaLabel]="'Ver clases del docente titular'"
-            />
-          </td>
-          <td>{{ lookups.nombrePersona(monitoria.docente_titular_id) }}</td>
-          <td>{{ lookups.nombrePersona(monitoria.monitor_delegado_id) }}</td>
-          <td>{{ monitoria.materia }}</td>
-          <td>{{ monitoria.aula ?? 'Sin aula fija' }}</td>
-          <td>{{ diaLegible(monitoria) }}</td>
-          <td>{{ monitoria.horario ?? 'Sin horario fijo' }}</td>
-          <td>
-            <p-tag
-              [severity]="monitoria.activo ? 'success' : 'danger'"
-              [value]="monitoria.activo ? 'Activa' : 'Inactiva'"
-            />
-          </td>
-          <td>
-            <p-button
-              icon="pi pi-ban"
-              severity="danger"
-              [text]="true"
-              [disabled]="!monitoria.activo"
-              (onClick)="abrirDesactivar(monitoria)"
-              [ariaLabel]="'Desactivar monitoría'"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #expandedrow let-monitoria>
-        <tr>
-          <td colspan="9">
-            <app-monitor-clases-docente [monitorId]="monitoria.id" />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="9">No hay monitorías que coincidan con el filtro.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+    @if (!cargando() && monitoriasFiltradas().length === 0) {
+      <p class="monitores-list__vacio">No hay monitorías que coincidan con el filtro.</p>
+    } @else {
+      <table class="tabla-simple">
+        <thead>
+          <tr>
+            <th></th>
+            <th>Docente titular</th>
+            <th>Monitor delegado</th>
+            <th>Materia</th>
+            <th>Aula</th>
+            <th>Día</th>
+            <th>Horario</th>
+            <th>Estado</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (monitoria of monitoriasFiltradas(); track monitoria.id) {
+            <tr>
+              <td>
+                <button
+                  mat-icon-button
+                  type="button"
+                  (click)="alternarExpandida(monitoria.id)"
+                  aria-label="Ver clases del docente titular"
+                >
+                  <mat-icon>{{ expandidaId() === monitoria.id ? 'expand_less' : 'chevron_right' }}</mat-icon>
+                </button>
+              </td>
+              <td>{{ lookups.nombrePersona(monitoria.docente_titular_id) }}</td>
+              <td>{{ lookups.nombrePersona(monitoria.monitor_delegado_id) }}</td>
+              <td>{{ monitoria.materia }}</td>
+              <td>{{ monitoria.aula ?? 'Sin aula fija' }}</td>
+              <td>{{ diaLegible(monitoria) }}</td>
+              <td>{{ monitoria.horario ?? 'Sin horario fijo' }}</td>
+              <td>
+                <span class="badge" [class.badge--exito]="monitoria.activo" [class.badge--peligro]="!monitoria.activo">
+                  {{ monitoria.activo ? 'Activa' : 'Inactiva' }}
+                </span>
+              </td>
+              <td>
+                <button
+                  mat-icon-button
+                  type="button"
+                  color="warn"
+                  [disabled]="!monitoria.activo"
+                  (click)="abrirDesactivar(monitoria)"
+                  aria-label="Desactivar monitoría"
+                >
+                  <mat-icon>block</mat-icon>
+                </button>
+              </td>
+            </tr>
+            @if (expandidaId() === monitoria.id) {
+              <tr>
+                <td colspan="9">
+                  <app-monitor-clases-docente [monitorId]="monitoria.id" />
+                </td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
+    }
 
     <app-monitor-form-dialog [(visible)]="formDialogVisible" />
     <app-monitor-desactivacion-dialog
@@ -182,8 +199,65 @@ import {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--space-4);
-      margin-bottom: var(--space-4);
+      gap: var(--space-4, 1rem);
+      margin-bottom: var(--space-4, 1rem);
+    }
+
+    .monitores-list__buscador {
+      min-width: 16rem;
+    }
+
+    .monitores-list__filtro {
+      min-width: 10rem;
+    }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.875rem;
+      color: #1a1a1a;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .monitores-list__vacio {
+      text-align: center;
+      color: #6b7280;
+      font-style: italic;
+      padding: var(--space-4, 1rem);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.75rem;
+      border-radius: 999px;
+      font-family: Poppins, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--peligro {
+      background: #e28210;
     }
   `,
 })
@@ -198,6 +272,7 @@ export class MonitoresListComponent {
   protected readonly formDialogVisible = signal(false);
   protected readonly desactivacionDialogVisible = signal(false);
   protected readonly monitoriaADesactivar = signal<Monitor | null>(null);
+  protected readonly expandidaId = signal<string | null>(null);
 
   protected readonly cargando = computed(() => this.monitoresService.monitores.isPending());
 
@@ -219,6 +294,10 @@ export class MonitoresListComponent {
 
   protected diaLegible(monitoria: Monitor): string {
     return monitoria.dia ? ETIQUETAS_DIA_SEMANA[monitoria.dia] : 'Cualquier día con clase';
+  }
+
+  protected alternarExpandida(monitorId: string): void {
+    this.expandidaId.set(this.expandidaId() === monitorId ? null : monitorId);
   }
 
   protected abrirCrear(): void {

@@ -1,11 +1,12 @@
 import { Component, computed, inject, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './prestamos-error.util';
 import { PrestamosLookupsService } from './prestamos-lookups.service';
 import { PrestamosService } from './prestamos.service';
@@ -17,8 +18,8 @@ import { PrestamosService } from './prestamos.service';
  * PATCH sobre préstamos.
  *
  * Los 4 campos de `PrestamoIn` son todos requeridos. Los tres primeros son
- * FKs elegidas con `p-select`; el cuarto, `equipo_ids`, es un
- * `p-multiselect` porque un préstamo entrega N equipos de una sola vez.
+ * FKs elegidas con `mat-select`; el cuarto, `equipo_ids`, es un `mat-select
+ * [multiple]` porque un préstamo entrega N equipos de una sola vez.
  *
  * Nota de diseño — "al menos un equipo" es la ÚNICA regla del backend que se
  * anticipa acá, y no por duplicar la validación sino porque enviar una lista
@@ -33,108 +34,141 @@ import { PrestamosService } from './prestamos.service';
  * `permite_prestamo_equipos` — esas ubicaciones solo quedan de últimas en el
  * selector (ver `PrestamosLookupsService.ubicacionesPrestamo`) y el 400 del
  * backend se muestra tal cual.
+ *
+ * Migrado de PrimeNG (`p-dialog`) a Angular Material: mismo patrón de
+ * visibilidad (`model<boolean>`), implementación interna con las directivas
+ * de `MatDialogModule` dentro de un overlay condicional (ver
+ * `llave-entrega-dialog.component.ts` para la misma decisión). El
+ * `p-multiselect` con chips se simplifica a un `mat-select [multiple]`
+ * simple: Material no trae un modo "chip" nativo para `mat-select` y no
+ * aporta reimplementarlo a mano acá.
  */
 @Component({
   selector: 'app-prestamo-form-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, SelectModule, MultiSelectModule, ButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+  ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Registrar préstamo"
-      [modal]="true"
-      [style]="{ width: '32rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="prestamo-form-dialog__form">
-        <div class="prestamo-form-dialog__campo">
-          <label for="prestamo-solicitante">Solicitante</label>
-          <p-select
-            id="prestamo-solicitante"
-            formControlName="solicitante_id"
-            [options]="lookups.opcionesPersonas()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona quién solicita el préstamo"
-          />
-        </div>
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="prestamo-form-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="prestamo-form-titulo">Registrar préstamo</h2>
 
-        <div class="prestamo-form-dialog__campo">
-          <label for="prestamo-prestamista">Usuario que presta</label>
-          <p-select
-            id="prestamo-prestamista"
-            formControlName="usuario_prestamista_id"
-            [options]="lookups.opcionesUsuarios()"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona quién entrega los equipos"
-          />
-        </div>
+          <mat-dialog-content>
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="prestamo-form-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Solicitante</mat-label>
+                <mat-select
+                  id="prestamo-solicitante"
+                  formControlName="solicitante_id"
+                  placeholder="Selecciona quién solicita el préstamo"
+                >
+                  @for (persona of lookups.opcionesPersonas(); track persona.value) {
+                    <mat-option [value]="persona.value">{{ persona.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-        <div class="prestamo-form-dialog__campo">
-          <label for="prestamo-ubicacion">Ubicación</label>
-          <p-select
-            id="prestamo-ubicacion"
-            formControlName="ubicacion_id"
-            [options]="lookups.ubicacionesPrestamo()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Selecciona la ubicación"
-          />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Usuario que presta</mat-label>
+                <mat-select
+                  id="prestamo-prestamista"
+                  formControlName="usuario_prestamista_id"
+                  placeholder="Selecciona quién entrega los equipos"
+                >
+                  @for (usuario of lookups.opcionesUsuarios(); track usuario.value) {
+                    <mat-option [value]="usuario.value">{{ usuario.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-        <div class="prestamo-form-dialog__campo">
-          <label for="prestamo-equipos">Equipos</label>
-          <p-multiselect
-            id="prestamo-equipos"
-            formControlName="equipo_ids"
-            [options]="lookups.opcionesEquipos()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            display="chip"
-            placeholder="Selecciona al menos un equipo"
-          />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Ubicación</mat-label>
+                <mat-select
+                  id="prestamo-ubicacion"
+                  formControlName="ubicacion_id"
+                  placeholder="Selecciona la ubicación"
+                >
+                  @for (ubicacion of lookups.ubicacionesPrestamo(); track ubicacion.id) {
+                    <mat-option [value]="ubicacion.id">{{ ubicacion.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-        <footer class="prestamo-form-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            label="Registrar préstamo"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+              <mat-form-field appearance="outline">
+                <mat-label>Equipos</mat-label>
+                <mat-select
+                  id="prestamo-equipos"
+                  formControlName="equipo_ids"
+                  multiple
+                  placeholder="Selecciona al menos un equipo"
+                >
+                  @for (equipo of lookups.opcionesEquipos(); track equipo.value) {
+                    <mat-option [value]="equipo.value">{{ equipo.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </form>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="cancelar()">Cancelar</button>
+            <button
+              type="submit"
+              mat-raised-button
+              color="primary"
+              [disabled]="form.invalid || guardando()"
+              (click)="guardar()"
+            >
+              @if (guardando()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Registrar préstamo
+              }
+            </button>
+          </mat-dialog-actions>
+        </div>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 32rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
+
     .prestamo-form-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .prestamo-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
       gap: var(--space-2);
-    }
-
-    .prestamo-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
     }
   `,
 })
@@ -144,7 +178,7 @@ export class PrestamoFormDialogComponent {
 
   protected readonly lookups = inject(PrestamosLookupsService);
   private readonly prestamosService = inject(PrestamosService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   // Los tres ids son `string` (`''` = "sin seleccionar", que
@@ -186,14 +220,13 @@ export class PrestamoFormDialogComponent {
             equipo_ids: [],
           });
           this.guardado.emit();
-          this.messageService.add({ severity: 'success', summary: 'Préstamo registrado' });
+          this.notificationService.success('Préstamo registrado');
         },
         onError: (error) =>
-          this.messageService.add({
-            severity: 'error',
-            summary: 'No se pudo registrar el préstamo',
-            detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-          }),
+          this.notificationService.error(
+            'No se pudo registrar el préstamo',
+            extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+          ),
       },
     );
   }

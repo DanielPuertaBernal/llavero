@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { ConfirmationService, type Confirmation } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
+import { ConfirmService } from '../../../core/shared/confirm.service';
 import { environment } from '../../../../environments/environment';
 import { UbicacionesListComponent } from './ubicaciones-list.component';
 
@@ -92,10 +92,9 @@ describe('UbicacionesListComponent', () => {
     fixture.detectChanges();
     httpMock.expectOne(BASE_URL).flush([ubicacionDto]);
 
-    // `ConfirmationService` está provisto a nivel de
-    // `UbicacionesListComponent` (ver su decorator), no a nivel de módulo.
-    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
+    // `ConfirmService` es `providedIn: 'root'`.
+    const confirmService = TestBed.inject(ConfirmService);
+    const confirmarSpy = vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
 
     await vi.waitFor(() => {
       fixture.detectChanges();
@@ -107,13 +106,10 @@ describe('UbicacionesListComponent', () => {
     ) as HTMLElement;
     expect(botonEliminar).toBeTruthy();
     botonEliminar.click();
-
-    expect(confirmSpy).toHaveBeenCalledOnce();
-    const confirmacion: Confirmation = confirmSpy.mock.calls[0][0];
-    expect(confirmacion.message).toContain('Biblioteca');
-
-    confirmacion.accept?.();
     await cederMicrotask();
+
+    expect(confirmarSpy).toHaveBeenCalledOnce();
+    expect(confirmarSpy.mock.calls[0][0].mensaje).toContain('Biblioteca');
 
     httpMock
       .expectOne({ method: 'DELETE', url: `${BASE_URL}/u-1` })

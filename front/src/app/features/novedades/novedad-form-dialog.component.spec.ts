@@ -2,11 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { AuthService } from '../../core/auth/auth.service';
 import type { UsuarioAutenticado } from '../../core/auth/auth.models';
+import { NotificationService } from '../../core/shared/notification.service';
 import { environment } from '../../../environments/environment';
 import { NovedadFormDialogComponent } from './novedad-form-dialog.component';
 
@@ -59,7 +59,6 @@ describe('NovedadFormDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
         { provide: AuthService, useValue: { currentUser } },
       ],
     }).compileComponents();
@@ -145,8 +144,8 @@ describe('NovedadFormDialogComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as NovedadFormDialogInternals;
     component.form.setValue({ categoria: 'dano', descripcion: '' });
@@ -154,8 +153,9 @@ describe('NovedadFormDialogComponent', () => {
     await cederMicrotask();
 
     httpMock.expectNone({ method: 'POST', url: `${BASE_URL}/` });
-    expect(addSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', summary: 'No se pudo crear la novedad' }),
+    expect(errorSpy).toHaveBeenCalledWith(
+      'No se pudo crear la novedad',
+      expect.any(String),
     );
   });
 
@@ -165,8 +165,8 @@ describe('NovedadFormDialogComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as NovedadFormDialogInternals;
     component.form.setValue({ categoria: 'dano', descripcion: '' });
@@ -179,12 +179,7 @@ describe('NovedadFormDialogComponent', () => {
       .flush({ detail: 'El usuario no existe' }, { status: 400, statusText: 'Bad Request' });
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'El usuario no existe',
-        }),
-      ),
+      expect(errorSpy).toHaveBeenCalledWith(expect.any(String), 'El usuario no existe'),
     );
     expect(fixture.componentInstance.visible()).toBe(true);
   });

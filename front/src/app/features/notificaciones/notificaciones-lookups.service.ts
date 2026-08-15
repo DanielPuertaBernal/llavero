@@ -44,7 +44,7 @@ export class NotificacionesLookupsService {
     queryFn: () => firstValueFrom(this.http.get<PersonaLookup[]>(`${API}/comunidad/`)),
   }));
 
-  // Opciones ya formateadas para `p-select`. Viven acá (y no en cada
+  // Opciones ya formateadas para `mat-select`. Viven acá (y no en cada
   // componente) porque el selector de destinatario se usa tanto en el filtro
   // futuro por destinatario como en el diálogo de envío.
   readonly opcionesPersonas = computed(() =>

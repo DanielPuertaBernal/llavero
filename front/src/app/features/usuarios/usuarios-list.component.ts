@@ -1,15 +1,14 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { ConfirmService } from '../../core/shared/confirm.service';
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './usuarios-error.util';
 import { UsuariosLookupsService } from './usuarios-lookups.service';
 import { UsuariosService } from './usuarios.service';
@@ -86,53 +85,63 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
  * En ambos casos el backend sigue siendo la autoridad: si una petición se
  * cuela igual (por ejemplo, una sesión que cambia en otra pestaña), lo que
  * ve el usuario es el 400 del backend con su mensaje tal cual.
+ *
+ * Migrado de PrimeNG a Angular Material: tabla HTML simple (sin sorting/
+ * paginación real), badges propios para "Vinculado a Microsoft"/"Estado", y
+ * `ConfirmService`/`NotificationService` (ambos `providedIn: 'root'`, ya no
+ * hace falta proveer nada a nivel de componente) en vez de
+ * `ConfirmationService`/`MessageService` de PrimeNG.
  */
 @Component({
   selector: 'app-usuarios-list',
   standalone: true,
   imports: [
     FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    SelectModule,
-    TagModule,
-    ToastModule,
-    ConfirmDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
     UsuarioFormDialogComponent,
   ],
-  providers: [ConfirmationService, MessageService],
   template: `
-    <p-toast />
-    <p-confirmdialog />
-
     <header class="usuarios-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar por nombre o correo institucional..."
-        aria-label="Buscar usuario por nombre o correo institucional"
-        (input)="onBusquedaChange($event)"
-      />
-      <p-select
-        [options]="opcionesEstado"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="filtroEstado()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onEstadoChange($event)"
-        ariaLabel="Filtrar por estado"
-        placeholder="Todos"
-      />
-      <p-button label="Nuevo usuario" icon="pi pi-plus" (onClick)="abrirCrear()" />
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Buscar por nombre o correo institucional..."
+          aria-label="Buscar usuario por nombre o correo institucional"
+          (input)="onBusquedaChange($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Estado</mat-label>
+        <mat-select
+          [ngModel]="filtroEstado()"
+          (ngModelChange)="onEstadoChange($event)"
+          aria-label="Filtrar por estado"
+        >
+          @for (opcion of opcionesEstado; track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button type="button" mat-raised-button color="primary" (click)="abrirCrear()">
+        <mat-icon>add</mat-icon>
+        Nuevo usuario
+      </button>
     </header>
 
     @if (usuariosService.usuarios.isError()) {
       <p role="alert">No se pudieron cargar los usuarios. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="usuariosFiltrados()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
+    <table class="tabla-simple">
+      <thead>
         <tr>
           <th>Nombre</th>
           <th>Correo institucional</th>
@@ -142,58 +151,64 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
           <th>Estado</th>
           <th></th>
         </tr>
-      </ng-template>
-      <ng-template #body let-usuario>
-        <tr>
-          <td>{{ usuario.nombre }}</td>
-          <td>{{ usuario.email_institucional }}</td>
-          <td>{{ lookups.nombreRol(usuario.rol_id) }}</td>
-          <td>{{ lookups.nombreUbicacion(usuario.ubicacion_id) }}</td>
-          <td>
-            <p-tag
-              [severity]="usuario.oid_microsoft ? 'success' : 'warn'"
-              [value]="usuario.oid_microsoft ? 'Sí' : 'No'"
-            />
-          </td>
-          <td>
-            <p-tag
-              [severity]="usuario.activo ? 'success' : 'danger'"
-              [value]="usuario.activo ? 'Activo' : 'Inactivo'"
-            />
-          </td>
-          <td>
-            <p-button
-              icon="pi pi-pencil"
-              [text]="true"
-              (onClick)="abrirEditar(usuario)"
-              [ariaLabel]="'Editar usuario'"
-            />
-            @if (!usuario.activo) {
-              <p-button
-                icon="pi pi-refresh"
-                severity="success"
-                [text]="true"
-                (onClick)="confirmarReactivar(usuario)"
-                [ariaLabel]="'Reactivar usuario'"
-              />
-            }
-            <p-button
-              icon="pi pi-ban"
-              severity="danger"
-              [text]="true"
-              [disabled]="!puedeDesactivar(usuario)"
-              (onClick)="confirmarDesactivar(usuario)"
-              [ariaLabel]="'Desactivar usuario'"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="7">No hay usuarios que coincidan con el filtro.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="7" class="tabla-simple__estado-vacio">Cargando...</td>
+          </tr>
+        } @else if (usuariosFiltrados().length === 0) {
+          <tr>
+            <td colspan="7" class="tabla-simple__estado-vacio">No hay usuarios que coincidan con el filtro.</td>
+          </tr>
+        } @else {
+          @for (usuario of usuariosFiltrados(); track usuario.id) {
+            <tr>
+              <td>{{ usuario.nombre }}</td>
+              <td>{{ usuario.email_institucional }}</td>
+              <td>{{ lookups.nombreRol(usuario.rol_id) }}</td>
+              <td>{{ lookups.nombreUbicacion(usuario.ubicacion_id) }}</td>
+              <td>
+                <span class="badge" [class]="usuario.oid_microsoft ? 'badge--exito' : 'badge--atencion'">
+                  {{ usuario.oid_microsoft ? 'Sí' : 'No' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="usuario.activo ? 'badge--exito' : 'badge--peligro'">
+                  {{ usuario.activo ? 'Activo' : 'Inactivo' }}
+                </span>
+              </td>
+              <td>
+                <button type="button" mat-icon-button (click)="abrirEditar(usuario)" aria-label="Editar usuario">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                @if (!usuario.activo) {
+                  <button
+                    type="button"
+                    mat-icon-button
+                    class="boton-exito"
+                    (click)="confirmarReactivar(usuario)"
+                    aria-label="Reactivar usuario"
+                  >
+                    <mat-icon>refresh</mat-icon>
+                  </button>
+                }
+                <button
+                  type="button"
+                  mat-icon-button
+                  class="boton-peligro"
+                  [disabled]="!puedeDesactivar(usuario)"
+                  (click)="confirmarDesactivar(usuario)"
+                  aria-label="Desactivar usuario"
+                >
+                  <mat-icon>block</mat-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
 
     <app-usuario-form-dialog [(visible)]="formDialogVisible" [usuario]="usuarioEditando()" />
   `,
@@ -205,14 +220,78 @@ import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
       gap: var(--space-4);
       margin-bottom: var(--space-4);
     }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 10px;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 10px;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+      padding: 24px;
+    }
+
+    .boton-peligro {
+      color: #e28210;
+    }
+
+    .boton-exito {
+      color: #008b50;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--atencion {
+      background: #ffca00;
+      color: #1a1a1a;
+    }
+
+    .badge--peligro {
+      background: #e28210;
+    }
   `,
 })
 export class UsuariosListComponent {
   protected readonly usuariosService = inject(UsuariosService);
   protected readonly lookups = inject(UsuariosLookupsService);
   private readonly authService = inject(AuthService);
-  private readonly confirmationService = inject(ConfirmationService);
-  private readonly messageService = inject(MessageService);
+  private readonly confirmService = inject(ConfirmService);
+  private readonly notificationService = inject(NotificationService);
 
   protected readonly opcionesEstado = OPCIONES_FILTRO_ESTADO_USUARIO;
 
@@ -262,31 +341,36 @@ export class UsuariosListComponent {
     this.formDialogVisible.set(true);
   }
 
-  protected confirmarDesactivar(usuario: Usuario): void {
-    this.confirmationService.confirm({
-      header: 'Desactivar usuario',
-      // El mensaje describe la consecuencia INMEDIATA (pierde el acceso) y
-      // aclara que la decisión es reversible: `POST /{id}/reactivar` existe,
-      // así que decir "no se puede deshacer" sería falso.
-      message:
+  protected async confirmarDesactivar(usuario: Usuario): Promise<void> {
+    // El mensaje describe la consecuencia INMEDIATA (pierde el acceso) y
+    // aclara que la decisión es reversible: `POST /{id}/reactivar` existe,
+    // así que decir "no se puede deshacer" sería falso.
+    const confirmado = await this.confirmService.confirmar({
+      titulo: 'Desactivar usuario',
+      mensaje:
         `¿Desactivar a "${usuario.nombre}"? Perderá el acceso a la aplicación de inmediato. ` +
         `Podrás volver a reactivarlo más adelante desde esta misma lista.`,
-      acceptLabel: 'Desactivar',
-      rejectLabel: 'Cancelar',
-      accept: () => this.desactivar(usuario),
+      peligro: true,
+      textoAceptar: 'Desactivar',
+      textoCancelar: 'Cancelar',
     });
+    if (confirmado) {
+      this.desactivar(usuario);
+    }
   }
 
-  protected confirmarReactivar(usuario: Usuario): void {
-    this.confirmationService.confirm({
-      header: 'Reactivar usuario',
-      message:
+  protected async confirmarReactivar(usuario: Usuario): Promise<void> {
+    const confirmado = await this.confirmService.confirmar({
+      titulo: 'Reactivar usuario',
+      mensaje:
         `¿Reactivar a "${usuario.nombre}"? Volverá a tener acceso a la aplicación ` +
         `con el rol y la ubicación que tiene asignados.`,
-      acceptLabel: 'Reactivar',
-      rejectLabel: 'Cancelar',
-      accept: () => this.reactivar(usuario),
+      textoAceptar: 'Reactivar',
+      textoCancelar: 'Cancelar',
     });
+    if (confirmado) {
+      this.reactivar(usuario);
+    }
   }
 
   /**
@@ -296,14 +380,12 @@ export class UsuariosListComponent {
    */
   private reactivar(usuario: Usuario): void {
     this.usuariosService.reactivar.mutate(usuario.id, {
-      onSuccess: () =>
-        this.messageService.add({ severity: 'success', summary: 'Usuario reactivado' }),
+      onSuccess: () => this.notificationService.success('Usuario reactivado'),
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo reactivar el usuario',
-          detail: extraerMensajeError(error, 'Intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo reactivar el usuario',
+          extraerMensajeError(error, 'Intenta de nuevo.'),
+        ),
     });
   }
 
@@ -312,25 +394,22 @@ export class UsuariosListComponent {
     if (!usuarioActual) {
       // Ver la nota de diseño del docblock: sin id de operador no se
       // despacha nada — el backend necesita ese dato para su autoprotección.
-      this.messageService.add({
-        severity: 'error',
-        summary: 'No se pudo desactivar el usuario',
-        detail: 'No hay una sesión activa. Vuelve a iniciar sesión e intenta de nuevo.',
-      });
+      this.notificationService.error(
+        'No se pudo desactivar el usuario',
+        'No hay una sesión activa. Vuelve a iniciar sesión e intenta de nuevo.',
+      );
       return;
     }
 
     this.usuariosService.desactivar.mutate(
       { id: usuario.id, usuario_actual_id: usuarioActual.id },
       {
-        onSuccess: () =>
-          this.messageService.add({ severity: 'success', summary: 'Usuario desactivado' }),
+        onSuccess: () => this.notificationService.success('Usuario desactivado'),
         onError: (error) =>
-          this.messageService.add({
-            severity: 'error',
-            summary: 'No se pudo desactivar el usuario',
-            detail: extraerMensajeError(error, 'Intenta de nuevo.'),
-          }),
+          this.notificationService.error(
+            'No se pudo desactivar el usuario',
+            extraerMensajeError(error, 'Intenta de nuevo.'),
+          ),
       },
     );
   }

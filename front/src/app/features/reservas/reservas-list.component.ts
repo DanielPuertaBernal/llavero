@@ -1,12 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTableModule } from '@angular/material/table';
 
 import { ReservaCancelacionDialogComponent } from './reserva-cancelacion-dialog.component';
 import { ReservaFormDialogComponent } from './reserva-form-dialog.component';
@@ -22,17 +21,19 @@ import {
 } from './reservas.models';
 
 /**
- * Severidad de `p-tag` por estado de la reserva: una aprobada es la que está
- * vigente (información neutra), una completada es el cierre exitoso del ciclo
- * (se entregó la llave), una cancelada es un cierre deliberado (secundario) y
- * una no reclamada es la que nadie usó — el caso que el operador quiere ver
- * destacado, porque bloqueó un salón para nada.
+ * Clase de badge por estado de la reserva (ver
+ * `DOC/5. Identidad Visual/Mockups/00-especificacion-visual.md`, tabla de
+ * paleta de estados): una aprobada es la que está vigente (info/turquesa),
+ * una completada es el cierre exitoso del ciclo (éxito/verde, se entregó la
+ * llave), una cancelada es un cierre deliberado (neutro/azul) y una no
+ * reclamada es la que nadie usó — el caso que el operador quiere ver
+ * destacado (atención/amarillo), porque bloqueó un salón para nada.
  */
-const SEVERIDAD_ESTADO: Record<EstadoReserva, 'info' | 'success' | 'secondary' | 'warn'> = {
-  aprobada: 'info',
-  completada: 'success',
-  cancelada: 'secondary',
-  no_reclamada: 'warn',
+const CLASE_BADGE_ESTADO: Record<EstadoReserva, string> = {
+  aprobada: 'badge badge--info',
+  completada: 'badge badge--exito',
+  cancelada: 'badge badge--neutro',
+  no_reclamada: 'badge badge--atencion',
 };
 
 /**
@@ -73,106 +74,138 @@ const SEVERIDAD_ESTADO: Record<EstadoReserva, 'info' | 'success' | 'secondary' |
  * `formatearHora` y NO con `DatePipe`: son valores de calendario sin zona
  * (`date`/`time` del schema), y `DatePipe` los parsearía como instantes UTC,
  * mostrando el día anterior en Colombia (UTC-5). Ver reservas.models.ts.
+ *
+ * Migración PrimeNG -> Angular Material: `p-table` -> `<table mat-table>`
+ * (misma estructura `tbody > tr`, así que los selectores de test no
+ * cambiaron), `p-select` -> `mat-select`, `p-tag` -> badge propio (Material
+ * no trae un componente de pastilla de estado; se define la clase
+ * `.badge--*` según la paleta de estados del spec visual), `p-toast`/
+ * `MessageService` -> `NotificationService` (SweetAlert2).
  */
 @Component({
   selector: 'app-reservas-list',
   standalone: true,
   imports: [
     FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    SelectModule,
-    TagModule,
-    ToastModule,
+    MatTableModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
     ReservaFormDialogComponent,
     ReservaCancelacionDialogComponent,
   ],
-  providers: [MessageService],
   template: `
-    <p-toast />
-
     <header class="reservas-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar por salón, solicitante o motivo..."
-        aria-label="Buscar reserva por salón, solicitante o motivo"
-        (input)="onBusquedaChange($event)"
-      />
-      <p-select
-        [options]="lookups.opcionesPersonas()"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="reservasService.filtroSolicitante()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onSolicitanteChange($event)"
-        [filter]="true"
-        filterBy="label"
-        [showClear]="true"
-        ariaLabel="Filtrar por solicitante"
-        placeholder="Todos los solicitantes"
-      />
-      <p-select
-        [options]="opcionesEstado"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="reservasService.filtroEstado()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onEstadoChange($event)"
-        ariaLabel="Filtrar por estado"
-        placeholder="Todos"
-      />
-      <p-button label="Registrar reserva" icon="pi pi-plus" (onClick)="abrirFormulario()" />
+      <mat-form-field appearance="outline" class="reservas-list__buscador">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Salón, solicitante o motivo..."
+          aria-label="Buscar reserva por salón, solicitante o motivo"
+          (input)="onBusquedaChange($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="reservas-list__filtro">
+        <mat-label>Solicitante</mat-label>
+        <mat-select
+          [ngModel]="reservasService.filtroSolicitante()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="onSolicitanteChange($event)"
+          aria-label="Filtrar por solicitante"
+        >
+          <mat-option [value]="null">Todos los solicitantes</mat-option>
+          @for (opcion of lookups.opcionesPersonas(); track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" class="reservas-list__filtro">
+        <mat-label>Estado</mat-label>
+        <mat-select
+          [ngModel]="reservasService.filtroEstado()"
+          [ngModelOptions]="{ standalone: true }"
+          (ngModelChange)="onEstadoChange($event)"
+          aria-label="Filtrar por estado"
+        >
+          @for (opcion of opcionesEstado; track opcion.value ?? 'todos') {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" type="button" (click)="abrirFormulario()">
+        <mat-icon>add</mat-icon>
+        Registrar reserva
+      </button>
     </header>
 
     @if (reservasService.reservas.isError()) {
       <p role="alert">No se pudieron cargar las reservas. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="filtradas()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
-        <tr>
-          <th>Salón</th>
-          <th>Solicitante</th>
-          <th>Fecha</th>
-          <th>Franja</th>
-          <th>Motivo</th>
-          <th>Estado</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-reserva>
-        <tr>
-          <td>{{ lookups.nombreSalon(reserva.salon_id) }}</td>
-          <td>{{ lookups.nombrePersona(reserva.solicitante_id) }}</td>
-          <td>{{ fecha(reserva) }}</td>
-          <td>{{ franja(reserva) }}</td>
-          <td>{{ reserva.motivo ?? '—' }}</td>
-          <td>
-            <p-tag
-              [severity]="severidadEstado(reserva.estado)"
-              [value]="etiquetaEstado(reserva.estado)"
-            />
-          </td>
-          <td>
-            <p-button
-              icon="pi pi-times"
-              [text]="true"
-              severity="danger"
-              [disabled]="reserva.estado !== 'aprobada'"
-              (onClick)="abrirCancelacion(reserva)"
-              [ariaLabel]="'Cancelar reserva'"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="7">No hay reservas registradas para este filtro.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+    <table mat-table [dataSource]="filtradas()" class="reservas-list__tabla">
+      <ng-container matColumnDef="salon">
+        <th mat-header-cell *matHeaderCellDef>Salón</th>
+        <td mat-cell *matCellDef="let reserva">{{ lookups.nombreSalon(reserva.salon_id) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="solicitante">
+        <th mat-header-cell *matHeaderCellDef>Solicitante</th>
+        <td mat-cell *matCellDef="let reserva">
+          {{ lookups.nombrePersona(reserva.solicitante_id) }}
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="fecha">
+        <th mat-header-cell *matHeaderCellDef>Fecha</th>
+        <td mat-cell *matCellDef="let reserva">{{ fecha(reserva) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="franja">
+        <th mat-header-cell *matHeaderCellDef>Franja</th>
+        <td mat-cell *matCellDef="let reserva">{{ franja(reserva) }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="motivo">
+        <th mat-header-cell *matHeaderCellDef>Motivo</th>
+        <td mat-cell *matCellDef="let reserva">{{ reserva.motivo ?? '—' }}</td>
+      </ng-container>
+
+      <ng-container matColumnDef="estado">
+        <th mat-header-cell *matHeaderCellDef>Estado</th>
+        <td mat-cell *matCellDef="let reserva">
+          <span [class]="claseBadgeEstado(reserva.estado)">{{ etiquetaEstado(reserva.estado) }}</span>
+        </td>
+      </ng-container>
+
+      <ng-container matColumnDef="acciones">
+        <th mat-header-cell *matHeaderCellDef></th>
+        <td mat-cell *matCellDef="let reserva">
+          <button
+            mat-icon-button
+            type="button"
+            color="warn"
+            [disabled]="reserva.estado !== 'aprobada'"
+            (click)="abrirCancelacion(reserva)"
+            aria-label="Cancelar reserva"
+          >
+            <mat-icon>close</mat-icon>
+          </button>
+        </td>
+      </ng-container>
+
+      <tr mat-header-row *matHeaderRowDef="columnas"></tr>
+      <tr mat-row *matRowDef="let row; columns: columnas"></tr>
+    </table>
+
+    @if (!cargando() && filtradas().length === 0) {
+      <p class="reservas-list__vacio">No hay reservas registradas para este filtro.</p>
+    }
 
     <app-reserva-form-dialog [(visible)]="formDialogVisible" />
     <app-reserva-cancelacion-dialog
@@ -185,14 +218,70 @@ const SEVERIDAD_ESTADO: Record<EstadoReserva, 'info' | 'success' | 'secondary' |
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--space-4);
-      margin-bottom: var(--space-4);
+      gap: var(--space-4, 1rem);
+      margin-bottom: var(--space-4, 1rem);
+    }
+
+    .reservas-list__buscador {
+      min-width: 16rem;
+    }
+
+    .reservas-list__filtro {
+      min-width: 12rem;
+    }
+
+    .reservas-list__tabla {
+      width: 100%;
+    }
+
+    .reservas-list__vacio {
+      text-align: center;
+      color: #6b7280;
+      font-style: italic;
+      padding: var(--space-4, 1rem);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.75rem;
+      border-radius: 999px;
+      font-family: Poppins, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--info {
+      background: #04b5ac;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--neutro {
+      background: #1d3475;
+    }
+
+    .badge--atencion {
+      background: #ffca00;
+      color: #1a1a1a;
     }
   `,
 })
 export class ReservasListComponent {
   protected readonly reservasService = inject(ReservasService);
   protected readonly lookups = inject(ReservasLookupsService);
+
+  protected readonly columnas = [
+    'salon',
+    'solicitante',
+    'fecha',
+    'franja',
+    'motivo',
+    'estado',
+    'acciones',
+  ];
 
   protected readonly opcionesEstado: { label: string; value: EstadoReserva | null }[] = [
     { label: 'Todos', value: null },
@@ -248,8 +337,8 @@ export class ReservasListComponent {
     return ETIQUETAS_ESTADO_RESERVA[estado];
   }
 
-  protected severidadEstado(estado: EstadoReserva): 'info' | 'success' | 'secondary' | 'warn' {
-    return SEVERIDAD_ESTADO[estado];
+  protected claseBadgeEstado(estado: EstadoReserva): string {
+    return CLASE_BADGE_ESTADO[estado];
   }
 
   protected abrirFormulario(): void {

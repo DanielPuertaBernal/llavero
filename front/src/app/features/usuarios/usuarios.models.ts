@@ -127,7 +127,7 @@ export interface DesactivacionVariables {
  */
 export type FiltroEstadoUsuario = 'todos' | 'activos' | 'inactivos';
 
-/** Forma que consume `p-select` de PrimeNG (`optionLabel`/`optionValue`). */
+/** Forma que consume `mat-select` (`label`/`value` por opción). */
 export interface OpcionSelect<T> {
   label: string;
   value: T;

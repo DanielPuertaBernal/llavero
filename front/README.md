@@ -1,6 +1,6 @@
 # Llavero — Frontend
 
-Stack: **Angular 22 + TypeScript (strict) + PrimeNG**, TanStack Query para server-state.
+Stack: **Angular 22 + TypeScript (strict) + Angular Material + SweetAlert2**, TanStack Query para server-state.
 
 Autenticación federada con Office 365: **sin librería MSAL** en el frontend — el backend ya resuelve el flujo completo (Authorization Code con callback en `GET /api/auth/callback`, ver `back/auth/service.py`). El frontend solo redirige a `GET /api/auth/login`, recibe un código opaco de un solo uso en `FRONTEND_POST_LOGIN_REDIRECT_URL`, y lo canjea vía `POST /api/auth/exchange` para obtener el par de JWT propios.
 
@@ -26,10 +26,9 @@ src/app/
     auth/        AuthService (signals), interceptor HTTP, guard, componente
                  de aterrizaje post-login (auth-callback)
     http/        provideCoreHttp() — HttpClient + interceptor + TanStack Query
-    theme/       preset PrimeNG con los colores institucionales UCO
-    shared/      vacío a propósito — componentes PrimeNG reutilizables
-                 (lector de credencial, indicador de mora) cuando la
-                 primera feature los necesite, ver core/shared/README.md
+    theme/       tokens M3 de Angular Material con los colores institucionales UCO
+    shared/      NotificationService/ConfirmService (SweetAlert2),
+                 MoraGaugeComponent — ver core/shared/README.md
   features/
     catalogos/   Salones (+ Bloques/TiposSilleteria co-gestionados desde su
                  vista) y Ubicaciones — cada entidad con su servicio de
@@ -86,11 +85,13 @@ el frontend compile o para correr los tests (mockeados con
 
 - **Test runner**: Vitest (`@angular/build:unit-test`), el default actual
   del Angular CLI para proyectos nuevos — no se forzó Karma/Jasmine.
-- **PrimeNG**: `providePrimeNG` + `@primeuix/themes` (el paquete
-  `@primeng/themes` quedó deprecado a favor de este). Preset propio
-  (`core/theme/llavero-preset.ts`) con el verde institucional UCO
-  (`#008b50`) como color primario — theming completo (superficie,
-  tipografía Montserrat/Poppins) queda deferido a cuando exista UI real.
+- **Angular Material** (no PrimeNG — se retiró por licencia): tema M3 vía
+  `mat.theme()` en `src/styles.scss`, con los tokens `--mat-sys-*`
+  sobreescritos con el HEX exacto de la paleta UCO (`#008b50` primario,
+  `#ffca00` acento) y tipografía Montserrat/Poppins. Notificaciones/toasts y
+  confirmaciones van por **SweetAlert2** (`core/shared/notification.service.ts`,
+  `core/shared/confirm.service.ts`) en vez de un componente de Material,
+  porque Material no trae un toast con severidad por color "de fábrica".
 - **TanStack Query**: `@tanstack/angular-query-experimental` (nombre de
   paquete correcto verificado en npm — sigue siendo "experimental" en su
   nomenclatura pese a ser la integración oficial recomendada).

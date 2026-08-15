@@ -1,13 +1,13 @@
 import { Component, computed, effect, inject, input, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TextareaModule } from 'primeng/textarea';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './notificaciones-error.util';
 import { NotificacionesLookupsService } from './notificaciones-lookups.service';
 import { NotificacionesService } from './notificaciones.service';
@@ -59,106 +59,119 @@ export interface NotificacionPrecarga {
  * requeridos — un `effect()` que ajusta los `Validators` de esos dos
  * controles cuando `modo()` cambia evita duplicar el resto del formulario y
  * su plantilla.
+ *
+ * Migración PrimeNG → Angular Material: el `visible` model input se
+ * mantiene igual (el diálogo se sigue renderizando inline en
+ * `notificaciones-list.component.ts`, no vía `MatDialog.open()`) — solo
+ * cambia el componente concreto que dibuja el overlay/panel, ahora con las
+ * directivas de `MatDialogModule` (`mat-dialog-title`/`mat-dialog-content`/
+ * `mat-dialog-actions`) sobre los estilos literales de "Diálogo/modal" de la
+ * especificación visual UCO. `MessageService.add(...)` se reemplaza por
+ * `NotificationService`.
  */
 @Component({
   selector: 'app-notificacion-form-dialog',
   standalone: true,
   imports: [
-    DialogModule,
+    MatDialogModule,
     ReactiveFormsModule,
-    SelectModule,
-    InputTextModule,
-    TextareaModule,
-    ButtonModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatInputModule,
+    MatButtonModule,
   ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      [header]="modo() === 'manual' ? 'Enviar notificación' : 'Enviar recordatorio'"
-      [modal]="true"
-      [style]="{ width: '32rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="notificacion-form-dialog__form">
-        <div class="notificacion-form-dialog__campo">
-          <label for="notificacion-destinatario">Destinatario</label>
-          <p-select
-            id="notificacion-destinatario"
-            formControlName="destinatario_id"
-            [options]="lookups.opcionesPersonas()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona el destinatario"
-          />
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          [attr.aria-label]="modo() === 'manual' ? 'Enviar notificación' : 'Enviar recordatorio'"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title>
+            {{ modo() === 'manual' ? 'Enviar notificación' : 'Enviar recordatorio' }}
+          </h2>
+
+          <form [formGroup]="form" (ngSubmit)="guardar()" class="notificacion-form-dialog__form">
+            <mat-dialog-content>
+              <mat-form-field appearance="outline" class="notificacion-form-dialog__campo">
+                <mat-label>Destinatario</mat-label>
+                <mat-select formControlName="destinatario_id" placeholder="Selecciona el destinatario">
+                  @for (opcion of lookups.opcionesPersonas(); track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              @if (modo() === 'manual') {
+                <mat-form-field appearance="outline" class="notificacion-form-dialog__campo">
+                  <mat-label>Asunto</mat-label>
+                  <input matInput formControlName="asunto" placeholder="Asunto del mensaje" />
+                </mat-form-field>
+              }
+
+              <mat-form-field appearance="outline" class="notificacion-form-dialog__campo">
+                <mat-label>{{ modo() === 'manual' ? 'Mensaje' : 'Mensaje (opcional)' }}</mat-label>
+                <textarea
+                  matInput
+                  formControlName="mensaje"
+                  rows="4"
+                  [placeholder]="
+                    modo() === 'manual'
+                      ? 'Escribe el mensaje'
+                      : 'Déjalo en blanco para usar la plantilla de recordatorio configurada'
+                  "
+                ></textarea>
+              </mat-form-field>
+            </mat-dialog-content>
+
+            <mat-dialog-actions align="end">
+              <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+              <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || guardando()">
+                {{
+                  guardando()
+                    ? 'Enviando…'
+                    : modo() === 'manual'
+                      ? 'Enviar notificación'
+                      : 'Enviar recordatorio'
+                }}
+              </button>
+            </mat-dialog-actions>
+          </form>
         </div>
-
-        @if (modo() === 'manual') {
-          <div class="notificacion-form-dialog__campo">
-            <label for="notificacion-asunto">Asunto</label>
-            <input
-              pInputText
-              id="notificacion-asunto"
-              type="text"
-              formControlName="asunto"
-              placeholder="Asunto del mensaje"
-            />
-          </div>
-        }
-
-        <div class="notificacion-form-dialog__campo">
-          <label for="notificacion-mensaje">
-            {{ modo() === 'manual' ? 'Mensaje' : 'Mensaje (opcional)' }}
-          </label>
-          <textarea
-            pTextarea
-            id="notificacion-mensaje"
-            formControlName="mensaje"
-            rows="4"
-            [placeholder]="
-              modo() === 'manual'
-                ? 'Escribe el mensaje'
-                : 'Déjalo en blanco para usar la plantilla de recordatorio configurada'
-            "
-          ></textarea>
-        </div>
-
-        <footer class="notificacion-form-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            [label]="modo() === 'manual' ? 'Enviar notificación' : 'Enviar recordatorio'"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);
+      width: 32rem;
+      max-width: calc(100vw - var(--space-4) * 2);
+      padding: var(--space-4);
+    }
+
     .notificacion-form-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
+      gap: var(--space-2);
     }
 
     .notificacion-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-
-    .notificacion-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
+      width: 100%;
     }
   `,
 })
@@ -171,7 +184,7 @@ export class NotificacionFormDialogComponent {
   protected readonly lookups = inject(NotificacionesLookupsService);
   private readonly notificacionesService = inject(NotificacionesService);
   private readonly authService = inject(AuthService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   // `destinatario_id` siempre requerido. `asunto`/`mensaje` arrancan sin
@@ -224,11 +237,10 @@ export class NotificacionFormDialogComponent {
       if (!usuarioActual) {
         // Mismo criterio que `usuarios-list.component.ts.desactivar`: sin id
         // de operador no se despacha nada.
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo enviar la notificación',
-          detail: 'No hay una sesión activa. Vuelve a iniciar sesión e intenta de nuevo.',
-        });
+        this.notificationService.error(
+          'No se pudo enviar la notificación',
+          'No hay una sesión activa. Vuelve a iniciar sesión e intenta de nuevo.',
+        );
         return;
       }
 
@@ -242,11 +254,10 @@ export class NotificacionFormDialogComponent {
         {
           onSuccess: () => this.alEnviarConExito(),
           onError: (error) =>
-            this.messageService.add({
-              severity: 'error',
-              summary: 'No se pudo enviar la notificación',
-              detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-            }),
+            this.notificationService.error(
+              'No se pudo enviar la notificación',
+              extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+            ),
         },
       );
       return;
@@ -263,11 +274,10 @@ export class NotificacionFormDialogComponent {
       {
         onSuccess: () => this.alEnviarConExito(),
         onError: (error) =>
-          this.messageService.add({
-            severity: 'error',
-            summary: 'No se pudo enviar el recordatorio',
-            detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-          }),
+          this.notificationService.error(
+            'No se pudo enviar el recordatorio',
+            extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+          ),
       },
     );
   }
@@ -276,10 +286,9 @@ export class NotificacionFormDialogComponent {
     this.visible.set(false);
     this.form.reset({ destinatario_id: '', asunto: '', mensaje: '' });
     this.enviado.emit();
-    this.messageService.add({
-      severity: 'success',
-      summary: this.modo() === 'manual' ? 'Notificación enviada' : 'Recordatorio enviado',
-    });
+    this.notificationService.success(
+      this.modo() === 'manual' ? 'Notificación enviada' : 'Recordatorio enviado',
+    );
   }
 
   protected cancelar(): void {

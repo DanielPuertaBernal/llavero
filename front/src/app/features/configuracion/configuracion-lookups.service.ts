@@ -36,7 +36,7 @@ export class ConfiguracionLookupsService {
       firstValueFrom(this.http.get<UbicacionLookup[]>(`${API}/catalogos/ubicaciones`)),
   }));
 
-  /** Opciones ya formateadas para el `p-select` de ubicación por defecto. */
+  /** Opciones ya formateadas para el `mat-select` de ubicación por defecto. */
   readonly opcionesUbicaciones = computed(() =>
     (this.ubicaciones.data() ?? []).map((ubicacion) => ({
       label: ubicacion.nombre,

@@ -1,12 +1,13 @@
 import { Component, computed, inject, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
-import { TextareaModule } from 'primeng/textarea';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import { AuthService } from '../../core/auth/auth.service';
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './novedades-error.util';
 import { NovedadesService } from './novedades.service';
 import { OPCIONES_CATEGORIA_NOVEDAD, type CategoriaNovedad } from './novedades.models';
@@ -29,7 +30,7 @@ import { OPCIONES_CATEGORIA_NOVEDAD, type CategoriaNovedad } from './novedades.m
  * un request con `registrado_por_id` ausente que el schema rechazaría con un
  * error de validación mucho menos claro.
  *
- * Nota de diseño — `categoria` se elige con un `p-select` alimentado por
+ * Nota de diseño — `categoria` se elige con un `mat-select` alimentado por
  * `OPCIONES_CATEGORIA_NOVEDAD` (derivado de `CategoriaNovedad`, ver
  * novedades.models.ts), nunca escribiendo el valor a mano. `descripcion` es
  * el único campo opcional (`str | None = None` en `NovedadIn`): se OMITE del
@@ -42,78 +43,91 @@ import { OPCIONES_CATEGORIA_NOVEDAD, type CategoriaNovedad } from './novedades.m
  * inventables, así que la única forma de que el 400 ocurra es una sesión
  * cuyo usuario fue borrado entretanto — un caso de carrera que el backend
  * sigue siendo la autoridad para rechazar (ver novedades-error.util.ts).
+ *
+ * Migración PrimeNG → Angular Material: el `visible` model input se
+ * mantiene igual (renderizado inline en `novedades-list.component.ts`), solo
+ * cambia el componente concreto del overlay/panel, ahora con las directivas
+ * de `MatDialogModule` sobre los estilos literales de "Diálogo/modal" de la
+ * especificación visual UCO. `MessageService.add(...)` se reemplaza por
+ * `NotificationService`.
  */
 @Component({
   selector: 'app-novedad-form-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, SelectModule, TextareaModule, ButtonModule],
+  imports: [MatDialogModule, ReactiveFormsModule, MatSelectModule, MatInputModule, MatButtonModule, MatFormFieldModule],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Nueva novedad"
-      [modal]="true"
-      [style]="{ width: '30rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="novedad-form-dialog__form">
-        <div class="novedad-form-dialog__campo">
-          <label for="novedad-categoria">Categoría</label>
-          <p-select
-            id="novedad-categoria"
-            formControlName="categoria"
-            [options]="opcionesCategoria"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona una categoría"
-          />
-        </div>
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Nueva novedad"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title>Nueva novedad</h2>
 
-        <div class="novedad-form-dialog__campo">
-          <label for="novedad-descripcion">Descripción</label>
-          <textarea
-            id="novedad-descripcion"
-            pTextarea
-            formControlName="descripcion"
-            rows="4"
-            placeholder="Opcional: detalla el incidente"
-          ></textarea>
-        </div>
+          <form [formGroup]="form" (ngSubmit)="guardar()" class="novedad-form-dialog__form">
+            <mat-dialog-content>
+              <mat-form-field appearance="outline" class="novedad-form-dialog__campo">
+                <mat-label>Categoría</mat-label>
+                <mat-select formControlName="categoria" placeholder="Selecciona una categoría">
+                  @for (opcion of opcionesCategoria; track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-        <footer class="novedad-form-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            label="Registrar novedad"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+              <mat-form-field appearance="outline" class="novedad-form-dialog__campo">
+                <mat-label>Descripción</mat-label>
+                <textarea
+                  matInput
+                  formControlName="descripcion"
+                  rows="4"
+                  placeholder="Opcional: detalla el incidente"
+                ></textarea>
+              </mat-form-field>
+            </mat-dialog-content>
+
+            <mat-dialog-actions align="end">
+              <button mat-stroked-button type="button" (click)="cancelar()">Cancelar</button>
+              <button mat-raised-button color="primary" type="submit" [disabled]="form.invalid || guardando()">
+                {{ guardando() ? 'Registrando…' : 'Registrar novedad' }}
+              </button>
+            </mat-dialog-actions>
+          </form>
+        </div>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);
+      width: 30rem;
+      max-width: calc(100vw - var(--space-4) * 2);
+      padding: var(--space-4);
+    }
+
     .novedad-form-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
+      gap: var(--space-2);
     }
 
     .novedad-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-
-    .novedad-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
+      width: 100%;
     }
   `,
 })
@@ -125,7 +139,7 @@ export class NovedadFormDialogComponent {
 
   private readonly authService = inject(AuthService);
   private readonly novedadesService = inject(NovedadesService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -144,11 +158,10 @@ export class NovedadFormDialogComponent {
     if (!usuarioActual) {
       // Sin id de operador no se despacha nada: el backend necesita
       // `registrado_por_id` para validar que el usuario exista.
-      this.messageService.add({
-        severity: 'error',
-        summary: 'No se pudo crear la novedad',
-        detail: 'No hay una sesión activa. Vuelve a iniciar sesión e intenta de nuevo.',
-      });
+      this.notificationService.error(
+        'No se pudo crear la novedad',
+        'No hay una sesión activa. Vuelve a iniciar sesión e intenta de nuevo.',
+      );
       return;
     }
 
@@ -165,14 +178,13 @@ export class NovedadFormDialogComponent {
           this.visible.set(false);
           this.form.reset();
           this.guardado.emit();
-          this.messageService.add({ severity: 'success', summary: 'Novedad registrada' });
+          this.notificationService.success('Novedad registrada');
         },
         onError: (error) =>
-          this.messageService.add({
-            severity: 'error',
-            summary: 'No se pudo crear la novedad',
-            detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-          }),
+          this.notificationService.error(
+            'No se pudo crear la novedad',
+            extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+          ),
       },
     );
   }

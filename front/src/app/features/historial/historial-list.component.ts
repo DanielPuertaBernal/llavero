@@ -1,7 +1,5 @@
 import { CommonModule } from '@angular/common';
 import { Component, computed, inject } from '@angular/core';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
 
 import { HistorialLookupsService } from './historial-lookups.service';
 import { HistorialService } from './historial.service';
@@ -39,22 +37,25 @@ import type { EventoHistorial, TipoEvento, TipoRecurso } from './historial.model
  * dispersa. En su lugar, `detalle(evento)` arma un solo texto legible por
  * fila, condicionado a `tipo_recurso` -- más compacto y más fácil de leer de
  * un vistazo que una fila a medio llenar.
+ *
+ * Migrado de PrimeNG a Angular Material: tabla HTML simple (solo lectura,
+ * sin sorting/paginación real) y badges propios en vez de `p-tag`.
  */
 @Component({
   selector: 'app-historial-list',
   standalone: true,
-  imports: [CommonModule, TableModule, TagModule],
+  imports: [CommonModule],
   template: `
     @if (historialService.esPortero()) {
-      <p-tag severity="info" value="Mostrando solo tus registros" />
+      <span class="badge badge--info">Mostrando solo tus registros</span>
     }
 
     @if (historialService.eventos.isError()) {
       <p role="alert">No se pudo cargar el historial. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="eventos()" [loading]="cargando()">
-      <ng-template #header>
+    <table class="tabla-simple">
+      <thead>
         <tr>
           <th>Fecha y hora</th>
           <th>Tipo de recurso</th>
@@ -62,33 +63,97 @@ import type { EventoHistorial, TipoEvento, TipoRecurso } from './historial.model
           <th>Procesado por</th>
           <th>Detalle</th>
         </tr>
-      </ng-template>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="5" class="tabla-simple__estado-vacio">Cargando...</td>
+          </tr>
+        } @else if (eventos().length === 0) {
+          <tr>
+            <td colspan="5" class="tabla-simple__estado-vacio">
+              No hay eventos de historial para mostrar.
+            </td>
+          </tr>
+        } @else {
+          @for (evento of eventos(); track $index) {
+            <tr>
+              <td>{{ evento.fecha_hora | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span class="badge" [class]="claseBadgeRecurso(evento.tipo_recurso)">
+                  {{ etiquetaRecurso(evento.tipo_recurso) }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="claseBadgeEvento(evento.tipo_evento)">
+                  {{ etiquetaEvento(evento.tipo_evento) }}
+                </span>
+              </td>
+              <td>{{ lookups.nombreUsuario(evento.procesado_por_id) }}</td>
+              <td>{{ detalle(evento) }}</td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
+  `,
+  styles: `
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
 
-      <ng-template #body let-evento>
-        <tr>
-          <td>{{ evento.fecha_hora | date: 'dd/MM/yyyy HH:mm' }}</td>
-          <td>
-            <p-tag
-              [severity]="severidadRecurso(evento.tipo_recurso)"
-              [value]="etiquetaRecurso(evento.tipo_recurso)"
-            />
-          </td>
-          <td>
-            <p-tag
-              [severity]="severidadEvento(evento.tipo_evento)"
-              [value]="etiquetaEvento(evento.tipo_evento)"
-            />
-          </td>
-          <td>{{ lookups.nombreUsuario(evento.procesado_por_id) }}</td>
-          <td>{{ detalle(evento) }}</td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="5">No hay eventos de historial para mostrar.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 10px;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 10px;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+      padding: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+      margin-bottom: var(--space-2);
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--info {
+      background: #04b5ac;
+    }
+
+    .badge--atencion {
+      background: #ffca00;
+      color: #1a1a1a;
+    }
   `,
 })
 export class HistorialListComponent {
@@ -99,22 +164,22 @@ export class HistorialListComponent {
 
   protected readonly eventos = computed(() => this.historialService.eventos.data() ?? []);
 
-  protected severidadRecurso(tipoRecurso: TipoRecurso): 'info' | 'warn' {
-    // Llave = info (neutro), equipo = warn -- solo para distinguir de un
+  protected claseBadgeRecurso(tipoRecurso: TipoRecurso): string {
+    // Llave = info (neutro), equipo = atención -- solo para distinguir de un
     // vistazo el origen del evento, sin implicar que uno sea "peor" que el
     // otro (mismo espíritu que la severidad de `disponibilidad-vista` por
     // origen de ocupación).
-    return tipoRecurso === 'llave' ? 'info' : 'warn';
+    return tipoRecurso === 'llave' ? 'badge--info' : 'badge--atencion';
   }
 
   protected etiquetaRecurso(tipoRecurso: TipoRecurso): string {
     return tipoRecurso === 'llave' ? 'Llave' : 'Equipo';
   }
 
-  protected severidadEvento(tipoEvento: TipoEvento): 'success' | 'info' {
+  protected claseBadgeEvento(tipoEvento: TipoEvento): string {
     // Entrega = éxito (el recurso sale), devolución = info (el recurso
     // vuelve) -- ninguna de las dos es un estado de alerta.
-    return tipoEvento === 'entrega' ? 'success' : 'info';
+    return tipoEvento === 'entrega' ? 'badge--exito' : 'badge--info';
   }
 
   protected etiquetaEvento(tipoEvento: TipoEvento): string {

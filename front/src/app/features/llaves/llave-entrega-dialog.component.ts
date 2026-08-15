@@ -1,12 +1,14 @@
 import { Component, computed, effect, inject, model, output } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './llaves-error.util';
 import { LlavesLookupsService } from './llaves-lookups.service';
 import { LlavesService } from './llaves.service';
@@ -25,7 +27,7 @@ import {
  * sobre llaves.
  *
  * Los 7 campos requeridos son exactamente los de `LlaveIn`; cada FK se
- * elige con un `p-select` alimentado por `LlavesLookupsService`, nunca
+ * elige con un `mat-select` alimentado por `LlavesLookupsService`, nunca
  * pegando un UUID a mano.
  *
  * Nota de diseño — `reserva_id`: el backend lo acepta SOLO junto con
@@ -38,157 +40,184 @@ import {
  * préstamo?, ¿el salón ya tiene una llave prestada?) NO se replican acá: se
  * envían y se muestra el mensaje del 400 tal cual (ver
  * llaves-error.util.ts).
+ *
+ * Migrado de PrimeNG (`p-dialog`) a Angular Material: se mantiene el mismo
+ * patrón de visibilidad (`model<boolean>` en vez de `MatDialog.open()`) para
+ * no romper la API pública del componente (`app-llave-entrega-dialog
+ * [(visible)]="..."` en `llaves-list.component.ts`); la implementación
+ * interna usa las directivas reales de `MatDialogModule`
+ * (`mat-dialog-title`/`mat-dialog-content`/`mat-dialog-actions`) dentro de
+ * un overlay condicional.
  */
 @Component({
   selector: 'app-llave-entrega-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, InputTextModule, SelectModule, ButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+  ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Registrar entrega de llave"
-      [modal]="true"
-      [style]="{ width: '32rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="llave-entrega-dialog__form">
-        <div class="llave-entrega-dialog__campo">
-          <label for="entrega-salon">Salón</label>
-          <p-select
-            id="entrega-salon"
-            formControlName="salon_id"
-            [options]="lookups.salones.data() ?? []"
-            optionLabel="nombre"
-            optionValue="id"
-            [filter]="true"
-            filterBy="nombre"
-            placeholder="Selecciona un salón"
-          />
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="entrega-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="entrega-titulo">Registrar entrega de llave</h2>
+
+          <mat-dialog-content>
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="llave-entrega-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Salón</mat-label>
+                <mat-select id="entrega-salon" formControlName="salon_id" placeholder="Selecciona un salón">
+                  @for (salon of lookups.salones.data() ?? []; track salon.id) {
+                    <mat-option [value]="salon.id">{{ salon.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Docente titular</mat-label>
+                <mat-select
+                  id="entrega-docente-titular"
+                  formControlName="docente_titular_id"
+                  placeholder="Selecciona al docente titular"
+                >
+                  @for (persona of lookups.opcionesPersonas(); track persona.value) {
+                    <mat-option [value]="persona.value">{{ persona.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Reclamado por</mat-label>
+                <mat-select
+                  id="entrega-reclamado-por"
+                  formControlName="reclamado_por_id"
+                  placeholder="Selecciona quién reclama la llave"
+                >
+                  @for (persona of lookups.opcionesPersonas(); track persona.value) {
+                    <mat-option [value]="persona.value">{{ persona.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Origen</mat-label>
+                <mat-select id="entrega-origen" formControlName="origen" placeholder="Selecciona el origen">
+                  @for (opcion of opcionesOrigen; track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              @if (requiereReserva()) {
+                <mat-form-field appearance="outline">
+                  <mat-label>Reserva individual</mat-label>
+                  <input
+                    matInput
+                    id="entrega-reserva"
+                    formControlName="reserva_id"
+                    placeholder="Identificador de la reserva (opcional)"
+                  />
+                </mat-form-field>
+              }
+
+              <mat-form-field appearance="outline">
+                <mat-label>Tipo de entrega</mat-label>
+                <mat-select
+                  id="entrega-tipo"
+                  formControlName="tipo_entrega"
+                  placeholder="Selecciona el tipo de entrega"
+                >
+                  @for (opcion of opcionesTipoEntrega; track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Usuario que entrega</mat-label>
+                <mat-select
+                  id="entrega-usuario"
+                  formControlName="usuario_entrega_id"
+                  placeholder="Selecciona quién entrega"
+                >
+                  @for (usuario of lookups.opcionesUsuarios(); track usuario.value) {
+                    <mat-option [value]="usuario.value">{{ usuario.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Ubicación de entrega</mat-label>
+                <mat-select
+                  id="entrega-ubicacion"
+                  formControlName="ubicacion_entrega_id"
+                  placeholder="Selecciona la ubicación"
+                >
+                  @for (ubicacion of lookups.ubicacionesEntrega(); track ubicacion.id) {
+                    <mat-option [value]="ubicacion.id">{{ ubicacion.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </form>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="cancelar()">Cancelar</button>
+            <button
+              type="submit"
+              mat-raised-button
+              color="primary"
+              [disabled]="form.invalid || guardando()"
+              (click)="guardar()"
+            >
+              @if (guardando()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Registrar entrega
+              }
+            </button>
+          </mat-dialog-actions>
         </div>
-
-        <div class="llave-entrega-dialog__campo">
-          <label for="entrega-docente-titular">Docente titular</label>
-          <p-select
-            id="entrega-docente-titular"
-            formControlName="docente_titular_id"
-            [options]="lookups.opcionesPersonas()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona al docente titular"
-          />
-        </div>
-
-        <div class="llave-entrega-dialog__campo">
-          <label for="entrega-reclamado-por">Reclamado por</label>
-          <p-select
-            id="entrega-reclamado-por"
-            formControlName="reclamado_por_id"
-            [options]="lookups.opcionesPersonas()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona quién reclama la llave"
-          />
-        </div>
-
-        <div class="llave-entrega-dialog__campo">
-          <label for="entrega-origen">Origen</label>
-          <p-select
-            id="entrega-origen"
-            formControlName="origen"
-            [options]="opcionesOrigen"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona el origen"
-          />
-        </div>
-
-        @if (requiereReserva()) {
-          <div class="llave-entrega-dialog__campo">
-            <label for="entrega-reserva">Reserva individual</label>
-            <input
-              pInputText
-              id="entrega-reserva"
-              formControlName="reserva_id"
-              placeholder="Identificador de la reserva (opcional)"
-            />
-          </div>
-        }
-
-        <div class="llave-entrega-dialog__campo">
-          <label for="entrega-tipo">Tipo de entrega</label>
-          <p-select
-            id="entrega-tipo"
-            formControlName="tipo_entrega"
-            [options]="opcionesTipoEntrega"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona el tipo de entrega"
-          />
-        </div>
-
-        <div class="llave-entrega-dialog__campo">
-          <label for="entrega-usuario">Usuario que entrega</label>
-          <p-select
-            id="entrega-usuario"
-            formControlName="usuario_entrega_id"
-            [options]="lookups.opcionesUsuarios()"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona quién entrega"
-          />
-        </div>
-
-        <div class="llave-entrega-dialog__campo">
-          <label for="entrega-ubicacion">Ubicación de entrega</label>
-          <p-select
-            id="entrega-ubicacion"
-            formControlName="ubicacion_entrega_id"
-            [options]="lookups.ubicacionesEntrega()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Selecciona la ubicación"
-          />
-        </div>
-
-        <footer class="llave-entrega-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            label="Registrar entrega"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 32rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
+
     .llave-entrega-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .llave-entrega-dialog__campo {
-      display: flex;
-      flex-direction: column;
       gap: var(--space-2);
-    }
-
-    .llave-entrega-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
     }
   `,
 })
@@ -198,7 +227,7 @@ export class LlaveEntregaDialogComponent {
 
   protected readonly lookups = inject(LlavesLookupsService);
   private readonly llavesService = inject(LlavesService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly opcionesOrigen = OPCIONES_ORIGEN_LLAVE;
@@ -207,7 +236,7 @@ export class LlaveEntregaDialogComponent {
   // Todos los controles son `string` (los ids son UUID y los enums viajan
   // como string): `''` representa "sin seleccionar" y `Validators.required`
   // lo rechaza. Los dos campos de enum se castean al construir el payload —
-  // el `p-select` solo ofrece los valores de `OPCIONES_*`, derivados del
+  // el `mat-select` solo ofrece los valores de `OPCIONES_*`, derivados del
   // propio enum del backend.
   protected readonly form = this.fb.nonNullable.group({
     salon_id: ['', Validators.required],
@@ -272,14 +301,13 @@ export class LlaveEntregaDialogComponent {
         this.visible.set(false);
         this.form.reset();
         this.guardado.emit();
-        this.messageService.add({ severity: 'success', summary: 'Entrega registrada' });
+        this.notificationService.success('Entrega registrada');
       },
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo registrar la entrega',
-          detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo registrar la entrega',
+          extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+        ),
     });
   }
 

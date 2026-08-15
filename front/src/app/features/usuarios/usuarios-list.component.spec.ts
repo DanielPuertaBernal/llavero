@@ -2,11 +2,12 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { ConfirmationService, MessageService, type Confirmation } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { AuthService } from '../../core/auth/auth.service';
 import type { UsuarioAutenticado } from '../../core/auth/auth.models';
+import { ConfirmService } from '../../core/shared/confirm.service';
+import { NotificationService } from '../../core/shared/notification.service';
 import { environment } from '../../../environments/environment';
 import { UsuariosListComponent } from './usuarios-list.component';
 import type { FiltroEstadoUsuario, Usuario } from './usuarios.models';
@@ -268,8 +269,8 @@ describe('UsuariosListComponent', () => {
     fixture.detectChanges();
     responderCargaInicial(httpMock, [usuarioActivo]);
 
-    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
+    const confirmService = TestBed.inject(ConfirmService);
+    const confirmarSpy = vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
 
     await vi.waitFor(() => {
       fixture.detectChanges();
@@ -277,19 +278,17 @@ describe('UsuariosListComponent', () => {
     });
 
     botonesDesactivar(fixture)[0].click();
+    await cederMicrotask();
 
-    expect(confirmSpy).toHaveBeenCalledOnce();
-    const confirmacion: Confirmation = confirmSpy.mock.calls[0][0];
-    expect(confirmacion.message).toContain('Ana Vigilante');
+    expect(confirmarSpy).toHaveBeenCalledOnce();
+    const opciones = confirmarSpy.mock.calls[0][0];
+    expect(opciones.mensaje).toContain('Ana Vigilante');
     // El backend YA expone `POST /{id}/reactivar`, así que el mensaje no
     // puede seguir diciendo que la acción es irreversible: eso sería mentirle
     // al operador. Lo que debe comunicar es la pérdida inmediata de acceso y
     // que la decisión se puede revertir después.
-    expect(confirmacion.message).not.toContain('no se puede deshacer');
-    expect(confirmacion.message).toContain('reactivar');
-
-    confirmacion.accept?.();
-    await cederMicrotask();
+    expect(opciones.mensaje).not.toContain('no se puede deshacer');
+    expect(opciones.mensaje).toContain('reactivar');
 
     const req = httpMock.expectOne({ method: 'POST', url: `${BASE_URL}/us-1/desactivar` });
     // El quid de esta feature: `usuario_actual_id` sale de `core/auth`.
@@ -309,10 +308,10 @@ describe('UsuariosListComponent', () => {
     fixture.detectChanges();
     responderCargaInicial(httpMock, [usuarioActivo]);
 
-    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
-    const messageService = fixture.debugElement.injector.get(MessageService);
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
-    const addSpy = vi.spyOn(messageService, 'add');
+    const confirmService = TestBed.inject(ConfirmService);
+    const notificationService = TestBed.inject(NotificationService);
+    vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     await vi.waitFor(() => {
       fixture.detectChanges();
@@ -320,14 +319,14 @@ describe('UsuariosListComponent', () => {
     });
 
     botonesDesactivar(fixture)[0].click();
-    confirmSpy.mock.calls[0][0].accept?.();
     await cederMicrotask();
 
     // Nunca se manda un request con `usuario_actual_id` faltante: sin id de
     // operador el backend no podría ni aplicar su autoprotección.
     httpMock.expectNone({ method: 'POST', url: `${BASE_URL}/us-1/desactivar` });
-    expect(addSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', summary: 'No se pudo desactivar el usuario' }),
+    expect(errorSpy).toHaveBeenCalledWith(
+      'No se pudo desactivar el usuario',
+      'No hay una sesión activa. Vuelve a iniciar sesión e intenta de nuevo.',
     );
   });
 
@@ -337,10 +336,10 @@ describe('UsuariosListComponent', () => {
     fixture.detectChanges();
     responderCargaInicial(httpMock, [usuarioActivo]);
 
-    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
-    const messageService = fixture.debugElement.injector.get(MessageService);
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
-    const addSpy = vi.spyOn(messageService, 'add');
+    const confirmService = TestBed.inject(ConfirmService);
+    const notificationService = TestBed.inject(NotificationService);
+    vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     await vi.waitFor(() => {
       fixture.detectChanges();
@@ -348,7 +347,6 @@ describe('UsuariosListComponent', () => {
     });
 
     botonesDesactivar(fixture)[0].click();
-    confirmSpy.mock.calls[0][0].accept?.();
     await cederMicrotask();
 
     httpMock
@@ -359,11 +357,9 @@ describe('UsuariosListComponent', () => {
       );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Un usuario no puede desactivarse a sí mismo',
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo desactivar el usuario',
+        'Un usuario no puede desactivarse a sí mismo',
       ),
     );
   });
@@ -430,10 +426,10 @@ describe('UsuariosListComponent', () => {
     fixture.detectChanges();
     responderCargaInicial(httpMock, [usuarioInactivo]);
 
-    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
-    const messageService = fixture.debugElement.injector.get(MessageService);
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
-    const addSpy = vi.spyOn(messageService, 'add');
+    const confirmService = TestBed.inject(ConfirmService);
+    const notificationService = TestBed.inject(NotificationService);
+    const confirmarSpy = vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
+    const successSpy = vi.spyOn(notificationService, 'success');
 
     await vi.waitFor(() => {
       fixture.detectChanges();
@@ -441,14 +437,12 @@ describe('UsuariosListComponent', () => {
     });
 
     botonesReactivar(fixture)[0].click();
-
-    expect(confirmSpy).toHaveBeenCalledOnce();
-    const confirmacion: Confirmation = confirmSpy.mock.calls[0][0];
-    expect(confirmacion.message).toContain('Bruno Retirado');
-    expect(confirmacion.header).toBe('Reactivar usuario');
-
-    confirmacion.accept?.();
     await cederMicrotask();
+
+    expect(confirmarSpy).toHaveBeenCalledOnce();
+    const opciones = confirmarSpy.mock.calls[0][0];
+    expect(opciones.mensaje).toContain('Bruno Retirado');
+    expect(opciones.titulo).toBe('Reactivar usuario');
 
     const req = httpMock.expectOne({ method: 'POST', url: `${BASE_URL}/us-2/reactivar` });
     // A diferencia de desactivar, el endpoint NO recibe `usuario_actual_id`:
@@ -460,11 +454,7 @@ describe('UsuariosListComponent', () => {
     // Refetch tras invalidar el prefijo `['usuarios']`.
     httpMock.expectOne(`${BASE_URL}/`).flush([{ ...usuarioInactivo, activo: true }]);
 
-    await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({ severity: 'success', summary: 'Usuario reactivado' }),
-      ),
-    );
+    await vi.waitFor(() => expect(successSpy).toHaveBeenCalledWith('Usuario reactivado'));
   });
 
   it('muestra el mensaje del backend tal cual cuando la reactivación falla con 404', async () => {
@@ -473,10 +463,10 @@ describe('UsuariosListComponent', () => {
     fixture.detectChanges();
     responderCargaInicial(httpMock, [usuarioInactivo]);
 
-    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
-    const messageService = fixture.debugElement.injector.get(MessageService);
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
-    const addSpy = vi.spyOn(messageService, 'add');
+    const confirmService = TestBed.inject(ConfirmService);
+    const notificationService = TestBed.inject(NotificationService);
+    vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     await vi.waitFor(() => {
       fixture.detectChanges();
@@ -484,7 +474,6 @@ describe('UsuariosListComponent', () => {
     });
 
     botonesReactivar(fixture)[0].click();
-    confirmSpy.mock.calls[0][0].accept?.();
     await cederMicrotask();
 
     httpMock
@@ -492,13 +481,7 @@ describe('UsuariosListComponent', () => {
       .flush({ detail: 'Usuario no encontrado' }, { status: 404, statusText: 'Not Found' });
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          summary: 'No se pudo reactivar el usuario',
-          detail: 'Usuario no encontrado',
-        }),
-      ),
+      expect(errorSpy).toHaveBeenCalledWith('No se pudo reactivar el usuario', 'Usuario no encontrado'),
     );
   });
 

@@ -58,7 +58,8 @@ export const ETIQUETAS_ESTADO_NOVEDAD: Record<EstadoNovedad, string> = {
   cerrada: 'Cerrada',
 };
 
-/** Forma que consume `p-select` de PrimeNG (`optionLabel`/`optionValue`). */
+/** Forma que consume `mat-select` (`<mat-option [value]="opcion.value">{{
+ * opcion.label }}</mat-option>`). */
 export interface OpcionSelect<T> {
   label: string;
   value: T;

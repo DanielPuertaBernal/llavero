@@ -54,10 +54,10 @@ export const ETIQUETAS_ESTADO_RESERVA: Record<EstadoReserva, string> = {
 };
 
 /**
- * Forma que consume `p-select` de PrimeNG (`optionLabel="label"`,
- * `optionValue="value"`). La lista de opciones del enum se deriva del mapa de
- * etiquetas de arriba en vez de escribirse a mano: agregar un valor al enum
- * del backend y su etiqueta acá es suficiente para que aparezca en el
+ * Forma que consume `mat-select`/`mat-autocomplete` (`label` se muestra,
+ * `value` es lo que viaja). La lista de opciones del enum se deriva del mapa
+ * de etiquetas de arriba en vez de escribirse a mano: agregar un valor al
+ * enum del backend y su etiqueta acá es suficiente para que aparezca en el
  * selector de la feature.
  */
 export interface OpcionSelect<T extends string> {

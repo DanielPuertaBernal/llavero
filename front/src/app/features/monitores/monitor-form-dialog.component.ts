@@ -1,11 +1,13 @@
 import { Component, computed, inject, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './monitores-error.util';
 import { MonitoresLookupsService } from './monitores-lookups.service';
 import { MonitoresService } from './monitores.service';
@@ -30,12 +32,15 @@ const HORARIO_REGEX = /^([01]\d|2[0-3]):[0-5]\d - ([01]\d|2[0-3]):[0-5]\d$/;
  * payload en vez de mandar `''`/`null` — mismo criterio que `motivo` en
  * `ReservaFormDialogComponent`.
  *
- * Nota de diseño — los dos `p-select` de persona (`docente_titular_id` y
+ * Nota de diseño — los dos autocompletados de persona (`docente_titular_id` y
  * `monitor_delegado_id`) reusan la MISMA lista de opciones
  * (`lookups.opcionesPersonas()`, ver `MonitoresLookupsService`): son dos
  * roles distintos sobre la misma entidad `Comunidad`, no dos catálogos
  * distintos — cualquier persona puede aparecer en cualquiera de los dos
- * selectores, el backend no restringe por tipo de persona.
+ * selectores, el backend no restringe por tipo de persona. Se usa
+ * `mat-autocomplete` (no `mat-select`) porque la comunidad universitaria
+ * puede tener cientos de personas: es el caso real de búsqueda de persona que
+ * `[filter]` de PrimeNG cumplía.
  *
  * Ninguna regla de negocio se replica acá: que `docente_titular_id` y
  * `monitor_delegado_id` existan en `comunidad` y sean personas DISTINTAS
@@ -50,121 +55,142 @@ const HORARIO_REGEX = /^([01]\d|2[0-3]):[0-5]\d - ([01]\d|2[0-3]):[0-5]\d$/;
  * obvios antes de guardar; no compara que la hora de inicio sea menor a la
  * de fin porque el campo ni siquiera son dos controles reales, es un solo
  * string libre.
+ *
+ * Migración PrimeNG -> Angular Material: `p-dialog` -> panel propio con las
+ * directivas reales de `MatDialogModule`; `p-select` de persona ->
+ * `mat-autocomplete` (ver nota de diseño arriba); `p-select` de día ->
+ * `mat-select`; `p-inputtext` -> `matInput`; `MessageService` ->
+ * `NotificationService`.
  */
 @Component({
   selector: 'app-monitor-form-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, InputTextModule, SelectModule, ButtonModule],
+  imports: [
+    MatDialogModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatSelectModule,
+    MatAutocompleteModule,
+    MatButtonModule,
+  ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Nueva monitoría"
-      [modal]="true"
-      [style]="{ width: '30rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="monitor-form-dialog__form">
-        <div class="monitor-form-dialog__campo">
-          <label for="monitor-docente-titular">Docente titular</label>
-          <p-select
-            id="monitor-docente-titular"
-            formControlName="docente_titular_id"
-            [options]="lookups.opcionesPersonas()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona el docente titular"
-          />
-        </div>
+    @if (visible()) {
+      <div class="dialogo__overlay" (keydown.escape)="cancelar()">
+        <div class="dialogo__panel" role="dialog" aria-modal="true" aria-label="Nueva monitoría">
+          <h2 mat-dialog-title>Nueva monitoría</h2>
+          <mat-dialog-content>
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="monitor-form-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Docente titular</mat-label>
+                <input
+                  type="text"
+                  matInput
+                  id="monitor-docente-titular"
+                  formControlName="docente_titular_id"
+                  [matAutocomplete]="autoDocente"
+                  placeholder="Busca el docente titular"
+                />
+                <mat-autocomplete #autoDocente="matAutocomplete" [displayWith]="etiquetaPersona">
+                  @for (opcion of lookups.opcionesPersonas(); track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
 
-        <div class="monitor-form-dialog__campo">
-          <label for="monitor-monitor-delegado">Monitor delegado</label>
-          <p-select
-            id="monitor-monitor-delegado"
-            formControlName="monitor_delegado_id"
-            [options]="lookups.opcionesPersonas()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona el monitor delegado"
-          />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Monitor delegado</mat-label>
+                <input
+                  type="text"
+                  matInput
+                  id="monitor-monitor-delegado"
+                  formControlName="monitor_delegado_id"
+                  [matAutocomplete]="autoDelegado"
+                  placeholder="Busca el monitor delegado"
+                />
+                <mat-autocomplete #autoDelegado="matAutocomplete" [displayWith]="etiquetaPersona">
+                  @for (opcion of lookups.opcionesPersonas(); track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
 
-        <div class="monitor-form-dialog__campo">
-          <label for="monitor-materia">Materia</label>
-          <input pInputText id="monitor-materia" formControlName="materia" />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Materia</mat-label>
+                <input matInput id="monitor-materia" formControlName="materia" />
+              </mat-form-field>
 
-        <div class="monitor-form-dialog__campo">
-          <label for="monitor-aula">Aula (opcional)</label>
-          <input pInputText id="monitor-aula" formControlName="aula" />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Aula (opcional)</mat-label>
+                <input matInput id="monitor-aula" formControlName="aula" />
+              </mat-form-field>
 
-        <div class="monitor-form-dialog__campo">
-          <label for="monitor-dia">Día (opcional)</label>
-          <p-select
-            id="monitor-dia"
-            formControlName="dia"
-            [options]="opcionesDia"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Cualquier día con clase"
-            [showClear]="true"
-          />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Día (opcional)</mat-label>
+                <mat-select id="monitor-dia" formControlName="dia" placeholder="Cualquier día con clase">
+                  <mat-option [value]="null">Cualquier día con clase</mat-option>
+                  @for (opcion of opcionesDia; track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-        <div class="monitor-form-dialog__campo">
-          <label for="monitor-horario">Horario (opcional)</label>
-          <input
-            pInputText
-            id="monitor-horario"
-            formControlName="horario"
-            placeholder="Ej. 14:00 - 16:00"
-          />
-          @if (form.controls.horario.errors?.['pattern']) {
-            <small class="monitor-form-dialog__error">
-              Formato esperado: HH:MM - HH:MM, en 24 horas (ej. 14:00 - 16:00).
-            </small>
-          }
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Horario (opcional)</mat-label>
+                <input
+                  matInput
+                  id="monitor-horario"
+                  formControlName="horario"
+                  placeholder="Ej. 14:00 - 16:00"
+                />
+                @if (form.controls.horario.errors?.['pattern']) {
+                  <mat-error>Formato esperado: HH:MM - HH:MM, en 24 horas (ej. 14:00 - 16:00).</mat-error>
+                }
+              </mat-form-field>
 
-        <footer class="monitor-form-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            label="Crear monitoría"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+              <mat-dialog-actions align="end">
+                <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+                <button
+                  mat-raised-button
+                  color="primary"
+                  type="submit"
+                  [disabled]="form.invalid || guardando()"
+                >
+                  {{ guardando() ? 'Creando...' : 'Crear monitoría' }}
+                </button>
+              </mat-dialog-actions>
+            </form>
+          </mat-dialog-content>
+        </div>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      width: 30rem;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4, 1rem);
+    }
+
     .monitor-form-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .monitor-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-
-    .monitor-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
+      gap: var(--space-2, 0.5rem);
     }
   `,
 })
@@ -174,7 +200,7 @@ export class MonitorFormDialogComponent {
 
   protected readonly lookups = inject(MonitoresLookupsService);
   private readonly monitoresService = inject(MonitoresService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly opcionesDia = OPCIONES_DIA_SEMANA;
@@ -193,6 +219,9 @@ export class MonitorFormDialogComponent {
   });
 
   protected readonly guardando = computed(() => this.monitoresService.crear.isPending());
+
+  protected readonly etiquetaPersona = (personaId: string): string =>
+    this.lookups.opcionesPersonas().find((opcion) => opcion.value === personaId)?.label ?? '';
 
   protected guardar(): void {
     if (this.form.invalid) {
@@ -225,14 +254,13 @@ export class MonitorFormDialogComponent {
           horario: '',
         });
         this.guardado.emit();
-        this.messageService.add({ severity: 'success', summary: 'Monitoría creada' });
+        this.notificationService.success('Monitoría creada');
       },
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo crear la monitoría',
-          detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo crear la monitoría',
+          extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+        ),
     });
   }
 

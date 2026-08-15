@@ -1,10 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../core/shared/notification.service';
 import { PrestamoFormDialogComponent } from './prestamo-form-dialog.component';
 import { PrestamosLookupsService } from './prestamos-lookups.service';
 
@@ -64,7 +64,6 @@ describe('PrestamoFormDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -159,8 +158,8 @@ describe('PrestamoFormDialogComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as FormDialogInternals;
     component.form.setValue({
@@ -181,11 +180,9 @@ describe('PrestamoFormDialogComponent', () => {
       );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'La ubicación no permite préstamo de equipos',
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo registrar el préstamo',
+        'La ubicación no permite préstamo de equipos',
       ),
     );
     // El diálogo NO se cierra ante un error: el usuario corrige y reintenta.

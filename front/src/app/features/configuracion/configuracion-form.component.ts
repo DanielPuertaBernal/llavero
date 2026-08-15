@@ -1,12 +1,12 @@
 import { Component, computed, effect, inject } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { SelectModule } from 'primeng/select';
-import { TextareaModule } from 'primeng/textarea';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './configuracion-error.util';
 import { ConfiguracionLookupsService } from './configuracion-lookups.service';
 import { ConfiguracionService } from './configuracion.service';
@@ -30,18 +30,23 @@ import type { ConfiguracionInput } from './configuracion.models';
  * campos de texto opcionales (ver `ReservaFormDialogComponent.motivo`), y
  * `guardar()` convierte `''` de vuelta a `null` al armar el payload.
  *
- * Nota de arquitectura — `MessageService` se provee acá, a nivel de
- * componente (mismo patrón que `UsuariosListComponent`), porque esta es la
- * vista de nivel de RUTA de la feature, no un diálogo anidado dentro de
- * otra.
+ * Nota de arquitectura — el toast de éxito/error usa el `NotificationService`
+ * global (`providedIn: 'root'`), igual que el resto de la app tras la
+ * migración de PrimeNG a Angular Material + SweetAlert2: ya no hace falta
+ * proveer nada a nivel de componente.
  */
 @Component({
   selector: 'app-configuracion-form',
   standalone: true,
-  imports: [ReactiveFormsModule, InputNumberModule, TextareaModule, SelectModule, ButtonModule, ToastModule],
-  providers: [MessageService],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+  ],
   template: `
-    <p-toast />
     <h1>Configuración</h1>
 
     @if (configuracionService.configuracion.isPending()) {
@@ -50,57 +55,59 @@ import type { ConfiguracionInput } from './configuracion.models';
       <p role="alert">No se pudo cargar la configuración. Intenta de nuevo.</p>
     } @else {
       <form [formGroup]="form" (ngSubmit)="guardar()" class="configuracion-form__form">
-        <div class="configuracion-form__campo">
-          <label for="configuracion-limite-mora">
-            Minutos antes de considerar una llave en mora
-          </label>
-          <p-inputnumber id="configuracion-limite-mora" formControlName="limite_antes_mora_minutos" />
-        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Minutos antes de considerar una llave en mora</mat-label>
+          <input matInput type="number" id="configuracion-limite-mora" formControlName="limite_antes_mora_minutos" />
+        </mat-form-field>
 
-        <div class="configuracion-form__campo">
-          <label for="configuracion-max-reintentos">
-            Máximo de reintentos de recordatorio
-          </label>
-          <p-inputnumber id="configuracion-max-reintentos" formControlName="max_reintentos_recordatorio" />
-        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Máximo de reintentos de recordatorio</mat-label>
+          <input
+            matInput
+            type="number"
+            id="configuracion-max-reintentos"
+            formControlName="max_reintentos_recordatorio"
+          />
+        </mat-form-field>
 
-        <div class="configuracion-form__campo">
-          <label for="configuracion-limite-no-reclamada">
-            Minutos antes de considerar una reserva no reclamada
-          </label>
-          <p-inputnumber
+        <mat-form-field appearance="outline">
+          <mat-label>Minutos antes de considerar una reserva no reclamada</mat-label>
+          <input
+            matInput
+            type="number"
             id="configuracion-limite-no-reclamada"
             formControlName="limite_no_reclamada_minutos"
           />
-        </div>
+        </mat-form-field>
 
-        <div class="configuracion-form__campo">
-          <label for="configuracion-plantilla">Plantilla de recordatorio (opcional)</label>
+        <mat-form-field appearance="outline">
+          <mat-label>Plantilla de recordatorio (opcional)</mat-label>
           <textarea
-            pTextarea
+            matInput
             id="configuracion-plantilla"
             formControlName="plantilla_recordatorio"
             rows="4"
             placeholder="Déjalo en blanco para no usar una plantilla por defecto"
           ></textarea>
-        </div>
+        </mat-form-field>
 
-        <div class="configuracion-form__campo">
-          <label for="configuracion-ubicacion-defecto">Ubicación por defecto</label>
-          <p-select
-            id="configuracion-ubicacion-defecto"
-            formControlName="ubicacion_defecto_id"
-            [options]="lookups.opcionesUbicaciones()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona una ubicación"
-          />
-        </div>
+        <mat-form-field appearance="outline">
+          <mat-label>Ubicación por defecto</mat-label>
+          <mat-select id="configuracion-ubicacion-defecto" formControlName="ubicacion_defecto_id">
+            @for (opcion of lookups.opcionesUbicaciones(); track opcion.value) {
+              <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+            }
+          </mat-select>
+        </mat-form-field>
 
         <footer class="configuracion-form__acciones">
-          <p-button type="submit" label="Guardar" [loading]="guardando()" [disabled]="form.invalid" />
+          <button type="submit" mat-raised-button color="primary" [disabled]="form.invalid || guardando()">
+            @if (guardando()) {
+              <mat-spinner diameter="18" />
+            } @else {
+              Guardar
+            }
+          </button>
         </footer>
       </form>
     }
@@ -109,14 +116,9 @@ import type { ConfiguracionInput } from './configuracion.models';
     .configuracion-form__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-      margin-top: var(--space-4);
-    }
-
-    .configuracion-form__campo {
-      display: flex;
-      flex-direction: column;
       gap: var(--space-2);
+      margin-top: var(--space-4);
+      max-width: 32rem;
     }
 
     .configuracion-form__acciones {
@@ -130,7 +132,7 @@ import type { ConfiguracionInput } from './configuracion.models';
 export class ConfiguracionFormComponent {
   protected readonly lookups = inject(ConfiguracionLookupsService);
   protected readonly configuracionService = inject(ConfiguracionService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -176,14 +178,12 @@ export class ConfiguracionFormComponent {
     };
 
     this.configuracionService.actualizar.mutate(payload, {
-      onSuccess: () =>
-        this.messageService.add({ severity: 'success', summary: 'Configuración actualizada' }),
+      onSuccess: () => this.notificationService.success('Configuración actualizada'),
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo actualizar la configuración',
-          detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo actualizar la configuración',
+          extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+        ),
     });
   }
 }

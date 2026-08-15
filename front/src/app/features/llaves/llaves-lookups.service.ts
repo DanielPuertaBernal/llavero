@@ -18,7 +18,7 @@ const API = environment.apiBaseUrl;
 /**
  * Catálogos de apoyo que la feature `llaves` necesita para (a) resolver a
  * nombre legible las 7 FKs que `LlaveOut` devuelve como UUID crudo y (b)
- * poblar los `p-select` de los diálogos de entrega y devolución.
+ * poblar los `mat-select` de los diálogos de entrega y devolución.
  *
  * Nota de arquitectura — esto NO viola la regla "una feature no importa
  * código de otra feature" (ver front/README.md): lo prohibido es importar
@@ -79,7 +79,7 @@ export class LlavesLookupsService {
     ordenarPorPermiso(this.ubicaciones.data() ?? [], (u) => u.permite_devolucion_llaves),
   );
 
-  // Opciones ya formateadas para los `p-select` de los diálogos. Viven acá
+  // Opciones ya formateadas para los `mat-select` de los diálogos. Viven acá
   // (y no en cada diálogo) porque `usuarios` se usa tanto en la entrega
   // como en la devolución: una sola definición, una sola forma de
   // etiquetar.

@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { ConfirmationService, type Confirmation } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
+import { ConfirmService } from '../../../core/shared/confirm.service';
 import { environment } from '../../../../environments/environment';
 import { SalonesListComponent } from './salones-list.component';
 
@@ -100,11 +100,10 @@ describe('SalonesListComponent', () => {
 
   it('eliminar salón pide confirmación y, al aceptar, hace DELETE', async () => {
     const fixture = await crearFixtureConDatos();
-    // `ConfirmationService` está provisto a nivel de `SalonesListComponent`
-    // (ver su decorator), no a nivel de módulo — hay que resolverlo desde
-    // el injector del propio elemento, no desde `TestBed.inject`.
-    const confirmationService = fixture.debugElement.injector.get(ConfirmationService);
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
+    // `ConfirmService` es `providedIn: 'root'`, se puede resolver desde
+    // `TestBed.inject` directamente.
+    const confirmService = TestBed.inject(ConfirmService);
+    const confirmarSpy = vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
 
     await vi.waitFor(() => {
       fixture.detectChanges();
@@ -116,13 +115,10 @@ describe('SalonesListComponent', () => {
     ) as HTMLElement;
     expect(botonEliminar).toBeTruthy();
     botonEliminar.click();
-
-    expect(confirmSpy).toHaveBeenCalledOnce();
-    const confirmacion: Confirmation = confirmSpy.mock.calls[0][0];
-    expect(confirmacion.message).toContain('Aula 101');
-
-    confirmacion.accept?.();
     await cederMicrotask();
+
+    expect(confirmarSpy).toHaveBeenCalledOnce();
+    expect(confirmarSpy.mock.calls[0][0].mensaje).toContain('Aula 101');
 
     httpMock
       .expectOne({ method: 'DELETE', url: `${SALONES_URL}/s-1` })

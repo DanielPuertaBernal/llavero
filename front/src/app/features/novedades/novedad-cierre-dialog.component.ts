@@ -6,12 +6,12 @@ import {
   type AbstractControl,
   type ValidationErrors,
 } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
-import { TextareaModule } from 'primeng/textarea';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './novedades-error.util';
 import { NovedadesLookupsService } from './novedades-lookups.service';
 import { NovedadesService } from './novedades.service';
@@ -21,12 +21,14 @@ import { ETIQUETAS_CATEGORIA_NOVEDAD, type Novedad } from './novedades.models';
  * Diálogo de CIERRE de una novedad
  * (`POST /api/novedades/{id}/cerrar` — ver back/novedades/controller.py).
  *
- * Nota de diseño — es un diálogo propio y no un `ConfirmationService.confirm`
+ * Nota de diseño — es un diálogo propio y no un `ConfirmService.confirmar`
  * genérico: a diferencia de `MonitorDesactivacionDialogComponent` y
  * `ReservaCancelacionDialogComponent`, esta transición además EXIGE un dato
  * nuevo (`solucion`, no vacía — ver `CerrarNovedadIn`), así que el diálogo
  * combina el resumen de qué se está cerrando con un formulario de un solo
- * campo, en vez de ser un simple `confirm()`.
+ * campo, en vez de ser una simple confirmación. El mensaje de advertencia de
+ * abajo ("NO se puede deshacer") cumple, dentro de este diálogo propio, el
+ * mismo rol que `peligro: true` cumpliría en un `ConfirmService.confirmar`.
  *
  * Nota de diseño — el mensaje de advertencia, el punto central de este
  * componente: el backend de novedades NO tiene endpoint de reapertura
@@ -49,79 +51,115 @@ import { ETIQUETAS_CATEGORIA_NOVEDAD, type Novedad } from './novedades.models';
  * está cerrada, o si el formulario es inválido: no es duplicar una regla de
  * negocio del backend, es no ofrecer una acción que no significa nada
  * (mismo criterio que `desactivable` en `MonitorDesactivacionDialogComponent`).
+ *
+ * Migración PrimeNG → Angular Material: el `visible` model input se
+ * mantiene igual (renderizado inline en `novedades-list.component.ts`), solo
+ * cambia el componente concreto del overlay/panel, ahora con las directivas
+ * de `MatDialogModule` sobre los estilos literales de "Diálogo/modal" de la
+ * especificación visual UCO, y el badge de estado con los colores de
+ * "Badge de estado" de esa misma especificación. `MessageService.add(...)`
+ * se reemplaza por `NotificationService`. El botón "Cerrar novedad" se pinta
+ * con el color de peligro (`#e28210`) porque es una acción irreversible.
  */
 @Component({
   selector: 'app-novedad-cierre-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, ButtonModule, TagModule, TextareaModule],
+  imports: [MatDialogModule, ReactiveFormsModule, MatButtonModule, MatFormFieldModule, MatInputModule],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Cerrar novedad"
-      [modal]="true"
-      [style]="{ width: '30rem' }"
-    >
-      @if (novedad(); as novedadActual) {
-        <dl class="novedad-cierre-dialog__resumen">
-          <dt>Categoría</dt>
-          <dd>{{ etiquetaCategoria(novedadActual) }}</dd>
-          <dt>Descripción</dt>
-          <dd>{{ novedadActual.descripcion ?? 'Sin descripción registrada' }}</dd>
-          <dt>Registrada por</dt>
-          <dd>{{ lookups.nombreUsuario(novedadActual.registrado_por_id) }}</dd>
-          <dt>Estado</dt>
-          <dd>
-            <p-tag
-              [severity]="novedadActual.estado === 'abierta' ? 'warn' : 'success'"
-              [value]="novedadActual.estado === 'abierta' ? 'Abierta' : 'Cerrada'"
-            />
-          </dd>
-        </dl>
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cerrar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Cerrar novedad"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title>Cerrar novedad</h2>
 
-        @if (!cerrable()) {
-          <p role="alert">Esta novedad ya está cerrada.</p>
-        } @else {
-          <p>
-            Esta acción NO se puede deshacer: el backend no ofrece forma de reabrir una novedad
-            cerrada.
-          </p>
+          <mat-dialog-content>
+            @if (novedad(); as novedadActual) {
+              <dl class="novedad-cierre-dialog__resumen">
+                <dt>Categoría</dt>
+                <dd>{{ etiquetaCategoria(novedadActual) }}</dd>
+                <dt>Descripción</dt>
+                <dd>{{ novedadActual.descripcion ?? 'Sin descripción registrada' }}</dd>
+                <dt>Registrada por</dt>
+                <dd>{{ lookups.nombreUsuario(novedadActual.registrado_por_id) }}</dd>
+                <dt>Estado</dt>
+                <dd>
+                  <span
+                    [class]="
+                      novedadActual.estado === 'abierta'
+                        ? 'badge badge--atencion'
+                        : 'badge badge--exito'
+                    "
+                  >
+                    {{ novedadActual.estado === 'abierta' ? 'Abierta' : 'Cerrada' }}
+                  </span>
+                </dd>
+              </dl>
 
-          <form [formGroup]="form" class="novedad-cierre-dialog__form">
-            <div class="novedad-cierre-dialog__campo">
-              <label for="novedad-solucion">Solución</label>
-              <textarea
-                id="novedad-solucion"
-                pTextarea
-                formControlName="solucion"
-                rows="4"
-                placeholder="Describe qué se hizo para resolver esta novedad"
-              ></textarea>
-            </div>
-          </form>
-        }
-      }
+              @if (!cerrable()) {
+                <p role="alert">Esta novedad ya está cerrada.</p>
+              } @else {
+                <p>
+                  Esta acción NO se puede deshacer: el backend no ofrece forma de reabrir una
+                  novedad cerrada.
+                </p>
 
-      <footer class="novedad-cierre-dialog__acciones">
-        <p-button
-          type="button"
-          label="Volver"
-          severity="secondary"
-          [text]="true"
-          (onClick)="cerrar()"
-        />
-        <p-button
-          type="button"
-          label="Cerrar novedad"
-          severity="danger"
-          [loading]="cerrando()"
-          [disabled]="!puedeConfirmar()"
-          (onClick)="confirmar()"
-          ariaLabel="Confirmar cierre"
-        />
-      </footer>
-    </p-dialog>
+                <form [formGroup]="form" class="novedad-cierre-dialog__form">
+                  <mat-form-field appearance="outline" class="novedad-cierre-dialog__campo">
+                    <mat-label>Solución</mat-label>
+                    <textarea
+                      matInput
+                      formControlName="solucion"
+                      rows="4"
+                      placeholder="Describe qué se hizo para resolver esta novedad"
+                    ></textarea>
+                  </mat-form-field>
+                </form>
+              }
+            }
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button mat-stroked-button type="button" (click)="cerrar()">Volver</button>
+            <button
+              mat-raised-button
+              type="button"
+              class="novedad-cierre-dialog__boton-peligro"
+              [disabled]="!puedeConfirmar() || cerrando()"
+              (click)="confirmar()"
+              aria-label="Confirmar cierre"
+            >
+              {{ cerrando() ? 'Cerrando…' : 'Cerrar novedad' }}
+            </button>
+          </mat-dialog-actions>
+        </div>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(26, 26, 26, 0.2);
+      width: 30rem;
+      max-width: calc(100vw - var(--space-4) * 2);
+      padding: var(--space-4);
+    }
+
     .novedad-cierre-dialog__resumen {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -136,21 +174,36 @@ import { ETIQUETAS_CATEGORIA_NOVEDAD, type Novedad } from './novedades.models';
     .novedad-cierre-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-      margin-top: var(--space-4);
+      gap: var(--space-2);
     }
 
     .novedad-cierre-dialog__campo {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
+      width: 100%;
     }
 
-    .novedad-cierre-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-4);
+    .novedad-cierre-dialog__boton-peligro {
+      background-color: #e28210;
+      color: #ffffff;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+    }
+
+    .badge--atencion {
+      background: #ffca00;
+      color: #1a1a1a;
+    }
+
+    .badge--exito {
+      background: #008b50;
+      color: #ffffff;
     }
   `,
 })
@@ -161,7 +214,7 @@ export class NovedadCierreDialogComponent {
 
   protected readonly lookups = inject(NovedadesLookupsService);
   private readonly novedadesService = inject(NovedadesService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -207,14 +260,13 @@ export class NovedadCierreDialogComponent {
           this.visible.set(false);
           this.form.reset();
           this.cerrada.emit();
-          this.messageService.add({ severity: 'success', summary: 'Novedad cerrada' });
+          this.notificationService.success('Novedad cerrada');
         },
         onError: (error) =>
-          this.messageService.add({
-            severity: 'error',
-            summary: 'No se pudo cerrar la novedad',
-            detail: extraerMensajeError(error, 'Intenta de nuevo.'),
-          }),
+          this.notificationService.error(
+            'No se pudo cerrar la novedad',
+            extraerMensajeError(error, 'Intenta de nuevo.'),
+          ),
       },
     );
   }

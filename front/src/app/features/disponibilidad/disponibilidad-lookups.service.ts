@@ -40,7 +40,7 @@ export class DisponibilidadLookupsService {
   /** Salones tal como los devuelve el backend, sin ordenar ni filtrar. */
   readonly listaSalones = computed(() => this.salones.data() ?? []);
 
-  /** Opciones ya formateadas para el `p-select` del salón. */
+  /** Opciones ya formateadas para el `mat-select` del salón. */
   readonly opcionesSalones = computed(() =>
     (this.salones.data() ?? []).map((salon) => ({ label: salon.nombre, value: salon.id })),
   );

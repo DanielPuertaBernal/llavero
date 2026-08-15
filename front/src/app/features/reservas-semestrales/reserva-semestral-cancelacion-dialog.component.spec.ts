@@ -1,10 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../core/shared/notification.service';
 import { ReservaSemestralCancelacionDialogComponent } from './reserva-semestral-cancelacion-dialog.component';
 import type { ReservaSemestral } from './reservas-semestrales.models';
 
@@ -78,7 +78,6 @@ describe('ReservaSemestralCancelacionDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -184,8 +183,8 @@ describe('ReservaSemestralCancelacionDialogComponent', () => {
     fixture.componentInstance.visible.set(true);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as CancelacionDialogInternals;
     component.confirmar();
@@ -197,11 +196,9 @@ describe('ReservaSemestralCancelacionDialogComponent', () => {
     );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('No se puede cancelar un grupo'),
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo cancelar el grupo',
+        expect.stringContaining('No se puede cancelar un grupo'),
       ),
     );
     // El diálogo NO se cierra ante un error.

@@ -1,11 +1,8 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { MessageService } from 'primeng/api';
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatSelectModule } from '@angular/material/select';
 
 import {
   NotificacionFormDialogComponent,
@@ -23,11 +20,13 @@ import {
   type TipoNotificacion,
 } from './notificaciones.models';
 
-/** Severidad de `p-tag` por estado de envío: un fallo es lo que el operador
- * necesita ver destacado (es el disparador de "Reenviar", RF24). */
-const SEVERIDAD_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, 'success' | 'danger'> = {
-  enviado: 'success',
-  fallido: 'danger',
+/** Clase de badge de estado por estado de envío: un fallo es lo que el
+ * operador necesita ver destacado (es el disparador de "Reenviar", RF24).
+ * Ver "Badge de estado" en
+ * `DOC/5. Identidad Visual/Mockups/00-especificacion-visual.md`. */
+const CLASE_BADGE_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, string> = {
+  enviado: 'badge badge--exito',
+  fallido: 'badge badge--peligro',
 };
 
 /**
@@ -65,93 +64,114 @@ const SEVERIDAD_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, 'success' | 'dange
  * que elegir uno cambia la consulta en `NotificacionesService`, no filtra la
  * lista ya descargada. Elegir un tipo limpia el filtro de estado de envío y
  * viceversa, porque el backend no expone un endpoint combinado.
+ *
+ * Migración PrimeNG → Angular Material: `p-toast`/`MessageService` se
+ * reemplazan por `NotificationService` (SweetAlert2, ver
+ * `core/shared/notification.service.ts`), `p-select` por `mat-select`,
+ * `p-button` por `button[mat-button]`/`button[mat-raised-button]`, `p-table`
+ * por una tabla-simple HTML simple (sin sorting/paginación real, no hacía falta
+ * `MatTableModule`) y `p-tag` por un badge propio con los colores de estado
+ * de la especificación visual UCO.
  */
 @Component({
   selector: 'app-notificaciones-list',
   standalone: true,
   imports: [
     FormsModule,
-    TableModule,
-    ButtonModule,
-    SelectModule,
-    TagModule,
-    ToastModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatSelectModule,
     NotificacionFormDialogComponent,
   ],
-  providers: [MessageService],
   template: `
-    <p-toast />
-
     <header class="notificaciones-list__header">
-      <p-select
-        [options]="opcionesTipo"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="notificacionesService.filtroTipo()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onTipoChange($event)"
-        ariaLabel="Filtrar por tipo"
-        placeholder="Todos los tipos"
-      />
-      <p-select
-        [options]="opcionesEstadoEnvio"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="notificacionesService.filtroEstadoEnvio()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onEstadoEnvioChange($event)"
-        ariaLabel="Filtrar por estado de envío"
-        placeholder="Todos los estados"
-      />
-      <p-button label="Enviar recordatorio" severity="secondary" (onClick)="abrirRecordatorio()" />
-      <p-button label="Enviar notificación" icon="pi pi-send" (onClick)="abrirEnvioManual()" />
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Tipo</mat-label>
+        <mat-select
+          [ngModel]="notificacionesService.filtroTipo()"
+          (ngModelChange)="onTipoChange($event)"
+          aria-label="Filtrar por tipo"
+          placeholder="Todos los tipos"
+        >
+          @for (opcion of opcionesTipo; track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <mat-form-field appearance="outline" subscriptSizing="dynamic">
+        <mat-label>Estado de envío</mat-label>
+        <mat-select
+          [ngModel]="notificacionesService.filtroEstadoEnvio()"
+          (ngModelChange)="onEstadoEnvioChange($event)"
+          aria-label="Filtrar por estado de envío"
+          placeholder="Todos los estados"
+        >
+          @for (opcion of opcionesEstadoEnvio; track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button mat-stroked-button type="button" (click)="abrirRecordatorio()">
+        Enviar recordatorio
+      </button>
+      <button mat-raised-button color="primary" type="button" (click)="abrirEnvioManual()">
+        Enviar notificación
+      </button>
     </header>
 
     @if (notificacionesService.notificaciones.isError()) {
       <p role="alert">No se pudieron cargar las notificaciones. Intenta de nuevo.</p>
+    } @else if (cargando()) {
+      <p>Cargando notificaciones…</p>
+    } @else {
+      <table class="tabla-simple">
+        <thead>
+          <tr>
+            <th>Destinatario</th>
+            <th>Tipo</th>
+            <th>Asunto</th>
+            <th>Mensaje</th>
+            <th>Estado de envío</th>
+            <th></th>
+          </tr>
+        </thead>
+        <tbody>
+          @for (notificacion of notificaciones(); track notificacion.id) {
+            <tr>
+              <td>{{ lookups.nombrePersona(notificacion.destinatario_id) }}</td>
+              <td>{{ etiquetaTipo(notificacion.tipo) }}</td>
+              <td>{{ notificacion.asunto ?? '—' }}</td>
+              <td>{{ notificacion.mensaje ?? '—' }}</td>
+              <td>
+                <span [class]="claseBadgeEstadoEnvio(notificacion.estado_envio)">
+                  {{ etiquetaEstadoEnvio(notificacion.estado_envio) }}
+                </span>
+              </td>
+              <td>
+                @if (notificacion.estado_envio === 'fallido') {
+                  <button
+                    mat-button
+                    type="button"
+                    (click)="abrirReenvio(notificacion)"
+                    aria-label="Reenviar notificación"
+                  >
+                    Reenviar
+                  </button>
+                }
+              </td>
+            </tr>
+          } @empty {
+            <tr>
+              <td colspan="6" class="tabla-simple-simple__estado-vacio">
+                No hay notificaciones registradas para este filtro.
+              </td>
+            </tr>
+          }
+        </tbody>
+      </table>
     }
-
-    <p-table [value]="notificaciones()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
-        <tr>
-          <th>Destinatario</th>
-          <th>Tipo</th>
-          <th>Asunto</th>
-          <th>Mensaje</th>
-          <th>Estado de envío</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-notificacion>
-        <tr>
-          <td>{{ lookups.nombrePersona(notificacion.destinatario_id) }}</td>
-          <td>{{ etiquetaTipo(notificacion.tipo) }}</td>
-          <td>{{ notificacion.asunto ?? '—' }}</td>
-          <td>{{ notificacion.mensaje ?? '—' }}</td>
-          <td>
-            <p-tag
-              [severity]="severidadEstadoEnvio(notificacion.estado_envio)"
-              [value]="etiquetaEstadoEnvio(notificacion.estado_envio)"
-            />
-          </td>
-          <td>
-            @if (notificacion.estado_envio === 'fallido') {
-              <p-button
-                label="Reenviar"
-                [text]="true"
-                (onClick)="abrirReenvio(notificacion)"
-                ariaLabel="Reenviar notificación"
-              />
-            }
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="6">No hay notificaciones registradas para este filtro.</td>
-        </tr>
-      </ng-template>
-    </p-table>
 
     <app-notificacion-form-dialog
       [(visible)]="formDialogVisible"
@@ -166,6 +186,58 @@ const SEVERIDAD_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, 'success' | 'dange
       align-items: center;
       gap: var(--space-4);
       margin-bottom: var(--space-4);
+    }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      text-align: left;
+      padding: var(--space-2) var(--space-3);
+    }
+
+    .tabla-simple-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+    }
+
+    .badge {
+      display: inline-flex;
+      align-items: center;
+      border-radius: 999px;
+      padding: 2px 10px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--peligro {
+      background: #e28210;
     }
   `,
 })
@@ -213,8 +285,8 @@ export class NotificacionesListComponent {
     return ETIQUETAS_ESTADO_ENVIO[estado];
   }
 
-  protected severidadEstadoEnvio(estado: EstadoEnvioNotificacion): 'success' | 'danger' {
-    return SEVERIDAD_ESTADO_ENVIO[estado];
+  protected claseBadgeEstadoEnvio(estado: EstadoEnvioNotificacion): string {
+    return CLASE_BADGE_ESTADO_ENVIO[estado];
   }
 
   protected abrirEnvioManual(): void {

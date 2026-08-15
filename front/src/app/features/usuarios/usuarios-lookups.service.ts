@@ -12,7 +12,7 @@ const API = environment.apiBaseUrl;
 /**
  * Catálogos de apoyo que la feature `usuarios` necesita para (a) resolver a
  * nombre legible las 2 FKs que `UsuarioOut` devuelve como UUID crudo
- * (`rol_id`, `ubicacion_id`) y (b) poblar los `p-select` del formulario de
+ * (`rol_id`, `ubicacion_id`) y (b) poblar los `mat-select` del formulario de
  * creación.
  *
  * Nota de arquitectura — esto NO viola la regla "una feature no importa
@@ -47,7 +47,7 @@ export class UsuariosLookupsService {
     queryFn: () => firstValueFrom(this.http.get<UbicacionLookup[]>(`${API}/catalogos/ubicaciones`)),
   }));
 
-  // Opciones ya formateadas para los `p-select` del formulario. Viven acá
+  // Opciones ya formateadas para los `mat-select` del formulario. Viven acá
   // (y no en el diálogo) por la misma razón que en las otras features: una
   // sola definición y una sola forma de etiquetar.
   //

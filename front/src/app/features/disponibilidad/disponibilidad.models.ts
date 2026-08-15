@@ -29,7 +29,7 @@ export interface ErrorDetalleDto {
  */
 export type Origen = 'programacion' | 'reserva_semestral' | 'reserva_individual';
 
-// Etiquetas para la UI de cada origen — usadas por el `p-tag` de cada fila
+// Etiquetas para la UI de cada origen — usadas por el badge de cada fila
 // (ver disponibilidad-vista.component.ts).
 export const ETIQUETAS_ORIGEN: Record<Origen, string> = {
   programacion: 'Programación académica',

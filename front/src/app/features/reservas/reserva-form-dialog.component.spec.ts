@@ -1,10 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../core/shared/notification.service';
 import { ReservaFormDialogComponent } from './reserva-form-dialog.component';
 
 const API = environment.apiBaseUrl;
@@ -60,7 +60,6 @@ describe('ReservaFormDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -198,8 +197,8 @@ describe('ReservaFormDialogComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as FormDialogInternals;
     component.form.setValue({
@@ -223,11 +222,9 @@ describe('ReservaFormDialogComponent', () => {
     );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('se solapa con otra reserva ya aprobada'),
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo registrar la reserva',
+        expect.stringContaining('se solapa con otra reserva ya aprobada'),
       ),
     );
     // El diálogo NO se cierra ante un error: el usuario corrige y reintenta.

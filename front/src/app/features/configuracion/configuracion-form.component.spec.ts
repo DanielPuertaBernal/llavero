@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { environment } from '../../../environments/environment';
 import { ConfiguracionFormComponent } from './configuracion-form.component';
 
@@ -99,8 +99,8 @@ describe('ConfiguracionFormComponent', () => {
     await cederMicrotask();
     fixture.detectChanges();
 
-    const messageService = fixture.debugElement.injector.get(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const successSpy = vi.spyOn(notificationService, 'success');
 
     const component = fixture.componentInstance as unknown as ConfiguracionFormInternals;
     component.form.patchValue({
@@ -127,9 +127,7 @@ describe('ConfiguracionFormComponent', () => {
     // La mutación invalida la raíz: el GET vuelve a dispararse.
     httpMock.expectOne(`${BASE_URL}/`).flush({ ...configuracionDto, limite_antes_mora_minutos: 90 });
 
-    expect(addSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'success' }),
-    );
+    expect(successSpy).toHaveBeenCalledWith('Configuración actualizada');
   });
 
   it('al fallar la actualización muestra un toast de error con el detalle del backend', async () => {
@@ -138,8 +136,8 @@ describe('ConfiguracionFormComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = fixture.debugElement.injector.get(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as ConfiguracionFormInternals;
     await vi.waitFor(() => expect(component.form.valid).toBe(true));
@@ -150,11 +148,9 @@ describe('ConfiguracionFormComponent', () => {
     req.flush({ detail: 'La ubicación por defecto no existe.' }, { status: 400, statusText: 'Bad Request' });
     await cederMicrotask();
 
-    expect(addSpy).toHaveBeenCalledWith(
-      expect.objectContaining({
-        severity: 'error',
-        detail: 'La ubicación por defecto no existe.',
-      }),
+    expect(errorSpy).toHaveBeenCalledWith(
+      'No se pudo actualizar la configuración',
+      'La ubicación por defecto no existe.',
     );
   });
 

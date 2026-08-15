@@ -1,17 +1,26 @@
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { InputTextModule } from 'primeng/inputtext';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
 import { ReservaSemestralCancelacionDialogComponent } from './reserva-semestral-cancelacion-dialog.component';
 import { ReservaSemestralFormDialogComponent } from './reserva-semestral-form-dialog.component';
 import { ReservasSemestralesLookupsService } from './reservas-semestrales-lookups.service';
 import { ReservasSemestralesService } from './reservas-semestrales.service';
 import { ETIQUETAS_DIA_SEMANA, formatearHora, type ReservaSemestral } from './reservas-semestrales.models';
+
+/** Un grupo de franjas que comparten `grupo_id` (mismo salón, solicitante y
+ * semestre), ya con los campos compartidos resueltos a texto legible. Es la
+ * unidad que renderiza cada bloque de la tabla. */
+interface GrupoFilas {
+  grupoId: string;
+  salon: string;
+  solicitante: string;
+  semestre: string;
+  franjas: ReservaSemestral[];
+}
 
 /**
  * Vista principal de Reservas Semestrales: el tablero de franjas horarias
@@ -30,16 +39,15 @@ import { ETIQUETAS_DIA_SEMANA, formatearHora, type ReservaSemestral } from './re
  * `ReservaSemestralOut` ya trae TODOS los campos en cada fila — no hay nada
  * que cargar aparte. Lo único que cambia entre las franjas de un mismo grupo
  * es `dia`/`hora_inicio`/`hora_fin`; salón, solicitante, semestre y
- * `grupo_id` se repiten. Por eso se usa el `rowGroupMode="subheader"` nativo
- * de `p-table`: la sub-cabecera muestra una sola vez los campos compartidos
- * del grupo (salón, solicitante, semestre) y cada fila del cuerpo muestra
- * solo lo que varía (día, franja horaria, origen). Repetir esas tres
- * columnas en cada fila —como una tabla plana— sería ruido visual para un
- * grupo que puede tener hasta 7 franjas.
+ * `grupo_id` se repiten. Angular Material no tiene un `rowGroupMode=
+ * "subheader"` como PrimeNG, así que la agrupación se arma acá con
+ * `computed` (`grupos`) y se recorre con una tabla HTML simple en vez de
+ * `mat-table`: cada grupo aporta una fila de sub-cabecera (salón, solicitante,
+ * semestre) y una fila por franja debajo.
  *
- * Nota de diseño — el botón "Cancelar grupo" vive en cada fila del CUERPO
- * (no en la sub-cabecera): visualmente pertenece a la franja donde el
- * operador puso el cursor, pero dispara la cancelación del GRUPO completo
+ * Nota de diseño — el botón "Cancelar grupo" vive en cada fila de FRANJA (no
+ * en la sub-cabecera): visualmente pertenece a la franja donde el operador
+ * puso el cursor, pero dispara la cancelación del GRUPO completo
  * (`abrirCancelacion` recolecta todas las franjas que comparten `grupo_id`
  * con la fila clicada, no solo esa fila) — el diálogo de confirmación deja
  * clarísimo que se eliminan todas. Queda deshabilitado si esa franja tiene
@@ -54,97 +62,101 @@ import { ETIQUETAS_DIA_SEMANA, formatearHora, type ReservaSemestral } from './re
  * servidor: el backend no expone ese endpoint para esta feature (ver la nota
  * de diseño de `ReservasSemestralesService`).
  *
- * Nota de diseño — sin columna "Estado" ni `p-tag` de severidad por estado, a
+ * Nota de diseño — sin columna "Estado" ni badge de severidad por estado, a
  * diferencia de `reservas`: `ReservaSemestral` no tiene esa columna (ver
- * reservas-semestrales.models.ts). El único `p-tag` acá distingue origen
+ * reservas-semestrales.models.ts). El único badge acá distingue origen
  * (manual/institucional), no ciclo de vida.
+ *
+ * Migración PrimeNG -> Angular Material: `p-table` (con `rowGroupMode`) ->
+ * tabla HTML simple con agrupamiento propio (ver nota de diseño arriba);
+ * `p-tag` -> badge propio; `MessageService`/`p-toast` -> `NotificationService`
+ * (no se usa acá directamente, pero los diálogos hijos ya migraron).
  */
 @Component({
   selector: 'app-reservas-semestrales-list',
   standalone: true,
   imports: [
     FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    TagModule,
-    ToastModule,
+    MatButtonModule,
+    MatIconModule,
+    MatFormFieldModule,
+    MatInputModule,
     ReservaSemestralFormDialogComponent,
     ReservaSemestralCancelacionDialogComponent,
   ],
-  providers: [MessageService],
   template: `
-    <p-toast />
-
     <header class="reservas-semestrales-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar por salón, solicitante, semestre o día..."
-        aria-label="Buscar reserva semestral por salón, solicitante, semestre o día"
-        (input)="onBusquedaChange($event)"
-      />
-      <p-button label="Registrar reserva semestral" icon="pi pi-plus" (onClick)="abrirFormulario()" />
+      <mat-form-field appearance="outline" class="reservas-semestrales-list__buscador">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Salón, solicitante, semestre o día..."
+          aria-label="Buscar reserva semestral por salón, solicitante, semestre o día"
+          (input)="onBusquedaChange($event)"
+        />
+      </mat-form-field>
+
+      <button mat-raised-button color="primary" type="button" (click)="abrirFormulario()">
+        <mat-icon>add</mat-icon>
+        Registrar reserva semestral
+      </button>
     </header>
 
     @if (reservasSemestralesService.reservas.isError()) {
       <p role="alert">No se pudieron cargar las reservas semestrales. Intenta de nuevo.</p>
     }
 
-    <p-table
-      [value]="filtradas()"
-      [loading]="cargando()"
-      dataKey="id"
-      rowGroupMode="subheader"
-      groupRowsBy="grupo_id"
-      sortField="grupo_id"
-      [sortOrder]="1"
-    >
-      <ng-template #groupheader let-reserva>
-        <tr>
-          <td colspan="4" class="reservas-semestrales-list__grupo-header">
-            <strong>{{ lookups.nombreSalon(reserva.salon_id) }}</strong>
-            — {{ lookups.nombrePersona(reserva.solicitante_id) }}
-            — {{ lookups.codigoSemestre(reserva.semestre_id) }}
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #header>
-        <tr>
-          <th>Día</th>
-          <th>Franja</th>
-          <th>Origen</th>
-          <th></th>
-        </tr>
-      </ng-template>
-      <ng-template #body let-reserva>
-        <tr>
-          <td>{{ etiquetaDia(reserva.dia) }}</td>
-          <td>{{ franja(reserva) }}</td>
-          <td>
-            <p-tag
-              [severity]="reserva.creado_manualmente ? 'info' : 'secondary'"
-              [value]="reserva.creado_manualmente ? 'Manual' : 'Institucional'"
-            />
-          </td>
-          <td>
-            <p-button
-              icon="pi pi-times"
-              [text]="true"
-              severity="danger"
-              [disabled]="!reserva.creado_manualmente"
-              (onClick)="abrirCancelacion(reserva)"
-              ariaLabel="Cancelar grupo"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="4">No hay reservas semestrales registradas para este filtro.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+    @if (!cargando() && grupos().length === 0) {
+      <p class="reservas-semestrales-list__vacio">
+        No hay reservas semestrales registradas para este filtro.
+      </p>
+    } @else {
+      <table class="tabla-simple">
+        <thead>
+          <tr>
+            <th>Día</th>
+            <th>Franja</th>
+            <th>Origen</th>
+            <th></th>
+          </tr>
+        </thead>
+        @for (grupo of grupos(); track grupo.grupoId) {
+          <tbody>
+            <tr class="reservas-semestrales-list__grupo-header">
+              <td colspan="4">
+                <strong>{{ grupo.salon }}</strong>
+                — {{ grupo.solicitante }}
+                — {{ grupo.semestre }}
+              </td>
+            </tr>
+            @for (franjaFila of grupo.franjas; track franjaFila.id) {
+              <tr>
+                <td>{{ etiquetaDia(franjaFila.dia) }}</td>
+                <td>{{ franja(franjaFila) }}</td>
+                <td>
+                  <span class="badge" [class.badge--info]="franjaFila.creado_manualmente" [class.badge--neutro]="!franjaFila.creado_manualmente">
+                    {{ franjaFila.creado_manualmente ? 'Manual' : 'Institucional' }}
+                  </span>
+                </td>
+                <td>
+                  <button
+                    mat-icon-button
+                    type="button"
+                    color="warn"
+                    [disabled]="!franjaFila.creado_manualmente"
+                    (click)="abrirCancelacion(franjaFila)"
+                    aria-label="Cancelar grupo"
+                  >
+                    <mat-icon>close</mat-icon>
+                  </button>
+                </td>
+              </tr>
+            }
+          </tbody>
+        }
+      </table>
+    }
 
     <app-reserva-semestral-form-dialog [(visible)]="formDialogVisible" />
     <app-reserva-semestral-cancelacion-dialog
@@ -157,12 +169,66 @@ import { ETIQUETAS_DIA_SEMANA, formatearHora, type ReservaSemestral } from './re
       display: flex;
       align-items: center;
       justify-content: space-between;
-      gap: var(--space-4);
-      margin-bottom: var(--space-4);
+      gap: var(--space-4, 1rem);
+      margin-bottom: var(--space-4, 1rem);
     }
 
-    .reservas-semestrales-list__grupo-header {
-      padding: var(--space-2) var(--space-4);
+    .reservas-semestrales-list__buscador {
+      min-width: 20rem;
+    }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 600;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 0.875rem;
+      color: #1a1a1a;
+      padding: 0.5rem 0.75rem;
+    }
+
+    .reservas-semestrales-list__grupo-header td {
+      background: #f5f7f6;
+      padding: var(--space-2, 0.5rem) var(--space-4, 1rem);
+    }
+
+    .reservas-semestrales-list__vacio {
+      text-align: center;
+      color: #6b7280;
+      font-style: italic;
+      padding: var(--space-4, 1rem);
+    }
+
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.75rem;
+      border-radius: 999px;
+      font-family: Poppins, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--info {
+      background: #04b5ac;
+    }
+
+    .badge--neutro {
+      background: #1d3475;
     }
   `,
 })
@@ -178,11 +244,8 @@ export class ReservasSemestralesListComponent {
   protected readonly cargando = computed(() => this.reservasSemestralesService.reservas.isPending());
 
   /**
-   * Se ordena por `grupo_id` antes de pasarla a `p-table`: `rowGroupMode=
-   * "subheader"` de PrimeNG necesita las filas del mismo grupo CONSECUTIVAS
-   * para no repetir la sub-cabecera — presortear acá garantiza eso sin
-   * depender de que el usuario interactúe con un `p-columnFilter`/orden de
-   * columna que esta tabla no tiene.
+   * Se ordena por `grupo_id` antes de agrupar: garantiza que las franjas del
+   * mismo grupo queden consecutivas sin depender de ningún orden de columna.
    */
   protected readonly filtradas = computed(() => {
     const termino = this.busqueda().trim().toLowerCase();
@@ -201,6 +264,28 @@ export class ReservasSemestralesListComponent {
     });
 
     return [...coincidentes].sort((a, b) => a.grupo_id.localeCompare(b.grupo_id));
+  });
+
+  /** Arma los bloques de la tabla: una entrada por `grupo_id`, con los campos
+   * compartidos ya resueltos y la lista de franjas del grupo. */
+  protected readonly grupos = computed<GrupoFilas[]>(() => {
+    const porGrupo = new Map<string, ReservaSemestral[]>();
+    for (const reserva of this.filtradas()) {
+      const franjas = porGrupo.get(reserva.grupo_id) ?? [];
+      franjas.push(reserva);
+      porGrupo.set(reserva.grupo_id, franjas);
+    }
+
+    return [...porGrupo.entries()].map(([grupoId, franjas]) => {
+      const primera = franjas[0];
+      return {
+        grupoId,
+        salon: this.lookups.nombreSalon(primera.salon_id),
+        solicitante: this.lookups.nombrePersona(primera.solicitante_id),
+        semestre: this.lookups.codigoSemestre(primera.semestre_id),
+        franjas,
+      };
+    });
   });
 
   protected onBusquedaChange(evento: Event): void {

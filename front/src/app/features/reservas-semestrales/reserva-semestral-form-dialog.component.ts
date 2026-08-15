@@ -6,12 +6,16 @@ import {
   type ValidationErrors,
   Validators,
 } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DatePickerModule } from 'primeng/datepicker';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
+import { MatAutocompleteModule } from '@angular/material/autocomplete';
+import { MatButtonModule } from '@angular/material/button';
+import { provideNativeDateAdapter } from '@angular/material/core';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatSelectModule } from '@angular/material/select';
+import { MatTimepickerModule } from '@angular/material/timepicker';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './reservas-semestrales-error.util';
 import { ReservasSemestralesLookupsService } from './reservas-semestrales-lookups.service';
 import { ReservasSemestralesService } from './reservas-semestrales.service';
@@ -41,10 +45,10 @@ import { OPCIONES_DIA_SEMANA, type FranjaInput, type GrupoReservaSemestralInput 
  * evita un 400 evitable para el caso más común.
  *
  * Nota de diseño — `hora_inicio`/`hora_fin` de cada franja se serializan
- * desde los componentes LOCALES del `Date` que produce `p-datepicker`
- * (`timeOnly`), nunca con `toISOString()`: son horas RECURRENTES sin fecha ni
- * zona (`time` en el schema) — mismo criterio (y misma razón, UTC-5 en
- * Colombia) que `ReservaFormDialogComponent.aHoraIso`.
+ * desde los componentes LOCALES del `Date` que produce `mat-timepicker`,
+ * nunca con `toISOString()`: son horas RECURRENTES sin fecha ni zona (`time`
+ * en el schema) — mismo criterio (y misma razón, UTC-5 en Colombia) que
+ * `ReservaFormDialogComponent.aHoraIso`.
  *
  * Ninguna regla de negocio se replica acá: que las tres FKs existan, y sobre
  * todo el SOLAPAMIENTO con otra reserva semestral o con una `Programacion`
@@ -61,170 +65,210 @@ import { OPCIONES_DIA_SEMANA, type FranjaInput, type GrupoReservaSemestralInput 
  * backend le da default `true`, y este formulario es la única vía HUMANA de
  * creación (una carga institucional con `creado_manualmente=false` no pasa
  * por esta UI). Se omite del payload y el backend aplica su propio default.
+ *
+ * Migración PrimeNG -> Angular Material: `p-dialog` -> panel propio con las
+ * directivas reales de `MatDialogModule`; `p-select` de solicitante ->
+ * `mat-autocomplete` (lista de personas potencialmente larga, igual criterio
+ * que `reserva-form-dialog`); `p-select` de salón/semestre/día -> `mat-select`
+ * (listas acotadas); `p-datepicker[timeOnly]` -> `MatTimepickerModule`;
+ * `MessageService` -> `NotificationService`.
  */
 @Component({
   selector: 'app-reserva-semestral-form-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, SelectModule, DatePickerModule, ButtonModule],
+  imports: [
+    MatDialogModule,
+    ReactiveFormsModule,
+    MatFormFieldModule,
+    MatSelectModule,
+    MatAutocompleteModule,
+    MatTimepickerModule,
+    MatIconModule,
+    MatButtonModule,
+  ],
+  providers: [provideNativeDateAdapter()],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Registrar reserva semestral"
-      [modal]="true"
-      [style]="{ width: '38rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="reserva-semestral-form-dialog__form">
-        <div class="reserva-semestral-form-dialog__campo">
-          <label for="rs-solicitante">Solicitante</label>
-          <p-select
-            id="rs-solicitante"
-            formControlName="solicitante_id"
-            [options]="lookups.opcionesPersonas()"
-            optionLabel="label"
-            optionValue="value"
-            [filter]="true"
-            filterBy="label"
-            placeholder="Selecciona quién solicita la reserva"
-          />
+    @if (visible()) {
+      <div class="dialogo__overlay" (keydown.escape)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Registrar reserva semestral"
+        >
+          <h2 mat-dialog-title>Registrar reserva semestral</h2>
+          <mat-dialog-content>
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="reserva-semestral-form-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Solicitante</mat-label>
+                <input
+                  type="text"
+                  matInput
+                  id="rs-solicitante"
+                  formControlName="solicitante_id"
+                  [matAutocomplete]="autoSolicitante"
+                  placeholder="Busca quién solicita la reserva"
+                />
+                <mat-autocomplete #autoSolicitante="matAutocomplete" [displayWith]="etiquetaPersona">
+                  @for (opcion of lookups.opcionesPersonas(); track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-autocomplete>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Salón</mat-label>
+                <mat-select id="rs-salon" formControlName="salon_id" placeholder="Selecciona el salón">
+                  @for (salon of lookups.listaSalones(); track salon.id) {
+                    <mat-option [value]="salon.id">{{ salon.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Semestre</mat-label>
+                <mat-select id="rs-semestre" formControlName="semestre_id" placeholder="Selecciona el semestre">
+                  @for (opcion of lookups.opcionesSemestres(); track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <fieldset formArrayName="franjas" class="reserva-semestral-form-dialog__franjas">
+                <legend>Franjas horarias</legend>
+
+                @for (franjaControl of franjasArray.controls; track franjaControl; let i = $index) {
+                  <div [formGroupName]="i" class="reserva-semestral-form-dialog__franja">
+                    <mat-form-field appearance="outline">
+                      <mat-label>Día</mat-label>
+                      <mat-select
+                        [id]="'rs-franja-dia-' + i"
+                        formControlName="dia"
+                        [attr.aria-label]="'Día de la franja ' + (i + 1)"
+                      >
+                        @for (opcion of opcionesDia; track opcion.value) {
+                          <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                        }
+                      </mat-select>
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Hora inicio</mat-label>
+                      <input
+                        matInput
+                        [id]="'rs-franja-inicio-' + i"
+                        formControlName="hora_inicio"
+                        [matTimepicker]="pickerInicio"
+                        [attr.aria-label]="'Hora de inicio de la franja ' + (i + 1)"
+                      />
+                      <mat-timepicker-toggle matIconSuffix [for]="pickerInicio" />
+                      <mat-timepicker #pickerInicio interval="15m" />
+                    </mat-form-field>
+
+                    <mat-form-field appearance="outline">
+                      <mat-label>Hora fin</mat-label>
+                      <input
+                        matInput
+                        [id]="'rs-franja-fin-' + i"
+                        formControlName="hora_fin"
+                        [matTimepicker]="pickerFin"
+                        [attr.aria-label]="'Hora de fin de la franja ' + (i + 1)"
+                      />
+                      <mat-timepicker-toggle matIconSuffix [for]="pickerFin" />
+                      <mat-timepicker #pickerFin interval="15m" />
+                    </mat-form-field>
+
+                    <button
+                      mat-icon-button
+                      type="button"
+                      color="warn"
+                      [disabled]="franjasArray.length === 1"
+                      (click)="quitarFranja(i)"
+                      [attr.aria-label]="'Quitar franja ' + (i + 1)"
+                    >
+                      <mat-icon>delete</mat-icon>
+                    </button>
+
+                    @if (franjaControl.errors?.['horaFinAntesQueInicio']) {
+                      <small class="reserva-semestral-form-dialog__error">
+                        La hora de fin debe ser posterior a la hora de inicio.
+                      </small>
+                    }
+                  </div>
+                }
+
+                <button mat-button type="button" (click)="agregarFranja()">
+                  <mat-icon>add</mat-icon>
+                  Agregar franja
+                </button>
+              </fieldset>
+
+              <mat-dialog-actions align="end">
+                <button mat-button type="button" (click)="cancelar()">Cancelar</button>
+                <button
+                  mat-raised-button
+                  color="primary"
+                  type="submit"
+                  [disabled]="form.invalid || guardando()"
+                >
+                  {{ guardando() ? 'Registrando...' : 'Registrar grupo' }}
+                </button>
+              </mat-dialog-actions>
+            </form>
+          </mat-dialog-content>
         </div>
-
-        <div class="reserva-semestral-form-dialog__campo">
-          <label for="rs-salon">Salón</label>
-          <p-select
-            id="rs-salon"
-            formControlName="salon_id"
-            [options]="lookups.listaSalones()"
-            optionLabel="nombre"
-            optionValue="id"
-            [filter]="true"
-            filterBy="nombre"
-            placeholder="Selecciona el salón"
-          />
-        </div>
-
-        <div class="reserva-semestral-form-dialog__campo">
-          <label for="rs-semestre">Semestre</label>
-          <p-select
-            id="rs-semestre"
-            formControlName="semestre_id"
-            [options]="lookups.opcionesSemestres()"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona el semestre"
-          />
-        </div>
-
-        <fieldset formArrayName="franjas" class="reserva-semestral-form-dialog__franjas">
-          <legend>Franjas horarias</legend>
-
-          @for (franja of franjasArray.controls; track franja; let i = $index) {
-            <div [formGroupName]="i" class="reserva-semestral-form-dialog__franja">
-              <p-select
-                [id]="'rs-franja-dia-' + i"
-                formControlName="dia"
-                [options]="opcionesDia"
-                optionLabel="label"
-                optionValue="value"
-                [ariaLabel]="'Día de la franja ' + (i + 1)"
-                placeholder="Día"
-              />
-              <p-datepicker
-                [inputId]="'rs-franja-inicio-' + i"
-                formControlName="hora_inicio"
-                [timeOnly]="true"
-                hourFormat="24"
-                placeholder="HH:MM"
-                [ariaLabel]="'Hora de inicio de la franja ' + (i + 1)"
-              />
-              <p-datepicker
-                [inputId]="'rs-franja-fin-' + i"
-                formControlName="hora_fin"
-                [timeOnly]="true"
-                hourFormat="24"
-                placeholder="HH:MM"
-                [ariaLabel]="'Hora de fin de la franja ' + (i + 1)"
-              />
-              <p-button
-                type="button"
-                icon="pi pi-trash"
-                severity="danger"
-                [text]="true"
-                [disabled]="franjasArray.length === 1"
-                (onClick)="quitarFranja(i)"
-                [ariaLabel]="'Quitar franja ' + (i + 1)"
-              />
-              @if (franja.errors?.['horaFinAntesQueInicio']) {
-                <small class="reserva-semestral-form-dialog__error">
-                  La hora de fin debe ser posterior a la hora de inicio.
-                </small>
-              }
-            </div>
-          }
-
-          <p-button
-            type="button"
-            label="Agregar franja"
-            icon="pi pi-plus"
-            [text]="true"
-            (onClick)="agregarFranja()"
-          />
-        </fieldset>
-
-        <footer class="reserva-semestral-form-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            label="Registrar grupo"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      width: 38rem;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4, 1rem);
+    }
+
     .reserva-semestral-form-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .reserva-semestral-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
+      gap: var(--space-4, 1rem);
     }
 
     .reserva-semestral-form-dialog__franjas {
       display: flex;
       flex-direction: column;
-      gap: var(--space-2);
-      padding: var(--space-4);
+      gap: var(--space-2, 0.5rem);
+      padding: var(--space-4, 1rem);
       margin: 0;
+      border: 1px solid #e2e5e4;
+      border-radius: 6px;
     }
 
     .reserva-semestral-form-dialog__franjas legend {
-      padding: 0 var(--space-2);
+      padding: 0 var(--space-2, 0.5rem);
+      color: #6b7280;
+      font-size: 0.75rem;
     }
 
     .reserva-semestral-form-dialog__franja {
       display: flex;
       flex-wrap: wrap;
       align-items: center;
-      gap: var(--space-2);
-    }
-
-    .reserva-semestral-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
+      gap: var(--space-2, 0.5rem);
     }
   `,
 })
@@ -234,7 +278,7 @@ export class ReservaSemestralFormDialogComponent {
 
   protected readonly lookups = inject(ReservasSemestralesLookupsService);
   private readonly reservasSemestralesService = inject(ReservasSemestralesService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly opcionesDia = OPCIONES_DIA_SEMANA;
@@ -254,6 +298,9 @@ export class ReservaSemestralFormDialogComponent {
   }
 
   protected readonly guardando = computed(() => this.reservasSemestralesService.crear.isPending());
+
+  protected readonly etiquetaPersona = (personaId: string): string =>
+    this.lookups.opcionesPersonas().find((opcion) => opcion.value === personaId)?.label ?? '';
 
   private crearFranjaControl() {
     return this.fb.nonNullable.group(
@@ -305,14 +352,13 @@ export class ReservaSemestralFormDialogComponent {
         this.visible.set(false);
         this.resetearFormulario();
         this.guardado.emit();
-        this.messageService.add({ severity: 'success', summary: 'Reserva semestral registrada' });
+        this.notificationService.success('Reserva semestral registrada');
       },
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo registrar la reserva semestral',
-          detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo registrar la reserva semestral',
+          extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+        ),
     });
   }
 

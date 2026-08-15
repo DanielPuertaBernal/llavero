@@ -1,10 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../core/shared/notification.service';
 import { MonitorDesactivacionDialogComponent } from './monitor-desactivacion-dialog.component';
 import type { Monitor } from './monitores.models';
 
@@ -68,7 +68,6 @@ describe('MonitorDesactivacionDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -178,8 +177,8 @@ describe('MonitorDesactivacionDialogComponent', () => {
     fixture.componentInstance.visible.set(true);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as DesactivacionDialogInternals;
     component.confirmar();
@@ -190,12 +189,7 @@ describe('MonitorDesactivacionDialogComponent', () => {
       .flush({ detail: 'Monitor no encontrado' }, { status: 404, statusText: 'Not Found' });
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Monitor no encontrado',
-        }),
-      ),
+      expect(errorSpy).toHaveBeenCalledWith('No se pudo desactivar la monitoría', 'Monitor no encontrado'),
     );
     expect(fixture.componentInstance.visible()).toBe(true);
   });

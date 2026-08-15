@@ -1,11 +1,13 @@
 import { Component, computed, effect, inject, input, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { CheckboxModule } from 'primeng/checkbox';
-import { MessageService } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
+import { MatButtonModule } from '@angular/material/button';
+import { MatCheckboxModule } from '@angular/material/checkbox';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
 
+import { NotificationService } from '../../../core/shared/notification.service';
 import { extraerMensajeError } from '../catalogos-error.util';
 import type { Ubicacion } from '../catalogos.models';
 import { UbicacionesService } from './ubicaciones.service';
@@ -19,81 +21,107 @@ import { UbicacionesService } from './ubicaciones.service';
  * El backend NO tiene una 4ta flag "activa" (a diferencia del frontend
  * legacy, ver `Ubicacion` en back/catalogos/model.py: solo 3 booleanos) —
  * no se agrega un checkbox para algo que no existe en el modelo.
+ *
+ * Migrado de PrimeNG (`p-dialog`) a Angular Material: se mantiene el mismo
+ * patrón de visibilidad (`model<boolean>`) para no romper la API pública
+ * del componente (`app-ubicacion-form-dialog [(visible)]="..."` en
+ * `ubicaciones-list.component.ts`); la implementación interna usa las
+ * directivas reales de `MatDialogModule` dentro de un overlay condicional,
+ * mismo criterio que `SalonFormDialogComponent`.
  */
 @Component({
   selector: 'app-ubicacion-form-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, InputTextModule, CheckboxModule, ButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatCheckboxModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+  ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      [header]="ubicacion() ? 'Editar ubicación' : 'Nueva ubicación'"
-      [modal]="true"
-      [style]="{ width: '28rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="ubicacion-form-dialog__form">
-        <div class="ubicacion-form-dialog__campo">
-          <label for="ubicacion-nombre">Nombre</label>
-          <input pInputText id="ubicacion-nombre" formControlName="nombre" />
-        </div>
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="ubicacion-form-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="ubicacion-form-titulo">
+            {{ ubicacion() ? 'Editar ubicación' : 'Nueva ubicación' }}
+          </h2>
 
-        <div class="ubicacion-form-dialog__campo ubicacion-form-dialog__checkbox">
-          <p-checkbox
-            formControlName="permite_prestamo_llaves"
-            [binary]="true"
-            inputId="ubicacion-prestamo-llaves"
-          />
-          <label for="ubicacion-prestamo-llaves">Permite préstamo de llaves</label>
-        </div>
+          <mat-dialog-content>
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="ubicacion-form-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Nombre</mat-label>
+                <input matInput id="ubicacion-nombre" formControlName="nombre" />
+              </mat-form-field>
 
-        <div class="ubicacion-form-dialog__campo ubicacion-form-dialog__checkbox">
-          <p-checkbox
-            formControlName="permite_devolucion_llaves"
-            [binary]="true"
-            inputId="ubicacion-devolucion-llaves"
-          />
-          <label for="ubicacion-devolucion-llaves">Permite devolución de llaves</label>
-        </div>
+              <mat-checkbox formControlName="permite_prestamo_llaves" id="ubicacion-prestamo-llaves">
+                Permite préstamo de llaves
+              </mat-checkbox>
 
-        <div class="ubicacion-form-dialog__campo ubicacion-form-dialog__checkbox">
-          <p-checkbox
-            formControlName="permite_prestamo_equipos"
-            [binary]="true"
-            inputId="ubicacion-prestamo-equipos"
-          />
-          <label for="ubicacion-prestamo-equipos">Permite préstamo de equipos</label>
-        </div>
+              <mat-checkbox formControlName="permite_devolucion_llaves" id="ubicacion-devolucion-llaves">
+                Permite devolución de llaves
+              </mat-checkbox>
 
-        <footer class="ubicacion-form-dialog__acciones">
-          <p-button type="button" label="Cancelar" severity="secondary" [text]="true" (onClick)="cancelar()" />
-          <p-button type="submit" label="Guardar" [loading]="guardando()" [disabled]="form.invalid" />
-        </footer>
-      </form>
-    </p-dialog>
+              <mat-checkbox formControlName="permite_prestamo_equipos" id="ubicacion-prestamo-equipos">
+                Permite préstamo de equipos
+              </mat-checkbox>
+            </form>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="cancelar()">Cancelar</button>
+            <button
+              type="submit"
+              mat-raised-button
+              color="primary"
+              [disabled]="form.invalid || guardando()"
+              (click)="guardar()"
+            >
+              @if (guardando()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Guardar
+              }
+            </button>
+          </mat-dialog-actions>
+        </div>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 28rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
+
     .ubicacion-form-dialog__form {
       display: flex;
       flex-direction: column;
       gap: var(--space-4);
-    }
-
-    .ubicacion-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
-      gap: var(--space-2);
-    }
-
-    .ubicacion-form-dialog__checkbox {
-      flex-direction: row;
-      align-items: center;
-    }
-
-    .ubicacion-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
     }
   `,
 })
@@ -103,7 +131,7 @@ export class UbicacionFormDialogComponent {
   readonly guardado = output<void>();
 
   private readonly ubicacionesService = inject(UbicacionesService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -148,17 +176,13 @@ export class UbicacionFormDialogComponent {
     const onSuccess = () => {
       this.visible.set(false);
       this.guardado.emit();
-      this.messageService.add({
-        severity: 'success',
-        summary: ubicacionActual ? 'Ubicación actualizada' : 'Ubicación creada',
-      });
+      this.notificationService.success(ubicacionActual ? 'Ubicación actualizada' : 'Ubicación creada');
     };
     const onError = (error: unknown) =>
-      this.messageService.add({
-        severity: 'error',
-        summary: ubicacionActual ? 'No se pudo actualizar la ubicación' : 'No se pudo crear la ubicación',
-        detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-      });
+      this.notificationService.error(
+        ubicacionActual ? 'No se pudo actualizar la ubicación' : 'No se pudo crear la ubicación',
+        extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+      );
 
     if (ubicacionActual) {
       this.ubicacionesService.actualizar.mutate({ id: ubicacionActual.id, ...valores }, { onSuccess, onError });

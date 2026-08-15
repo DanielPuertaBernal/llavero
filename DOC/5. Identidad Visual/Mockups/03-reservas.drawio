@@ -1,0 +1,832 @@
+<mxfile host="app.diagrams.net" agent="llavero-mockups" version="24.0.0">
+  <diagram id="reservas-lista" name="Reservas — Lista">
+    <mxGraphModel dx="1440" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <!-- Fondo -->
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1440" height="900" as="geometry" />
+        </mxCell>
+
+        <!-- Sidebar -->
+        <mxCell id="sb-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="260" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logo" value="UCO Llavero" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=18;fontStyle=1;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="16" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-collapse" value="&#171;" style="rounded=20;whiteSpace=wrap;html=1;fillColor=#024426;strokeColor=none;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="222" y="20" width="28" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-dashboard" value="&#9632; Dashboard" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="64" width="236" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-sec1" value="GESTI&#211;N DE LLAVES" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="116" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-llaves" value="Llaves" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="144" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-prestamos" value="Pr&#233;stamos" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="176" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-disponibilidad" value="Disponibilidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="208" width="260" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-sec2" value="RESERVAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="252" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas" value="Reservas" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffca00;strokeColor=none;fontColor=#024426;fontFamily=Montserrat;fontSize=13;fontStyle=1;align=left;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="280" width="236" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas-sem" value="Reservas Semestrales" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="312" width="260" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-sec3" value="CAT&#193;LOGOS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="356" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-salones" value="Salones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="384" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-ubicaciones" value="Ubicaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="416" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-bloques" value="Bloques" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="448" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-tipos-silleteria" value="Tipos de Silleter&#237;a" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="480" width="260" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-sec4" value="PERSONAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="524" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-usuarios" value="Usuarios" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="552" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-comunidad" value="Comunidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="584" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-monitores" value="Monitores" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="616" width="260" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-sec5" value="SEGUIMIENTO" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="660" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-novedades" value="Novedades" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="688" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-notificaciones" value="Notificaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="720" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-historial" value="Historial" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="752" width="260" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-divider" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;opacity=20;" vertex="1" parent="1">
+          <mxGeometry x="20" y="800" width="220" height="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-user" value="Ana P&#233;rez &#183; admin" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="820" width="260" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logout" value="Cerrar sesi&#243;n" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffca00;fontStyle=4;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="848" width="260" height="24" as="geometry" />
+        </mxCell>
+
+        <!-- Header -->
+        <mxCell id="hd-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="0" width="1180" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="hd-title" value="Reservas" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=22;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="292" y="0" width="300" height="72" as="geometry" />
+        </mxCell>
+
+        <!-- Barra de filtros -->
+        <mxCell id="f-buscar" value="Buscar por sal&#243;n, solicitante o motivo..." style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#6b7280;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="104" width="320" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="f-solicitante" value="Todos los solicitantes &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="628" y="104" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="f-estado" value="Todos &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="844" y="104" width="160" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="f-btn-registrar" value="+ Registrar reserva" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1230" y="104" width="178" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Tabla: encabezado -->
+        <mxCell id="th1" value="Sal&#243;n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="160" width="180" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th2" value="Solicitante" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="472" y="160" width="200" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th3" value="Fecha" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="672" y="160" width="110" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th4" value="Franja" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="782" y="160" width="140" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th5" value="Motivo" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="922" y="160" width="260" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th6" value="Estado" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1182" y="160" width="120" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th7" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="160" width="106" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Fila 1: aprobada -->
+        <mxCell id="r1c1" value="Aula 204" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="196" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c2" value="Carlos Ram&#237;rez" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="472" y="196" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c3" value="20/08/2026" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="672" y="196" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c4" value="08:00 &#8212; 10:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="782" y="196" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c5" value="Clase de refuerzo" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="922" y="196" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c6-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1182" y="196" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c6-badge" value="Aprobada" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#04b5ac;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1194" y="206" width="88" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c7-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="196" width="106" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r1c7-btn" value="&#10005; Cancelar" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#e28210;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="196" width="106" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Fila 2: completada -->
+        <mxCell id="r2c1" value="Auditorio Central" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="236" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c2" value="Ana P&#233;rez" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="472" y="236" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c3" value="18/08/2026" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="672" y="236" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c4" value="14:00 &#8212; 16:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="782" y="236" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c5" value="Conferencia institucional" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="922" y="236" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c6-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1182" y="236" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c6-badge" value="Completada" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1194" y="246" width="96" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c7-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="236" width="106" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r2c7-btn" value="&#10005; Cancelar" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="236" width="106" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Fila 3: cancelada -->
+        <mxCell id="r3c1" value="Lab. F&#237;sica" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="276" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c2" value="Juli&#225;n V&#233;lez" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="472" y="276" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c3" value="12/08/2026" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="672" y="276" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c4" value="09:00 &#8212; 11:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="782" y="276" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c5" value="&#8212;" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="922" y="276" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c6-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1182" y="276" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c6-badge" value="Cancelada" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#1d3475;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1194" y="286" width="88" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c7-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="276" width="106" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r3c7-btn" value="&#10005; Cancelar" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="276" width="106" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Fila 4: no reclamada -->
+        <mxCell id="r4c1" value="Sala de Juntas B" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="316" width="180" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c2" value="Mar&#237;a Osorio" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="472" y="316" width="200" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c3" value="10/08/2026" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="672" y="316" width="110" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c4" value="07:00 &#8212; 09:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="782" y="316" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c5" value="Reuni&#243;n de coordinaci&#243;n" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="922" y="316" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c6-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1182" y="316" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c6-badge" value="No reclamada" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#ffca00;strokeColor=none;fontColor=#1a1a1a;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1194" y="326" width="96" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c7-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="316" width="106" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="r4c7-btn" value="&#10005; Cancelar" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="1302" y="316" width="106" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="reservas-dialogo" name="Reservas — Registrar reserva">
+    <mxGraphModel dx="1440" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1440" height="900" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="260" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logo" value="UCO Llavero" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=18;fontStyle=1;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="16" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-collapse" value="&#171;" style="rounded=20;whiteSpace=wrap;html=1;fillColor=#024426;strokeColor=none;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="222" y="20" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-dashboard" value="&#9632; Dashboard" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="64" width="236" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec1" value="GESTI&#211;N DE LLAVES" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="116" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-llaves" value="Llaves" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="144" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-prestamos" value="Pr&#233;stamos" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="176" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-disponibilidad" value="Disponibilidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="208" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec2" value="RESERVAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="252" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas" value="Reservas" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffca00;strokeColor=none;fontColor=#024426;fontFamily=Montserrat;fontSize=13;fontStyle=1;align=left;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="280" width="236" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas-sem" value="Reservas Semestrales" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="312" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec3" value="CAT&#193;LOGOS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="356" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-salones" value="Salones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="384" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-ubicaciones" value="Ubicaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="416" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-bloques" value="Bloques" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="448" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-tipos-silleteria" value="Tipos de Silleter&#237;a" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="480" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec4" value="PERSONAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="524" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-usuarios" value="Usuarios" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="552" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-comunidad" value="Comunidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="584" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-monitores" value="Monitores" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="616" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec5" value="SEGUIMIENTO" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="660" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-novedades" value="Novedades" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="688" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-notificaciones" value="Notificaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="720" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-historial" value="Historial" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="752" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-divider" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;opacity=20;" vertex="1" parent="1">
+          <mxGeometry x="20" y="800" width="220" height="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-user" value="Ana P&#233;rez &#183; admin" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="820" width="260" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logout" value="Cerrar sesi&#243;n" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffca00;fontStyle=4;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="848" width="260" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hd-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="0" width="1180" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="hd-title" value="Reservas" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=22;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="292" y="0" width="300" height="72" as="geometry" />
+        </mxCell>
+
+        <!-- Overlay -->
+        <mxCell id="dlg-overlay" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1a1a1a;strokeColor=none;opacity=40;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1440" height="900" as="geometry" />
+        </mxCell>
+
+        <!-- Panel del dialogo -->
+        <mxCell id="dlg-panel" value="" style="rounded=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="460" y="120" width="520" height="660" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-title" value="Registrar reserva" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=18;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="492" y="152" width="456" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l1" value="Solicitante" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="492" y="200" width="456" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i1" value="Selecciona qui&#233;n solicita la reserva &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="492" y="220" width="456" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l2" value="Sal&#243;n" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="492" y="276" width="456" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i2" value="Selecciona el sal&#243;n &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="492" y="296" width="456" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l3" value="Fecha" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="492" y="352" width="456" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i3" value="20/08/2026 &#128197;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="492" y="372" width="456" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l4" value="Hora de inicio" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="492" y="428" width="212" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i4" value="08:00" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="492" y="448" width="212" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l5" value="Hora de fin" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="736" y="428" width="212" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i5" value="10:00" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="736" y="448" width="212" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l6" value="Motivo (opcional)" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="492" y="504" width="456" height="18" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i6" value="Para qu&#233; se usar&#225; el sal&#243;n" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#6b7280;align=left;verticalAlign=top;spacingLeft=10;spacingTop=8;" vertex="1" parent="1">
+          <mxGeometry x="492" y="524" width="456" height="64" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-btn-cancel" value="Cancelar" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#008b50;strokeWidth=1;fontColor=#008b50;fontFamily=Poppins;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="656" y="612" width="100" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-btn-primary" value="Registrar reserva" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="768" y="612" width="180" height="44" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="reservas-sem-lista" name="Reservas Semestrales — Lista">
+    <mxGraphModel dx="1440" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1440" height="900" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="260" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logo" value="UCO Llavero" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=18;fontStyle=1;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="16" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-collapse" value="&#171;" style="rounded=20;whiteSpace=wrap;html=1;fillColor=#024426;strokeColor=none;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="222" y="20" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-dashboard" value="&#9632; Dashboard" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="64" width="236" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec1" value="GESTI&#211;N DE LLAVES" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="116" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-llaves" value="Llaves" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="144" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-prestamos" value="Pr&#233;stamos" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="176" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-disponibilidad" value="Disponibilidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="208" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec2" value="RESERVAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="252" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas" value="Reservas" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="280" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas-sem" value="Reservas Semestrales" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffca00;strokeColor=none;fontColor=#024426;fontFamily=Montserrat;fontSize=13;fontStyle=1;align=left;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="312" width="236" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec3" value="CAT&#193;LOGOS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="356" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-salones" value="Salones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="384" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-ubicaciones" value="Ubicaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="416" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-bloques" value="Bloques" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="448" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-tipos-silleteria" value="Tipos de Silleter&#237;a" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="480" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec4" value="PERSONAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="524" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-usuarios" value="Usuarios" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="552" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-comunidad" value="Comunidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="584" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-monitores" value="Monitores" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="616" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec5" value="SEGUIMIENTO" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="660" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-novedades" value="Novedades" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="688" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-notificaciones" value="Notificaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="720" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-historial" value="Historial" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="752" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-divider" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;opacity=20;" vertex="1" parent="1">
+          <mxGeometry x="20" y="800" width="220" height="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-user" value="Ana P&#233;rez &#183; admin" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="820" width="260" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logout" value="Cerrar sesi&#243;n" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffca00;fontStyle=4;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="848" width="260" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hd-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="0" width="1180" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="hd-title" value="Reservas Semestrales" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=22;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="292" y="0" width="500" height="72" as="geometry" />
+        </mxCell>
+
+        <!-- Barra de filtros -->
+        <mxCell id="f-buscar" value="Buscar por sal&#243;n, solicitante, semestre o d&#237;a..." style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#6b7280;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="104" width="400" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="f-btn-registrar" value="+ Registrar reserva semestral" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="1148" y="104" width="260" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Tabla: encabezado -->
+        <mxCell id="th1" value="D&#237;a" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="160" width="220" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th2" value="Franja" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="512" y="160" width="300" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th3" value="Origen" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="812" y="160" width="260" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="th4" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=12;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="160" width="336" height="36" as="geometry" />
+        </mxCell>
+
+        <!-- Grupo 1: Aula 204 - Carlos Ramirez - 2026-1 -->
+        <mxCell id="grp1-hdr" value="Aula 204 &#8212; Carlos Ram&#237;rez &#8212; 2026-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="196" width="1116" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g1r1c1" value="Lunes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="232" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r1c2" value="08:00 &#8212; 10:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="512" y="232" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r1c3-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="812" y="232" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r1c3-badge" value="Manual" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#04b5ac;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="824" y="242" width="72" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r1c4-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="232" width="336" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r1c4-btn" value="&#10005; Cancelar grupo" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#e28210;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="232" width="336" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g1r2c1" value="Mi&#233;rcoles" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="272" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r2c2" value="08:00 &#8212; 10:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="512" y="272" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r2c3-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="812" y="272" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r2c3-badge" value="Manual" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#04b5ac;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="824" y="282" width="72" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r2c4-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="272" width="336" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g1r2c4-btn" value="&#10005; Cancelar grupo" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#e28210;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="272" width="336" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Grupo 2: Auditorio Central - Ana Perez - 2026-1 -->
+        <mxCell id="grp2-hdr" value="Auditorio Central &#8212; Ana P&#233;rez &#8212; 2026-1" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="312" width="1116" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g2r1c1" value="Martes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="348" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g2r1c2" value="14:00 &#8212; 16:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="512" y="348" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g2r1c3-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="812" y="348" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g2r1c3-badge" value="Institucional" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#1d3475;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="824" y="358" width="96" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="g2r1c4-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="348" width="336" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g2r1c4-btn" value="&#10005; Cancelar grupo" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="348" width="336" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Grupo 3: Lab. Fisica - Julian Velez - 2025-2 -->
+        <mxCell id="grp3-hdr" value="Lab. F&#237;sica &#8212; Juli&#225;n V&#233;lez &#8212; 2025-2" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#f5f7f6;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontStyle=1;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="388" width="1116" height="36" as="geometry" />
+        </mxCell>
+
+        <mxCell id="g3r1c1" value="Viernes" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="292" y="424" width="220" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g3r1c2" value="09:00 &#8212; 11:00" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="512" y="424" width="300" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g3r1c3-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="812" y="424" width="260" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g3r1c3-badge" value="Manual" style="rounded=1;arcSize=50;whiteSpace=wrap;html=1;fillColor=#04b5ac;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=11;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="824" y="434" width="72" height="20" as="geometry" />
+        </mxCell>
+        <mxCell id="g3r1c4-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="424" width="336" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="g3r1c4-btn" value="&#10005; Cancelar grupo" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=12;fontStyle=1;fontColor=#e28210;" vertex="1" parent="1">
+          <mxGeometry x="1072" y="424" width="336" height="40" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+
+  <diagram id="reservas-sem-dialogo" name="Reservas Semestrales — Registrar grupo">
+    <mxGraphModel dx="1440" dy="900" grid="0" gridSize="10" guides="1" tooltips="1" connect="1" arrows="1" fold="1" page="1" pageScale="1" pageWidth="1440" pageHeight="900" math="0" shadow="0">
+      <root>
+        <mxCell id="0" />
+        <mxCell id="1" parent="0" />
+
+        <mxCell id="bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1440" height="900" as="geometry" />
+        </mxCell>
+
+        <mxCell id="sb-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="260" height="900" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logo" value="UCO Llavero" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=18;fontStyle=1;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="16" width="210" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-collapse" value="&#171;" style="rounded=20;whiteSpace=wrap;html=1;fillColor=#024426;strokeColor=none;fontColor=#ffffff;fontSize=12;" vertex="1" parent="1">
+          <mxGeometry x="222" y="20" width="28" height="28" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-dashboard" value="&#9632; Dashboard" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="64" width="236" height="36" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec1" value="GESTI&#211;N DE LLAVES" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="116" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-llaves" value="Llaves" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="144" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-prestamos" value="Pr&#233;stamos" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="176" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-disponibilidad" value="Disponibilidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="208" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec2" value="RESERVAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="252" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas" value="Reservas" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="280" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-reservas-sem" value="Reservas Semestrales" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffca00;strokeColor=none;fontColor=#024426;fontFamily=Montserrat;fontSize=13;fontStyle=1;align=left;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="12" y="312" width="236" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec3" value="CAT&#193;LOGOS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="356" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-salones" value="Salones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="384" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-ubicaciones" value="Ubicaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="416" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-bloques" value="Bloques" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="448" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-tipos-silleteria" value="Tipos de Silleter&#237;a" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="480" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec4" value="PERSONAS" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="524" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-usuarios" value="Usuarios" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="552" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-comunidad" value="Comunidad" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="584" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-monitores" value="Monitores" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="616" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-sec5" value="SEGUIMIENTO" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=11;fontColor=#ffca00;fontStyle=1;spacingLeft=16;" vertex="1" parent="1">
+          <mxGeometry x="0" y="660" width="220" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-novedades" value="Novedades" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="688" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-notificaciones" value="Notificaciones" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="720" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-historial" value="Historial" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontColor=#ffffff;spacingLeft=28;" vertex="1" parent="1">
+          <mxGeometry x="0" y="752" width="260" height="32" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-divider" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;opacity=20;" vertex="1" parent="1">
+          <mxGeometry x="20" y="800" width="220" height="1" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-user" value="Ana P&#233;rez &#183; admin" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffffff;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="820" width="260" height="24" as="geometry" />
+        </mxCell>
+        <mxCell id="sb-logout" value="Cerrar sesi&#243;n" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#ffca00;fontStyle=4;spacingLeft=20;" vertex="1" parent="1">
+          <mxGeometry x="0" y="848" width="260" height="24" as="geometry" />
+        </mxCell>
+
+        <mxCell id="hd-bg" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="260" y="0" width="1180" height="72" as="geometry" />
+        </mxCell>
+        <mxCell id="hd-title" value="Reservas Semestrales" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=22;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="292" y="0" width="500" height="72" as="geometry" />
+        </mxCell>
+
+        <!-- Overlay -->
+        <mxCell id="dlg-overlay" value="" style="rounded=0;whiteSpace=wrap;html=1;fillColor=#1a1a1a;strokeColor=none;opacity=40;" vertex="1" parent="1">
+          <mxGeometry x="0" y="0" width="1440" height="900" as="geometry" />
+        </mxCell>
+
+        <!-- Panel del dialogo -->
+        <mxCell id="dlg-panel" value="" style="rounded=10;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=none;shadow=1;" vertex="1" parent="1">
+          <mxGeometry x="400" y="90" width="640" height="680" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-title" value="Registrar reserva semestral" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=18;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="432" y="122" width="576" height="32" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l1" value="Solicitante" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="432" y="170" width="576" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i1" value="Selecciona qui&#233;n solicita la reserva &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="432" y="188" width="576" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l2" value="Sal&#243;n" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="432" y="244" width="576" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i2" value="Selecciona el sal&#243;n &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="432" y="262" width="576" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-l3" value="Semestre" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=12;fontColor=#6b7280;" vertex="1" parent="1">
+          <mxGeometry x="432" y="318" width="576" height="16" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-i3" value="Selecciona el semestre &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="432" y="336" width="576" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Fieldset de franjas horarias (FormArray) -->
+        <mxCell id="dlg-franjas-box" value="" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;" vertex="1" parent="1">
+          <mxGeometry x="432" y="392" width="576" height="160" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-franjas-legend" value="Franjas horarias" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Montserrat;fontSize=13;fontStyle=1;fontColor=#1a1a1a;" vertex="1" parent="1">
+          <mxGeometry x="448" y="396" width="240" height="20" as="geometry" />
+        </mxCell>
+
+        <!-- Franja 1 -->
+        <mxCell id="dlg-f1-dia" value="Lunes &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="448" y="424" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-f1-inicio" value="08:00" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="424" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-f1-fin" value="10:00" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="732" y="424" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-f1-trash" value="&#128465;" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=14;fontColor=#e28210;" vertex="1" parent="1">
+          <mxGeometry x="864" y="424" width="40" height="40" as="geometry" />
+        </mxCell>
+
+        <!-- Franja 2 -->
+        <mxCell id="dlg-f2-dia" value="Mi&#233;rcoles &#9662;" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="448" y="468" width="140" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-f2-inicio" value="08:00" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="600" y="468" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-f2-fin" value="10:00" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#e2e5e4;strokeWidth=1;fontFamily=Montserrat;fontSize=13;fontColor=#1a1a1a;align=left;spacingLeft=10;" vertex="1" parent="1">
+          <mxGeometry x="732" y="468" width="120" height="40" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-f2-trash" value="&#128465;" style="text;html=1;align=center;verticalAlign=middle;fontFamily=Poppins;fontSize=14;fontColor=#e28210;" vertex="1" parent="1">
+          <mxGeometry x="864" y="468" width="40" height="40" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-btn-add" value="+ Agregar franja" style="text;html=1;align=left;verticalAlign=middle;fontFamily=Poppins;fontSize=13;fontStyle=1;fontColor=#008b50;" vertex="1" parent="1">
+          <mxGeometry x="448" y="516" width="160" height="28" as="geometry" />
+        </mxCell>
+
+        <mxCell id="dlg-btn-cancel" value="Cancelar" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#ffffff;strokeColor=#008b50;strokeWidth=1;fontColor=#008b50;fontFamily=Poppins;fontSize=13;" vertex="1" parent="1">
+          <mxGeometry x="700" y="592" width="100" height="44" as="geometry" />
+        </mxCell>
+        <mxCell id="dlg-btn-primary" value="Registrar grupo" style="rounded=6;whiteSpace=wrap;html=1;fillColor=#008b50;strokeColor=none;fontColor=#ffffff;fontFamily=Poppins;fontSize=13;fontStyle=1;" vertex="1" parent="1">
+          <mxGeometry x="812" y="592" width="196" height="44" as="geometry" />
+        </mxCell>
+
+      </root>
+    </mxGraphModel>
+  </diagram>
+</mxfile>

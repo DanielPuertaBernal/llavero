@@ -1,10 +1,12 @@
 import { Component, computed, effect, inject, input, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './llaves-error.util';
 import { LlavesLookupsService } from './llaves-lookups.service';
 import { LlavesService } from './llaves.service';
@@ -30,96 +32,139 @@ import { OPCIONES_TIPO_ENTREGA_LLAVE, type Llave, type TipoEntregaLlave } from '
  * `LlavesLookupsService.ubicacionesDevolucion`): la validación es del
  * backend y su 400 se muestra tal cual, sin pre-chequeo cliente que
  * duplique la regla.
+ *
+ * Migrado de PrimeNG (`p-dialog`) a Angular Material: mismo patrón de
+ * visibilidad (`model<boolean>`), implementación interna con las directivas
+ * de `MatDialogModule` dentro de un overlay condicional (ver
+ * `llave-entrega-dialog.component.ts` para la misma decisión).
  */
 @Component({
   selector: 'app-llave-devolucion-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, SelectModule, ButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+  ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Registrar devolución"
-      [modal]="true"
-      [style]="{ width: '30rem' }"
-    >
-      @if (llave(); as llaveActual) {
-        <dl class="llave-devolucion-dialog__resumen">
-          <dt>Salón</dt>
-          <dd>{{ lookups.nombreSalon(llaveActual.salon_id) }}</dd>
-          <dt>Reclamada por</dt>
-          <dd>{{ lookups.nombrePersona(llaveActual.reclamado_por_id) }}</dd>
-        </dl>
-      }
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="devolucion-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="devolucion-titulo">Registrar devolución</h2>
 
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="llave-devolucion-dialog__form">
-        <div class="llave-devolucion-dialog__campo">
-          <label for="devolucion-usuario">Usuario que recibe</label>
-          <p-select
-            id="devolucion-usuario"
-            formControlName="usuario_recibe_id"
-            [options]="lookups.opcionesUsuarios()"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona quién recibe"
-          />
+          <mat-dialog-content>
+            @if (llave(); as llaveActual) {
+              <dl class="llave-devolucion-dialog__resumen">
+                <dt>Salón</dt>
+                <dd>{{ lookups.nombreSalon(llaveActual.salon_id) }}</dd>
+                <dt>Reclamada por</dt>
+                <dd>{{ lookups.nombrePersona(llaveActual.reclamado_por_id) }}</dd>
+              </dl>
+            }
+
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="llave-devolucion-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Usuario que recibe</mat-label>
+                <mat-select
+                  id="devolucion-usuario"
+                  formControlName="usuario_recibe_id"
+                  placeholder="Selecciona quién recibe"
+                >
+                  @for (usuario of lookups.opcionesUsuarios(); track usuario.value) {
+                    <mat-option [value]="usuario.value">{{ usuario.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Ubicación de devolución</mat-label>
+                <mat-select
+                  id="devolucion-ubicacion"
+                  formControlName="ubicacion_devolucion_id"
+                  placeholder="Selecciona la ubicación"
+                >
+                  @for (ubicacion of lookups.ubicacionesDevolucion(); track ubicacion.id) {
+                    <mat-option [value]="ubicacion.id">{{ ubicacion.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Tipo de devolución</mat-label>
+                <mat-select
+                  id="devolucion-tipo"
+                  formControlName="tipo_devolucion"
+                  placeholder="Selecciona el tipo de devolución"
+                >
+                  @for (opcion of opcionesTipoDevolucion; track opcion.value) {
+                    <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Novedad (opcional)</mat-label>
+                <mat-select id="devolucion-novedad" formControlName="novedad_id" placeholder="Sin novedad">
+                  <mat-option value="">Sin novedad</mat-option>
+                  @for (novedad of lookups.opcionesNovedades(); track novedad.value) {
+                    <mat-option [value]="novedad.value">{{ novedad.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+            </form>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="cancelar()">Cancelar</button>
+            <button
+              type="submit"
+              mat-raised-button
+              color="primary"
+              [disabled]="form.invalid || guardando()"
+              (click)="guardar()"
+            >
+              @if (guardando()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Registrar devolución
+              }
+            </button>
+          </mat-dialog-actions>
         </div>
-
-        <div class="llave-devolucion-dialog__campo">
-          <label for="devolucion-ubicacion">Ubicación de devolución</label>
-          <p-select
-            id="devolucion-ubicacion"
-            formControlName="ubicacion_devolucion_id"
-            [options]="lookups.ubicacionesDevolucion()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Selecciona la ubicación"
-          />
-        </div>
-
-        <div class="llave-devolucion-dialog__campo">
-          <label for="devolucion-tipo">Tipo de devolución</label>
-          <p-select
-            id="devolucion-tipo"
-            formControlName="tipo_devolucion"
-            [options]="opcionesTipoDevolucion"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona el tipo de devolución"
-          />
-        </div>
-
-        <div class="llave-devolucion-dialog__campo">
-          <label for="devolucion-novedad">Novedad (opcional)</label>
-          <p-select
-            id="devolucion-novedad"
-            formControlName="novedad_id"
-            [options]="lookups.opcionesNovedades()"
-            optionLabel="label"
-            optionValue="value"
-            [showClear]="true"
-            placeholder="Sin novedad"
-          />
-        </div>
-
-        <footer class="llave-devolucion-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            label="Registrar devolución"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 30rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
+
     .llave-devolucion-dialog__resumen {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -134,20 +179,7 @@ import { OPCIONES_TIPO_ENTREGA_LLAVE, type Llave, type TipoEntregaLlave } from '
     .llave-devolucion-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .llave-devolucion-dialog__campo {
-      display: flex;
-      flex-direction: column;
       gap: var(--space-2);
-    }
-
-    .llave-devolucion-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
     }
   `,
 })
@@ -158,15 +190,16 @@ export class LlaveDevolucionDialogComponent {
 
   protected readonly lookups = inject(LlavesLookupsService);
   private readonly llavesService = inject(LlavesService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly opcionesTipoDevolucion = OPCIONES_TIPO_ENTREGA_LLAVE;
 
   // `novedad_id` usa `''` como "sin novedad" (mismo convenio que el resto
   // de los selectores de la feature) y se traduce a `null` al construir el
-  // payload; `p-select` con `[showClear]` puede además dejarlo en `null`,
-  // caso que el `?? ''` de abajo también cubre.
+  // payload; el `mat-select` con la opción "Sin novedad" en `''` puede
+  // además dejarlo así explícitamente, caso que el `?? ''` de abajo también
+  // cubre.
   protected readonly form = this.fb.nonNullable.group({
     usuario_recibe_id: ['', Validators.required],
     ubicacion_devolucion_id: ['', Validators.required],
@@ -211,14 +244,13 @@ export class LlaveDevolucionDialogComponent {
         onSuccess: () => {
           this.visible.set(false);
           this.guardado.emit();
-          this.messageService.add({ severity: 'success', summary: 'Devolución registrada' });
+          this.notificationService.success('Devolución registrada');
         },
         onError: (error) =>
-          this.messageService.add({
-            severity: 'error',
-            summary: 'No se pudo registrar la devolución',
-            detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-          }),
+          this.notificationService.error(
+            'No se pudo registrar la devolución',
+            extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+          ),
       },
     );
   }

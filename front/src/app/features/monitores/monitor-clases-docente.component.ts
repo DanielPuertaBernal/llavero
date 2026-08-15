@@ -1,7 +1,6 @@
 import { HttpClient } from '@angular/common/http';
 import { Component, inject, input } from '@angular/core';
 import { injectQuery } from '@tanstack/angular-query-experimental';
-import { TableModule } from 'primeng/table';
 import { firstValueFrom } from 'rxjs';
 
 import { environment } from '../../../environments/environment';
@@ -37,7 +36,7 @@ const BASE_URL = `${environment.apiBaseUrl}/monitores`;
 @Component({
   selector: 'app-monitor-clases-docente',
   standalone: true,
-  imports: [TableModule],
+  imports: [],
   template: `
     @if (clases.isPending()) {
       <p class="monitor-clases-docente__estado">Cargando las clases del docente titular...</p>
@@ -47,8 +46,8 @@ const BASE_URL = `${environment.apiBaseUrl}/monitores`;
       <p role="alert">No se pudieron cargar las clases del docente titular. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="clases.data() ?? []" dataKey="id" size="small">
-      <ng-template #header>
+    <table class="tabla-simple">
+      <thead>
         <tr>
           <th>Materia</th>
           <th>Día</th>
@@ -56,28 +55,59 @@ const BASE_URL = `${environment.apiBaseUrl}/monitores`;
           <th>Hora fin</th>
           <th>Salón</th>
         </tr>
-      </ng-template>
-      <ng-template #body let-clase>
-        <tr>
-          <td>{{ clase.materia }}</td>
-          <td>{{ diaLegible(clase) }}</td>
-          <td>{{ formatearHora(clase.hora_inicio) }}</td>
-          <td>{{ formatearHora(clase.hora_fin) }}</td>
-          <!-- salon_id se muestra crudo a propósito: ver la nota de
-               alcance de ClaseDocente en monitores.models.ts. -->
-          <td>{{ clase.salon_id }}</td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="5">Este docente titular no tiene clases programadas.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </thead>
+      <tbody>
+        @for (clase of clases.data() ?? []; track clase.id) {
+          <tr>
+            <td>{{ clase.materia }}</td>
+            <td>{{ diaLegible(clase) }}</td>
+            <td>{{ formatearHora(clase.hora_inicio) }}</td>
+            <td>{{ formatearHora(clase.hora_fin) }}</td>
+            <!-- salon_id se muestra crudo a propósito: ver la nota de
+                 alcance de ClaseDocente en monitores.models.ts. -->
+            <td>{{ clase.salon_id }}</td>
+          </tr>
+        } @empty {
+          <tr>
+            <td colspan="5" class="tabla-simple__estado-vacio">
+              Este docente titular no tiene clases programadas.
+            </td>
+          </tr>
+        }
+      </tbody>
+    </table>
   `,
   styles: `
     .monitor-clases-docente__estado {
       margin: 0 0 var(--space-2);
+    }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+    }
+
+    .tabla-simple thead th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-weight: 700;
+      text-align: left;
+      padding: 8px 10px;
+    }
+
+    .tabla-simple tbody td {
+      background: #ffffff;
+      border: 1px solid #e2e5e4;
+      color: #1a1a1a;
+      padding: 8px 10px;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      color: #6b7280;
+      font-style: italic;
     }
   `,
 })

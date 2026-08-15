@@ -64,8 +64,8 @@ export const ETIQUETAS_ESTADO_EQUIPO: Record<EstadoEquipo, string> = {
 };
 
 /**
- * Forma que consumen `p-select` y `p-multiselect` de PrimeNG
- * (`optionLabel="label"`, `optionValue="value"`). Las listas de opciones de
+ * Forma que consumen `mat-select` (single) y `mat-select [multiple]` de
+ * Angular Material (`mat-option [value]`). Las listas de opciones de
  * los enums se derivan de los mapas de etiquetas de arriba en vez de
  * escribirse a mano: agregar un valor al enum del backend y su etiqueta acá
  * es suficiente para que aparezca en los selectores de la feature.

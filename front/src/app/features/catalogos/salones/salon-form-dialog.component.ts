@@ -1,12 +1,13 @@
 import { Component, computed, effect, inject, input, model, output } from '@angular/core';
 import { FormBuilder, ReactiveFormsModule, Validators } from '@angular/forms';
-import { ButtonModule } from 'primeng/button';
-import { MessageService } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
-import { InputNumberModule } from 'primeng/inputnumber';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatInputModule } from '@angular/material/input';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../../core/shared/notification.service';
 import { extraerMensajeError } from '../catalogos-error.util';
 import type { Bloque, Salon, TipoSilleteria } from '../catalogos.models';
 import { SalonesService } from './salones.service';
@@ -21,83 +22,128 @@ import { SalonesService } from './salones.service';
  * `BloquesService`/`TiposSilleteriaService` directamente acá: el
  * componente padre (`SalonesListComponent`) ya los tiene cargados para la
  * tabla, evitando una segunda suscripción redundante a la misma query.
+ *
+ * Migrado de PrimeNG (`p-dialog`) a Angular Material: se mantiene el mismo
+ * patrón de visibilidad (`model<boolean>`) para no romper la API pública
+ * del componente (`app-salon-form-dialog [(visible)]="..."` en
+ * `salones-list.component.ts`); la implementación interna usa las
+ * directivas reales de `MatDialogModule` (`mat-dialog-title`/
+ * `mat-dialog-content`/`mat-dialog-actions`) dentro de un overlay
+ * condicional, mismo criterio que `LlaveEntregaDialogComponent`.
  */
 @Component({
   selector: 'app-salon-form-dialog',
   standalone: true,
-  imports: [DialogModule, ReactiveFormsModule, InputTextModule, InputNumberModule, SelectModule, ButtonModule],
+  imports: [
+    ReactiveFormsModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatInputModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
+  ],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      [header]="salon() ? 'Editar salón' : 'Nuevo salón'"
-      [modal]="true"
-      [style]="{ width: '28rem' }"
-    >
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="salon-form-dialog__form">
-        <div class="salon-form-dialog__campo">
-          <label for="salon-nombre">Nombre</label>
-          <input pInputText id="salon-nombre" formControlName="nombre" />
-        </div>
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="salon-form-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="salon-form-titulo">
+            {{ salon() ? 'Editar salón' : 'Nuevo salón' }}
+          </h2>
 
-        <div class="salon-form-dialog__campo">
-          <label for="salon-bloque">Bloque</label>
-          <p-select
-            id="salon-bloque"
-            formControlName="bloque_id"
-            [options]="bloques()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Selecciona un bloque"
-          />
-        </div>
+          <mat-dialog-content>
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="salon-form-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Nombre</mat-label>
+                <input matInput id="salon-nombre" formControlName="nombre" />
+              </mat-form-field>
 
-        <div class="salon-form-dialog__campo">
-          <label for="salon-tipo-silleteria">Tipo de silletería</label>
-          <p-select
-            id="salon-tipo-silleteria"
-            formControlName="tipo_silleteria_id"
-            [options]="tiposSilleteria()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Selecciona un tipo de silletería"
-          />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Bloque</mat-label>
+                <mat-select id="salon-bloque" formControlName="bloque_id" placeholder="Selecciona un bloque">
+                  @for (bloque of bloques(); track bloque.id) {
+                    <mat-option [value]="bloque.id">{{ bloque.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-        <div class="salon-form-dialog__campo">
-          <label for="salon-cantidad-sillas">Cantidad de sillas</label>
-          <p-inputnumber id="salon-cantidad-sillas" formControlName="cantidad_sillas" />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Tipo de silletería</mat-label>
+                <mat-select
+                  id="salon-tipo-silleteria"
+                  formControlName="tipo_silleteria_id"
+                  placeholder="Selecciona un tipo de silletería"
+                >
+                  @for (tipo of tiposSilleteria(); track tipo.id) {
+                    <mat-option [value]="tipo.id">{{ tipo.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
 
-        <div class="salon-form-dialog__campo">
-          <label for="salon-cantidad-mesas">Cantidad de mesas</label>
-          <p-inputnumber id="salon-cantidad-mesas" formControlName="cantidad_mesas" />
-        </div>
+              <mat-form-field appearance="outline">
+                <mat-label>Cantidad de sillas</mat-label>
+                <input matInput type="number" id="salon-cantidad-sillas" formControlName="cantidad_sillas" />
+              </mat-form-field>
 
-        <footer class="salon-form-dialog__acciones">
-          <p-button type="button" label="Cancelar" severity="secondary" [text]="true" (onClick)="cancelar()" />
-          <p-button type="submit" label="Guardar" [loading]="guardando()" [disabled]="form.invalid" />
-        </footer>
-      </form>
-    </p-dialog>
+              <mat-form-field appearance="outline">
+                <mat-label>Cantidad de mesas</mat-label>
+                <input matInput type="number" id="salon-cantidad-mesas" formControlName="cantidad_mesas" />
+              </mat-form-field>
+            </form>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="cancelar()">Cancelar</button>
+            <button
+              type="submit"
+              mat-raised-button
+              color="primary"
+              [disabled]="form.invalid || guardando()"
+              (click)="guardar()"
+            >
+              @if (guardando()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Guardar
+              }
+            </button>
+          </mat-dialog-actions>
+        </div>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 28rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
+
     .salon-form-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .salon-form-dialog__campo {
-      display: flex;
-      flex-direction: column;
       gap: var(--space-2);
-    }
-
-    .salon-form-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
     }
   `,
 })
@@ -109,7 +155,7 @@ export class SalonFormDialogComponent {
   readonly guardado = output<void>();
 
   private readonly salonesService = inject(SalonesService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -160,17 +206,13 @@ export class SalonFormDialogComponent {
     const onSuccess = () => {
       this.visible.set(false);
       this.guardado.emit();
-      this.messageService.add({
-        severity: 'success',
-        summary: salonActual ? 'Salón actualizado' : 'Salón creado',
-      });
+      this.notificationService.success(salonActual ? 'Salón actualizado' : 'Salón creado');
     };
     const onError = (error: unknown) =>
-      this.messageService.add({
-        severity: 'error',
-        summary: salonActual ? 'No se pudo actualizar el salón' : 'No se pudo crear el salón',
-        detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-      });
+      this.notificationService.error(
+        salonActual ? 'No se pudo actualizar el salón' : 'No se pudo crear el salón',
+        extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+      );
 
     if (salonActual) {
       this.salonesService.actualizar.mutate({ id: salonActual.id, ...valores }, { onSuccess, onError });

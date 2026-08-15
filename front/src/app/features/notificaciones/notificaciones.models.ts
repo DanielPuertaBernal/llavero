@@ -61,10 +61,10 @@ export const ETIQUETAS_ESTADO_ENVIO: Record<EstadoEnvioNotificacion, string> = {
 };
 
 /**
- * Forma que consume `p-select` de PrimeNG (`optionLabel="label"`,
- * `optionValue="value"`). Se deriva de los mapas de etiquetas de arriba en
- * vez de escribirse a mano, mismo patrón que `OPCIONES_ESTADO_RESERVA` en
- * `features/reservas`.
+ * Forma que consume `mat-select` (`<mat-option [value]="opcion.value">{{
+ * opcion.label }}</mat-option>`). Se deriva de los mapas de etiquetas de
+ * arriba en vez de escribirse a mano, mismo patrón que
+ * `OPCIONES_ESTADO_RESERVA` en `features/reservas`.
  */
 export interface OpcionSelect<T extends string> {
   label: string;

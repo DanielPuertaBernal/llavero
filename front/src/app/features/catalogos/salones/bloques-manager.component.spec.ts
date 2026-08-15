@@ -2,9 +2,9 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import type { FormGroup } from '@angular/forms';
 import { TestBed } from '@angular/core/testing';
-import { ConfirmationService, MessageService, type Confirmation } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
+import { ConfirmService } from '../../../core/shared/confirm.service';
 import { environment } from '../../../../environments/environment';
 import { BloquesManagerComponent } from './bloques-manager.component';
 
@@ -23,12 +23,12 @@ const cederMicrotask = () => new Promise((resolve) => setTimeout(resolve, 0));
 interface BloquesManagerInternals {
   formNuevo: FormGroup<{ nombre: import('@angular/forms').FormControl<string> }>;
   agregar(): void;
-  confirmarEliminar(bloque: { id: string; nombre: string }): void;
+  confirmarEliminar(bloque: { id: string; nombre: string }): Promise<void>;
 }
 
 describe('BloquesManagerComponent', () => {
   let httpMock: HttpTestingController;
-  let confirmationService: ConfirmationService;
+  let confirmService: ConfirmService;
 
   beforeEach(async () => {
     await TestBed.configureTestingModule({
@@ -37,13 +37,11 @@ describe('BloquesManagerComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        ConfirmationService,
-        MessageService,
       ],
     }).compileComponents();
 
     httpMock = TestBed.inject(HttpTestingController);
-    confirmationService = TestBed.inject(ConfirmationService);
+    confirmService = TestBed.inject(ConfirmService);
   });
 
   afterEach(() => {
@@ -93,17 +91,14 @@ describe('BloquesManagerComponent', () => {
     httpMock.expectOne(BASE_URL).flush([{ id: 'b-1', nombre: 'Bloque A' }]);
     fixture.detectChanges();
 
-    const confirmSpy = vi.spyOn(confirmationService, 'confirm');
+    const confirmarSpy = vi.spyOn(confirmService, 'confirmar').mockResolvedValue(true);
 
     const component = fixture.componentInstance as unknown as BloquesManagerInternals;
-    component.confirmarEliminar({ id: 'b-1', nombre: 'Bloque A' });
+    await component.confirmarEliminar({ id: 'b-1', nombre: 'Bloque A' });
 
-    expect(confirmSpy).toHaveBeenCalledOnce();
-    const confirmacion: Confirmation = confirmSpy.mock.calls[0][0];
-    expect(confirmacion.message).toContain('Bloque A');
+    expect(confirmarSpy).toHaveBeenCalledOnce();
+    expect(confirmarSpy.mock.calls[0][0].mensaje).toContain('Bloque A');
 
-    // Simula al usuario aceptando la confirmación.
-    confirmacion.accept?.();
     await cederMicrotask();
 
     httpMock
@@ -122,10 +117,10 @@ describe('BloquesManagerComponent', () => {
     httpMock.expectOne(BASE_URL).flush([{ id: 'b-1', nombre: 'Bloque A' }]);
     fixture.detectChanges();
 
-    vi.spyOn(confirmationService, 'confirm').mockImplementation((): ConfirmationService => confirmationService);
+    vi.spyOn(confirmService, 'confirmar').mockResolvedValue(false);
 
     const component = fixture.componentInstance as unknown as BloquesManagerInternals;
-    component.confirmarEliminar({ id: 'b-1', nombre: 'Bloque A' });
+    await component.confirmarEliminar({ id: 'b-1', nombre: 'Bloque A' });
     await cederMicrotask();
 
     httpMock.expectNone({ method: 'DELETE', url: `${BASE_URL}/b-1` });

@@ -2,11 +2,11 @@ import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { signal } from '@angular/core';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { AuthService } from '../../core/auth/auth.service';
 import type { UsuarioAutenticado } from '../../core/auth/auth.models';
+import { NotificationService } from '../../core/shared/notification.service';
 import { environment } from '../../../environments/environment';
 import { NotificacionFormDialogComponent } from './notificacion-form-dialog.component';
 
@@ -56,7 +56,6 @@ describe('NotificacionFormDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
         { provide: AuthService, useValue: { currentUser } },
       ],
     }).compileComponents();
@@ -123,8 +122,8 @@ describe('NotificacionFormDialogComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as FormDialogInternals;
     component.form.setValue({ destinatario_id: 'p-1', asunto: 'Aviso', mensaje: 'Mensaje' });
@@ -133,8 +132,9 @@ describe('NotificacionFormDialogComponent', () => {
     await cederMicrotask();
 
     httpMock.expectNone({ method: 'POST', url: `${BASE_URL}/manual` });
-    expect(addSpy).toHaveBeenCalledWith(
-      expect.objectContaining({ severity: 'error', detail: expect.stringContaining('sesión') }),
+    expect(errorSpy).toHaveBeenCalledWith(
+      expect.any(String),
+      expect.stringContaining('sesión'),
     );
   });
 
@@ -144,8 +144,8 @@ describe('NotificacionFormDialogComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as FormDialogInternals;
     component.form.setValue({ destinatario_id: 'p-9', asunto: 'Aviso', mensaje: 'Mensaje' });
@@ -161,11 +161,9 @@ describe('NotificacionFormDialogComponent', () => {
       );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: expect.stringContaining('No existe un destinatario'),
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        expect.any(String),
+        expect.stringContaining('No existe un destinatario'),
       ),
     );
     expect(fixture.componentInstance.visible()).toBe(true);

@@ -1,9 +1,9 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { environment } from '../../../environments/environment';
 import { UsuarioFormDialogComponent } from './usuario-form-dialog.component';
 
@@ -55,7 +55,6 @@ describe('UsuarioFormDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -144,8 +143,8 @@ describe('UsuarioFormDialogComponent', () => {
     responderCargaInicial(httpMock);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as UsuarioFormDialogInternals;
     component.form.setValue(valoresBase);
@@ -163,11 +162,9 @@ describe('UsuarioFormDialogComponent', () => {
       );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'Ya existe un usuario con ese email institucional',
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo crear el usuario',
+        'Ya existe un usuario con ese email institucional',
       ),
     );
     // El diálogo sigue abierto para que el operador corrija el correo.
@@ -255,8 +252,8 @@ describe('UsuarioFormDialogComponent', () => {
     fixture.componentRef.setInput('usuario', usuarioDto);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as UsuarioFormDialogInternals;
     component.form.patchValue({ email_institucional: 'bruno@uco.edu.co' });
@@ -272,12 +269,9 @@ describe('UsuarioFormDialogComponent', () => {
       .flush('Internal Server Error', { status: 500, statusText: 'Internal Server Error' });
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          summary: 'No se pudo actualizar el usuario',
-          detail: expect.stringContaining('correo institucional'),
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo actualizar el usuario',
+        expect.stringContaining('correo institucional'),
       ),
     );
     // El diálogo sigue abierto para que el operador corrija el correo.

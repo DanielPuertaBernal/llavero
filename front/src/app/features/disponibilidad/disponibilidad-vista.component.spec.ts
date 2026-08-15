@@ -35,7 +35,7 @@ describe('DisponibilidadVistaComponent', () => {
   let httpMock: HttpTestingController;
 
   beforeEach(async () => {
-    // Fecha de hoy fija: `p-datepicker` arranca con hoy por defecto (ver la
+    // Fecha de hoy fija: `mat-datepicker` arranca con hoy por defecto (ver la
     // tarea de esta feature) y el test necesita saber cuál es "hoy" para
     // esperar la URL exacta.
     vi.setSystemTime(new Date(2026, 7, 13, 9, 0, 0));

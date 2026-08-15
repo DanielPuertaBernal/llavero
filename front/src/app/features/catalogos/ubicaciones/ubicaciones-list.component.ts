@@ -1,12 +1,11 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { InputTextModule } from 'primeng/inputtext';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
+import { ConfirmService } from '../../../core/shared/confirm.service';
+import { NotificationService } from '../../../core/shared/notification.service';
 import { extraerMensajeError } from '../catalogos-error.util';
 import type { Ubicacion } from '../catalogos.models';
 import { UbicacionFormDialogComponent } from './ubicacion-form-dialog.component';
@@ -14,48 +13,47 @@ import { UbicacionesService } from './ubicaciones.service';
 
 /**
  * Vista de Ubicaciones: tabla con búsqueda por nombre y los 3 flags de
- * permiso mostrados con `p-tag` (en vez de columnas booleanas planas, para
- * que se lean de un vistazo qué operaciones autoriza cada ubicación — ver
- * `PermisosCell` en el legacy, catalogos.md §2).
+ * permiso mostrados con un badge propio (en vez de columnas booleanas
+ * planas, para que se lean de un vistazo qué operaciones autoriza cada
+ * ubicación — ver `PermisosCell` en el legacy, catalogos.md §2).
  *
  * A diferencia de `UbicacionesPage` legacy (ver catalogos.md §8, "Sin
  * manejo de carga/deshabilitado"), acá SÍ se muestra un estado de error si
  * la carga inicial falla (`isError()`), no solo el spinner de `loading`.
+ *
+ * Migrado de PrimeNG a Angular Material: tabla HTML simple (sin sorting/
+ * paginación real) y badges propios con la paleta de estados de
+ * `DOC/5. Identidad Visual/Mockups/00-especificacion-visual.md` (no hay
+ * componente Material equivalente a `p-tag`).
  */
 @Component({
   selector: 'app-ubicaciones-list',
   standalone: true,
-  imports: [
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    TagModule,
-    ToastModule,
-    ConfirmDialogModule,
-    UbicacionFormDialogComponent,
-  ],
-  providers: [ConfirmationService, MessageService],
+  imports: [MatButtonModule, MatFormFieldModule, MatIconModule, MatInputModule, UbicacionFormDialogComponent],
   template: `
-    <p-toast />
-    <p-confirmdialog />
-
     <header class="ubicaciones-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar ubicación por nombre..."
-        aria-label="Buscar ubicación por nombre"
-        (input)="onBusquedaChange($event)"
-      />
-      <p-button label="Nueva ubicación" icon="pi pi-plus" (onClick)="abrirCrear()" />
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Buscar ubicación por nombre..."
+          aria-label="Buscar ubicación por nombre"
+          (input)="onBusquedaChange($event)"
+        />
+      </mat-form-field>
+      <button type="button" mat-raised-button color="primary" (click)="abrirCrear()">
+        <mat-icon>add</mat-icon>
+        Nueva ubicación
+      </button>
     </header>
 
     @if (ubicacionesService.ubicaciones.isError()) {
       <p role="alert">No se pudieron cargar las ubicaciones. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="ubicacionesFiltradas()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
+    <table class="tabla-simple">
+      <thead>
         <tr>
           <th>Nombre</th>
           <th>Préstamo de llaves</th>
@@ -63,46 +61,54 @@ import { UbicacionesService } from './ubicaciones.service';
           <th>Préstamo de equipos</th>
           <th></th>
         </tr>
-      </ng-template>
-      <ng-template #body let-ubicacion>
-        <tr>
-          <td>{{ ubicacion.nombre }}</td>
-          <td>
-            <p-tag
-              [severity]="ubicacion.permite_prestamo_llaves ? 'success' : 'danger'"
-              [value]="ubicacion.permite_prestamo_llaves ? 'Permitido' : 'No permitido'"
-            />
-          </td>
-          <td>
-            <p-tag
-              [severity]="ubicacion.permite_devolucion_llaves ? 'success' : 'danger'"
-              [value]="ubicacion.permite_devolucion_llaves ? 'Permitido' : 'No permitido'"
-            />
-          </td>
-          <td>
-            <p-tag
-              [severity]="ubicacion.permite_prestamo_equipos ? 'success' : 'danger'"
-              [value]="ubicacion.permite_prestamo_equipos ? 'Permitido' : 'No permitido'"
-            />
-          </td>
-          <td>
-            <p-button icon="pi pi-pencil" [text]="true" (onClick)="abrirEditar(ubicacion)" [ariaLabel]="'Editar ubicación'" />
-            <p-button
-              icon="pi pi-trash"
-              severity="danger"
-              [text]="true"
-              (onClick)="confirmarEliminar(ubicacion)"
-              [ariaLabel]="'Eliminar ubicación'"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="5">No hay ubicaciones registradas.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="5" class="tabla-simple__estado-vacio">Cargando...</td>
+          </tr>
+        } @else if (ubicacionesFiltradas().length === 0) {
+          <tr>
+            <td colspan="5" class="tabla-simple__estado-vacio">No hay ubicaciones registradas.</td>
+          </tr>
+        } @else {
+          @for (ubicacion of ubicacionesFiltradas(); track ubicacion.id) {
+            <tr>
+              <td>{{ ubicacion.nombre }}</td>
+              <td>
+                <span class="badge" [class]="ubicacion.permite_prestamo_llaves ? 'badge--exito' : 'badge--peligro'">
+                  {{ ubicacion.permite_prestamo_llaves ? 'Permitido' : 'No permitido' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="ubicacion.permite_devolucion_llaves ? 'badge--exito' : 'badge--peligro'">
+                  {{ ubicacion.permite_devolucion_llaves ? 'Permitido' : 'No permitido' }}
+                </span>
+              </td>
+              <td>
+                <span class="badge" [class]="ubicacion.permite_prestamo_equipos ? 'badge--exito' : 'badge--peligro'">
+                  {{ ubicacion.permite_prestamo_equipos ? 'Permitido' : 'No permitido' }}
+                </span>
+              </td>
+              <td>
+                <button type="button" mat-icon-button (click)="abrirEditar(ubicacion)" aria-label="Editar ubicación">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  mat-icon-button
+                  class="boton-peligro"
+                  (click)="confirmarEliminar(ubicacion)"
+                  aria-label="Eliminar ubicación"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
 
     <app-ubicacion-form-dialog [(visible)]="formDialogVisible" [ubicacion]="ubicacionEditando()" />
   `,
@@ -114,12 +120,67 @@ import { UbicacionesService } from './ubicaciones.service';
       gap: var(--space-4);
       margin-bottom: var(--space-4);
     }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 10px;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 10px;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+      padding: 24px;
+    }
+
+    .boton-peligro {
+      color: #e28210;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--peligro {
+      background: #e28210;
+    }
   `,
 })
 export class UbicacionesListComponent {
   protected readonly ubicacionesService = inject(UbicacionesService);
-  private readonly confirmationService = inject(ConfirmationService);
-  private readonly messageService = inject(MessageService);
+  private readonly confirmService = inject(ConfirmService);
+  private readonly notificationService = inject(NotificationService);
 
   protected readonly busqueda = signal('');
   protected readonly formDialogVisible = signal(false);
@@ -150,25 +211,27 @@ export class UbicacionesListComponent {
     this.formDialogVisible.set(true);
   }
 
-  protected confirmarEliminar(ubicacion: Ubicacion): void {
-    this.confirmationService.confirm({
-      header: 'Eliminar ubicación',
-      message: `¿Eliminar la ubicación "${ubicacion.nombre}"? Esta acción no se puede deshacer.`,
-      acceptLabel: 'Eliminar',
-      rejectLabel: 'Cancelar',
-      accept: () => this.eliminar(ubicacion),
+  protected async confirmarEliminar(ubicacion: Ubicacion): Promise<void> {
+    const confirmado = await this.confirmService.confirmar({
+      titulo: 'Eliminar ubicación',
+      mensaje: `¿Eliminar la ubicación "${ubicacion.nombre}"? Esta acción no se puede deshacer.`,
+      peligro: true,
+      textoAceptar: 'Eliminar',
+      textoCancelar: 'Cancelar',
     });
+    if (confirmado) {
+      this.eliminar(ubicacion);
+    }
   }
 
   private eliminar(ubicacion: Ubicacion): void {
     this.ubicacionesService.eliminar.mutate(ubicacion.id, {
-      onSuccess: () => this.messageService.add({ severity: 'success', summary: 'Ubicación eliminada' }),
+      onSuccess: () => this.notificationService.success('Ubicación eliminada'),
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo eliminar la ubicación',
-          detail: extraerMensajeError(error, 'Intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo eliminar la ubicación',
+          extraerMensajeError(error, 'Intenta de nuevo.'),
+        ),
     });
   }
 }

@@ -19,7 +19,7 @@ import type { ErrorDetalleDto } from './monitores.models';
  * Ese mensaje ya viene redactado para el usuario final, así que se muestra
  * tal cual. Regla del proyecto: NO se replica ninguna de esas validaciones
  * del lado cliente — en particular, "docente titular distinto de monitor
- * delegado" NO se pre-chequea comparando los dos `p-select` del formulario;
+ * delegado" NO se pre-chequea comparando los dos selectores del formulario;
  * el backend es la única autoridad y su 400 es la respuesta que ve el
  * operador.
  */

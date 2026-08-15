@@ -1,14 +1,11 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, inject, signal } from '@angular/core';
 import { FormsModule } from '@angular/forms';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { SelectModule } from 'primeng/select';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
+import { MatSelectModule } from '@angular/material/select';
 
 import { LlaveDevolucionDialogComponent } from './llave-devolucion-dialog.component';
 import { LlaveEntregaDialogComponent } from './llave-entrega-dialog.component';
@@ -26,14 +23,15 @@ import {
 } from './llaves.models';
 
 /**
- * Severidad de `p-tag` por estado: préstamo abierto es información neutra,
- * demora es una alerta que exige acción, y entregado es el cierre exitoso
- * del ciclo.
+ * Clase de badge por estado: préstamo abierto es información neutra, demora
+ * es una alerta que exige acción, y entregado es el cierre exitoso del
+ * ciclo. Colores según la paleta de estados de
+ * `DOC/5. Identidad Visual/Mockups/00-especificacion-visual.md`.
  */
-const SEVERIDAD_ESTADO: Record<EstadoLlave, 'info' | 'danger' | 'success'> = {
-  en_prestamo: 'info',
-  demora_entrega: 'danger',
-  entregado: 'success',
+const CLASE_BADGE_ESTADO: Record<EstadoLlave, string> = {
+  en_prestamo: 'badge--info',
+  demora_entrega: 'badge--peligro',
+  entregado: 'badge--exito',
 };
 
 /**
@@ -58,6 +56,11 @@ const SEVERIDAD_ESTADO: Record<EstadoLlave, 'info' | 'danger' | 'success'> = {
  * Las 3 FKs que la tabla muestra se resuelven contra
  * `LlavesLookupsService`, con el id crudo como respaldo mientras el lookup
  * carga: la tabla nunca muestra una celda vacía.
+ *
+ * Migrado de PrimeNG a Angular Material: la tabla usa HTML simple (sin
+ * sorting/paginación real, no aporta forzar `mat-table`); el filtro de
+ * estado es un `mat-select` corto (4 opciones); los estados se muestran con
+ * un badge propio (no hay componente Material equivalente a `p-tag`).
  */
 @Component({
   selector: 'app-llaves-list',
@@ -65,48 +68,52 @@ const SEVERIDAD_ESTADO: Record<EstadoLlave, 'info' | 'danger' | 'success'> = {
   imports: [
     DatePipe,
     FormsModule,
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    SelectModule,
-    TagModule,
-    ToastModule,
-    ConfirmDialogModule,
+    MatButtonModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
+    MatSelectModule,
     LlaveEntregaDialogComponent,
     LlaveDevolucionDialogComponent,
   ],
-  providers: [ConfirmationService, MessageService],
   template: `
-    <p-toast />
-    <p-confirmdialog />
-
     <header class="llaves-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar por salón o persona..."
-        aria-label="Buscar llave por salón o persona"
-        (input)="onBusquedaChange($event)"
-      />
-      <p-select
-        [options]="opcionesEstado"
-        optionLabel="label"
-        optionValue="value"
-        [ngModel]="llavesService.filtroEstado()"
-        [ngModelOptions]="{ standalone: true }"
-        (ngModelChange)="onEstadoChange($event)"
-        ariaLabel="Filtrar por estado"
-        placeholder="Todas"
-      />
-      <p-button label="Registrar entrega" icon="pi pi-plus" (onClick)="abrirEntrega()" />
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Buscar por salón o persona..."
+          aria-label="Buscar llave por salón o persona"
+          (input)="onBusquedaChange($event)"
+        />
+      </mat-form-field>
+
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Estado</mat-label>
+        <mat-select
+          [ngModel]="llavesService.filtroEstado()"
+          (ngModelChange)="onEstadoChange($event)"
+          aria-label="Filtrar por estado"
+        >
+          @for (opcion of opcionesEstado; track opcion.value) {
+            <mat-option [value]="opcion.value">{{ opcion.label }}</mat-option>
+          }
+        </mat-select>
+      </mat-form-field>
+
+      <button type="button" mat-raised-button color="primary" (click)="abrirEntrega()">
+        <mat-icon>add</mat-icon>
+        Registrar entrega
+      </button>
     </header>
 
     @if (llavesService.llaves.isError()) {
       <p role="alert">No se pudieron cargar las llaves. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="llavesFiltradas()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
+    <table class="tabla-simple">
+      <thead>
         <tr>
           <th>Salón</th>
           <th>Docente titular</th>
@@ -117,38 +124,48 @@ const SEVERIDAD_ESTADO: Record<EstadoLlave, 'info' | 'danger' | 'success'> = {
           <th>Estado</th>
           <th></th>
         </tr>
-      </ng-template>
-      <ng-template #body let-llave>
-        <tr>
-          <td>{{ lookups.nombreSalon(llave.salon_id) }}</td>
-          <td>{{ lookups.nombrePersona(llave.docente_titular_id) }}</td>
-          <td>{{ lookups.nombrePersona(llave.reclamado_por_id) }}</td>
-          <td>{{ etiquetaOrigen(llave.origen) }}</td>
-          <td>{{ etiquetaTipoEntrega(llave.tipo_entrega) }}</td>
-          <td>{{ llave.fecha_hora_entrega | date: 'dd/MM/yyyy HH:mm' }}</td>
-          <td>
-            <p-tag
-              [severity]="severidadEstado(llave.estado)"
-              [value]="etiquetaEstado(llave.estado)"
-            />
-          </td>
-          <td>
-            <p-button
-              icon="pi pi-inbox"
-              [text]="true"
-              [disabled]="llave.estado === 'entregado'"
-              (onClick)="abrirDevolucion(llave)"
-              [ariaLabel]="'Registrar devolución'"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="8">No hay llaves registradas para este filtro.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="8" class="tabla-simple__estado-vacio">Cargando...</td>
+          </tr>
+        } @else if (llavesFiltradas().length === 0) {
+          <tr>
+            <td colspan="8" class="tabla-simple__estado-vacio">
+              No hay llaves registradas para este filtro.
+            </td>
+          </tr>
+        } @else {
+          @for (llave of llavesFiltradas(); track llave.id) {
+            <tr>
+              <td>{{ lookups.nombreSalon(llave.salon_id) }}</td>
+              <td>{{ lookups.nombrePersona(llave.docente_titular_id) }}</td>
+              <td>{{ lookups.nombrePersona(llave.reclamado_por_id) }}</td>
+              <td>{{ etiquetaOrigen(llave.origen) }}</td>
+              <td>{{ etiquetaTipoEntrega(llave.tipo_entrega) }}</td>
+              <td>{{ llave.fecha_hora_entrega | date: 'dd/MM/yyyy HH:mm' }}</td>
+              <td>
+                <span class="badge" [class]="claseBadgeEstado(llave.estado)">
+                  {{ etiquetaEstado(llave.estado) }}
+                </span>
+              </td>
+              <td>
+                <button
+                  type="button"
+                  mat-icon-button
+                  [disabled]="llave.estado === 'entregado'"
+                  (click)="abrirDevolucion(llave)"
+                  aria-label="Registrar devolución"
+                >
+                  <mat-icon>inbox</mat-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
 
     <app-llave-entrega-dialog [(visible)]="entregaDialogVisible" />
     <app-llave-devolucion-dialog [(visible)]="devolucionDialogVisible" [llave]="llaveADevolver()" />
@@ -160,6 +177,66 @@ const SEVERIDAD_ESTADO: Record<EstadoLlave, 'info' | 'danger' | 'success'> = {
       align-items: center;
       gap: var(--space-4);
       margin-bottom: var(--space-4);
+    }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 10px;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 10px;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+      padding: 24px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--info {
+      background: #04b5ac;
+    }
+
+    .badge--atencion {
+      background: #ffca00;
+      color: #1a1a1a;
+    }
+
+    .badge--peligro {
+      background: #e28210;
     }
   `,
 })
@@ -206,8 +283,8 @@ export class LlavesListComponent {
     return ETIQUETAS_ESTADO_LLAVE[estado];
   }
 
-  protected severidadEstado(estado: EstadoLlave): 'info' | 'danger' | 'success' {
-    return SEVERIDAD_ESTADO[estado];
+  protected claseBadgeEstado(estado: EstadoLlave): string {
+    return CLASE_BADGE_ESTADO[estado];
   }
 
   protected etiquetaOrigen(origen: OrigenLlave): string {

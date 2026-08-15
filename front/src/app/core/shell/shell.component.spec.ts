@@ -22,10 +22,9 @@ describe('ShellComponent', () => {
   beforeEach(async () => {
     logout.mockClear();
 
-    // `p-menubar` de PrimeNG usa `window.matchMedia` para su comportamiento
-    // responsive (colapsar a menú móvil por debajo de cierto ancho) — jsdom
-    // no lo implementa. Es el primer componente del proyecto que lo toca,
-    // así que el stub vive acá, scoped a este spec.
+    // Angular CDK (`mat-sidenav`/overlay) usa `window.matchMedia` para su
+    // comportamiento responsive — jsdom no lo implementa. Stub scoped a
+    // este spec.
     if (!window.matchMedia) {
       window.matchMedia = () =>
         ({
@@ -87,12 +86,10 @@ describe('ShellComponent', () => {
 
   it('el botón de cerrar sesión invoca authService.logout()', () => {
     const fixture = crearComponente();
-    const boton = fixture.debugElement
-      .queryAll(By.css('button'))
-      .find((debugEl) => (debugEl.nativeElement as HTMLButtonElement).textContent?.includes('Cerrar sesión'));
+    const boton = fixture.debugElement.query(By.css('button[aria-label="Cerrar sesión"]'));
 
     expect(boton).toBeTruthy();
-    boton!.nativeElement.click();
+    boton.nativeElement.click();
 
     expect(logout).toHaveBeenCalledTimes(1);
   });

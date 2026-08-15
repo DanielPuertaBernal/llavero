@@ -1,20 +1,18 @@
 import { DatePipe } from '@angular/common';
 import { Component, computed, effect, inject, input } from '@angular/core';
-import { TableModule } from 'primeng/table';
-import { TagModule } from 'primeng/tag';
 
 import { PrestamoDetallesService } from './prestamo-detalles.service';
 import { PrestamosLookupsService } from './prestamos-lookups.service';
 import { ETIQUETAS_ESTADO_DETALLE_EQUIPO, type EstadoDetalleEquipo } from './prestamos.models';
 
 /**
- * Severidad de `p-tag` por estado del equipo dentro del préstamo: un equipo
+ * Clase de badge por estado del equipo dentro del préstamo: un equipo
  * todavía en poder del solicitante es información neutra; uno ya devuelto es
  * el cierre exitoso de su parte del ciclo.
  */
-const SEVERIDAD_ESTADO_EQUIPO: Record<EstadoDetalleEquipo, 'info' | 'success'> = {
-  entregado: 'info',
-  devuelto: 'success',
+const CLASE_BADGE_ESTADO_EQUIPO: Record<EstadoDetalleEquipo, string> = {
+  entregado: 'badge--info',
+  devuelto: 'badge--exito',
 };
 
 /**
@@ -32,11 +30,14 @@ const SEVERIDAD_ESTADO_EQUIPO: Record<EstadoDetalleEquipo, 'info' | 'success'> =
  * Los ids de equipo, usuario, ubicación y novedad se resuelven contra
  * `PrestamosLookupsService` (ese sí de raíz: son catálogos globales), con el
  * id crudo como respaldo mientras el lookup carga.
+ *
+ * Migrado de PrimeNG a Angular Material: tablas HTML simples (sin
+ * sorting/paginación real) y badges propios en vez de `p-tag`.
  */
 @Component({
   selector: 'app-prestamo-detalles',
   standalone: true,
-  imports: [DatePipe, TableModule, TagModule],
+  imports: [DatePipe],
   providers: [PrestamoDetallesService],
   template: `
     @if (cargando()) {
@@ -49,8 +50,8 @@ const SEVERIDAD_ESTADO_EQUIPO: Record<EstadoDetalleEquipo, 'info' | 'success'> =
 
     <section class="prestamo-detalles__seccion">
       <h3>Equipos del préstamo</h3>
-      <p-table [value]="detallesService.detalles.data() ?? []" dataKey="id" size="small">
-        <ng-template #header>
+      <table class="tabla-simple tabla-simple--chica">
+        <thead>
           <tr>
             <th>Equipo</th>
             <th>Estado del equipo</th>
@@ -58,60 +59,69 @@ const SEVERIDAD_ESTADO_EQUIPO: Record<EstadoDetalleEquipo, 'info' | 'success'> =
             <th>Devuelto</th>
             <th>Novedad</th>
           </tr>
-        </ng-template>
-        <ng-template #body let-detalle>
-          <tr>
-            <td>{{ lookups.nombreEquipo(detalle.equipo_id) }}</td>
-            <td>
-              <p-tag
-                [severity]="severidadEstadoEquipo(detalle.estado_equipo)"
-                [value]="etiquetaEstadoEquipo(detalle.estado_equipo)"
-              />
-            </td>
-            <td>{{ detalle.fecha_entrega | date: 'dd/MM/yyyy HH:mm' }}</td>
-            <td>
-              {{
-                detalle.fecha_devolucion
-                  ? (detalle.fecha_devolucion | date: 'dd/MM/yyyy HH:mm')
-                  : '—'
-              }}
-            </td>
-            <td>{{ detalle.novedad_id ? lookups.nombreNovedad(detalle.novedad_id) : '—' }}</td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="5">Este préstamo no tiene equipos registrados.</td>
-          </tr>
-        </ng-template>
-      </p-table>
+        </thead>
+        <tbody>
+          @if ((detallesService.detalles.data() ?? []).length === 0) {
+            <tr>
+              <td colspan="5" class="tabla-simple__estado-vacio">
+                Este préstamo no tiene equipos registrados.
+              </td>
+            </tr>
+          } @else {
+            @for (detalle of detallesService.detalles.data() ?? []; track detalle.id) {
+              <tr>
+                <td>{{ lookups.nombreEquipo(detalle.equipo_id) }}</td>
+                <td>
+                  <span class="badge" [class]="claseBadgeEstadoEquipo(detalle.estado_equipo)">
+                    {{ etiquetaEstadoEquipo(detalle.estado_equipo) }}
+                  </span>
+                </td>
+                <td>{{ detalle.fecha_entrega | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>
+                  {{
+                    detalle.fecha_devolucion
+                      ? (detalle.fecha_devolucion | date: 'dd/MM/yyyy HH:mm')
+                      : '—'
+                  }}
+                </td>
+                <td>{{ detalle.novedad_id ? lookups.nombreNovedad(detalle.novedad_id) : '—' }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
     </section>
 
     <section class="prestamo-detalles__seccion">
       <h3>Devoluciones</h3>
-      <p-table [value]="detallesService.devoluciones.data() ?? []" dataKey="id" size="small">
-        <ng-template #header>
+      <table class="tabla-simple tabla-simple--chica">
+        <thead>
           <tr>
             <th>Fecha</th>
             <th>Recibido por</th>
             <th>Ubicación</th>
             <th>Tipo</th>
           </tr>
-        </ng-template>
-        <ng-template #body let-devolucion>
-          <tr>
-            <td>{{ devolucion.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
-            <td>{{ lookups.nombreUsuario(devolucion.usuario_recibe_id) }}</td>
-            <td>{{ lookups.nombreUbicacion(devolucion.ubicacion_id) }}</td>
-            <td>{{ devolucion.es_completa ? 'Completa' : 'Parcial' }}</td>
-          </tr>
-        </ng-template>
-        <ng-template #emptymessage>
-          <tr>
-            <td colspan="4">Este préstamo todavía no tiene devoluciones.</td>
-          </tr>
-        </ng-template>
-      </p-table>
+        </thead>
+        <tbody>
+          @if ((detallesService.devoluciones.data() ?? []).length === 0) {
+            <tr>
+              <td colspan="4" class="tabla-simple__estado-vacio">
+                Este préstamo todavía no tiene devoluciones.
+              </td>
+            </tr>
+          } @else {
+            @for (devolucion of detallesService.devoluciones.data() ?? []; track devolucion.id) {
+              <tr>
+                <td>{{ devolucion.fecha | date: 'dd/MM/yyyy HH:mm' }}</td>
+                <td>{{ lookups.nombreUsuario(devolucion.usuario_recibe_id) }}</td>
+                <td>{{ lookups.nombreUbicacion(devolucion.ubicacion_id) }}</td>
+                <td>{{ devolucion.es_completa ? 'Completa' : 'Parcial' }}</td>
+              </tr>
+            }
+          }
+        </tbody>
+      </table>
     </section>
   `,
   styles: `
@@ -128,6 +138,59 @@ const SEVERIDAD_ESTADO_EQUIPO: Record<EstadoDetalleEquipo, 'info' | 'success'> =
 
     .prestamo-detalles__seccion:last-child {
       margin-bottom: 0;
+    }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .tabla-simple--chica th,
+    .tabla-simple--chica td {
+      padding: 6px 10px;
+      font-size: 12px;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      color: #1a1a1a;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+      padding: 16px;
+    }
+
+    .badge {
+      display: inline-block;
+      border-radius: 999px;
+      padding: 2px 12px;
+      font-family: Poppins, sans-serif;
+      font-size: 11px;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--info {
+      background: #04b5ac;
     }
   `,
 })
@@ -160,7 +223,7 @@ export class PrestamoDetallesComponent {
     return ETIQUETAS_ESTADO_DETALLE_EQUIPO[estado];
   }
 
-  protected severidadEstadoEquipo(estado: EstadoDetalleEquipo): 'info' | 'success' {
-    return SEVERIDAD_ESTADO_EQUIPO[estado];
+  protected claseBadgeEstadoEquipo(estado: EstadoDetalleEquipo): string {
+    return CLASE_BADGE_ESTADO_EQUIPO[estado];
   }
 }

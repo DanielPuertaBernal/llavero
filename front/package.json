@@ -17,12 +17,12 @@
     "@angular/compiler": "^22.1.0",
     "@angular/core": "^22.1.0",
     "@angular/forms": "^22.1.0",
+    "@angular/material": "^22.1.2",
     "@angular/platform-browser": "^22.1.0",
     "@angular/router": "^22.1.0",
-    "@primeuix/themes": "^3.0.0",
     "@tanstack/angular-query-experimental": "^5.101.4",
-    "primeng": "^21.1.9",
     "rxjs": "~7.8.0",
+    "sweetalert2": "^11.26.25",
     "tslib": "^2.3.0"
   },
   "devDependencies": {

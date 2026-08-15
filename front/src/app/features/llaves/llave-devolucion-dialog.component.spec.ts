@@ -1,10 +1,10 @@
 import { provideHttpClient } from '@angular/common/http';
 import { HttpTestingController, provideHttpClientTesting } from '@angular/common/http/testing';
 import { TestBed } from '@angular/core/testing';
-import { MessageService } from 'primeng/api';
 import { QueryClient, provideTanStackQuery } from '@tanstack/angular-query-experimental';
 
 import { environment } from '../../../environments/environment';
+import { NotificationService } from '../../core/shared/notification.service';
 import { LlaveDevolucionDialogComponent } from './llave-devolucion-dialog.component';
 import type { Llave } from './llaves.models';
 
@@ -56,7 +56,6 @@ describe('LlaveDevolucionDialogComponent', () => {
         provideHttpClient(),
         provideHttpClientTesting(),
         provideTanStackQuery(new QueryClient({ defaultOptions: { queries: { retry: false } } })),
-        MessageService,
       ],
     }).compileComponents();
 
@@ -161,8 +160,8 @@ describe('LlaveDevolucionDialogComponent', () => {
     fixture.componentRef.setInput('llave', llaveEnPrestamo);
     fixture.detectChanges();
 
-    const messageService = TestBed.inject(MessageService);
-    const addSpy = vi.spyOn(messageService, 'add');
+    const notificationService = TestBed.inject(NotificationService);
+    const errorSpy = vi.spyOn(notificationService, 'error');
 
     const component = fixture.componentInstance as unknown as DevolucionDialogInternals;
     component.form.setValue({
@@ -183,11 +182,9 @@ describe('LlaveDevolucionDialogComponent', () => {
       );
 
     await vi.waitFor(() =>
-      expect(addSpy).toHaveBeenCalledWith(
-        expect.objectContaining({
-          severity: 'error',
-          detail: 'La ubicación no permite devolución de llaves',
-        }),
+      expect(errorSpy).toHaveBeenCalledWith(
+        'No se pudo registrar la devolución',
+        'La ubicación no permite devolución de llaves',
       ),
     );
     expect(fixture.componentInstance.visible()).toBe(true);

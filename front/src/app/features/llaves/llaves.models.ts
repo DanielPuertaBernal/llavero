@@ -61,8 +61,8 @@ export const ETIQUETAS_TIPO_ENTREGA_LLAVE: Record<TipoEntregaLlave, string> = {
 };
 
 /**
- * Forma que consume `p-select` de PrimeNG (`optionLabel="label"`,
- * `optionValue="value"`). Las listas de opciones de los tres enums se
+ * Forma que consume `mat-select` de Angular Material (`mat-option [value]`).
+ * Las listas de opciones de los tres enums se
  * derivan de los mapas de etiquetas de arriba en vez de escribirse a mano:
  * agregar un valor al enum del backend y su etiqueta acá es suficiente para
  * que aparezca en los tres selectores de la feature.

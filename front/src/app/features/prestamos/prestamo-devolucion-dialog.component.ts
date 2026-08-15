@@ -1,12 +1,13 @@
 import { Component, computed, effect, inject, input, model, output, signal } from '@angular/core';
 import { toSignal } from '@angular/core/rxjs-interop';
 import { FormBuilder, FormsModule, ReactiveFormsModule, Validators } from '@angular/forms';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { MultiSelectModule } from 'primeng/multiselect';
-import { SelectModule } from 'primeng/select';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatProgressSpinnerModule } from '@angular/material/progress-spinner';
+import { MatSelectModule } from '@angular/material/select';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { PrestamoDetallesService } from './prestamo-detalles.service';
 import { extraerMensajeError } from './prestamos-error.util';
 import { PrestamosLookupsService } from './prestamos-lookups.service';
@@ -46,111 +47,153 @@ import type { DevolucionInput, Prestamo } from './prestamos.models';
  * `service.devolver_equipos` no valida permiso alguno de ubicación al
  * recibir. Inventar acá esa restricción sería agregar una regla que el
  * dominio no tiene.
+ *
+ * Migrado de PrimeNG (`p-dialog`) a Angular Material: mismo patrón de
+ * visibilidad (`model<boolean>`), implementación interna con las directivas
+ * de `MatDialogModule` dentro de un overlay condicional (ver
+ * `llave-entrega-dialog.component.ts` para la misma decisión). El
+ * `p-multiselect` con chips se simplifica a un `mat-select [multiple]`; el
+ * `[showClear]` de los selects de novedad por equipo se reemplaza por una
+ * opción explícita "Sin novedad" en `''`.
  */
 @Component({
   selector: 'app-prestamo-devolucion-dialog',
   standalone: true,
   imports: [
-    DialogModule,
     ReactiveFormsModule,
     FormsModule,
-    SelectModule,
-    MultiSelectModule,
-    ButtonModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatProgressSpinnerModule,
+    MatSelectModule,
   ],
   providers: [PrestamoDetallesService],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Devolver equipos"
-      [modal]="true"
-      [style]="{ width: '32rem' }"
-    >
-      @if (prestamo(); as prestamoActual) {
-        <dl class="prestamo-devolucion-dialog__resumen">
-          <dt>Solicitante</dt>
-          <dd>{{ lookups.nombrePersona(prestamoActual.solicitante_id) }}</dd>
-          <dt>Ubicación del préstamo</dt>
-          <dd>{{ lookups.nombreUbicacion(prestamoActual.ubicacion_id) }}</dd>
-        </dl>
-      }
+    @if (visible()) {
+      <div class="dialogo__overlay" (click)="cancelar()">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="prestamo-devolucion-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="prestamo-devolucion-titulo">Devolver equipos</h2>
 
-      <form [formGroup]="form" (ngSubmit)="guardar()" class="prestamo-devolucion-dialog__form">
-        <div class="prestamo-devolucion-dialog__campo">
-          <label for="devolucion-usuario">Usuario que recibe</label>
-          <p-select
-            id="devolucion-usuario"
-            formControlName="usuario_recibe_id"
-            [options]="lookups.opcionesUsuarios()"
-            optionLabel="label"
-            optionValue="value"
-            placeholder="Selecciona quién recibe"
-          />
+          <mat-dialog-content>
+            @if (prestamo(); as prestamoActual) {
+              <dl class="prestamo-devolucion-dialog__resumen">
+                <dt>Solicitante</dt>
+                <dd>{{ lookups.nombrePersona(prestamoActual.solicitante_id) }}</dd>
+                <dt>Ubicación del préstamo</dt>
+                <dd>{{ lookups.nombreUbicacion(prestamoActual.ubicacion_id) }}</dd>
+              </dl>
+            }
+
+            <form [formGroup]="form" (ngSubmit)="guardar()" class="prestamo-devolucion-dialog__form">
+              <mat-form-field appearance="outline">
+                <mat-label>Usuario que recibe</mat-label>
+                <mat-select
+                  id="devolucion-usuario"
+                  formControlName="usuario_recibe_id"
+                  placeholder="Selecciona quién recibe"
+                >
+                  @for (usuario of lookups.opcionesUsuarios(); track usuario.value) {
+                    <mat-option [value]="usuario.value">{{ usuario.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Ubicación de devolución</mat-label>
+                <mat-select
+                  id="devolucion-ubicacion"
+                  formControlName="ubicacion_id"
+                  placeholder="Selecciona la ubicación"
+                >
+                  @for (ubicacion of lookups.ubicacionesDevolucion(); track ubicacion.id) {
+                    <mat-option [value]="ubicacion.id">{{ ubicacion.nombre }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              <mat-form-field appearance="outline">
+                <mat-label>Equipos a devolver</mat-label>
+                <mat-select
+                  id="devolucion-equipos"
+                  formControlName="equipo_ids"
+                  multiple
+                  placeholder="Selecciona al menos un equipo"
+                >
+                  @for (equipo of opcionesEquiposDevolver(); track equipo.value) {
+                    <mat-option [value]="equipo.value">{{ equipo.label }}</mat-option>
+                  }
+                </mat-select>
+              </mat-form-field>
+
+              @for (equipoId of equiposSeleccionados(); track equipoId) {
+                <mat-form-field appearance="outline">
+                  <mat-label>Novedad de {{ lookups.nombreEquipo(equipoId) }} (opcional)</mat-label>
+                  <mat-select
+                    [id]="'devolucion-novedad-' + equipoId"
+                    placeholder="Sin novedad"
+                    [ngModel]="novedadDe(equipoId)"
+                    [ngModelOptions]="{ standalone: true }"
+                    (ngModelChange)="onNovedadChange(equipoId, $event)"
+                  >
+                    <mat-option value="">Sin novedad</mat-option>
+                    @for (novedad of lookups.opcionesNovedades(); track novedad.value) {
+                      <mat-option [value]="novedad.value">{{ novedad.label }}</mat-option>
+                    }
+                  </mat-select>
+                </mat-form-field>
+              }
+            </form>
+          </mat-dialog-content>
+
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="cancelar()">Cancelar</button>
+            <button
+              type="submit"
+              mat-raised-button
+              color="primary"
+              [disabled]="form.invalid || guardando()"
+              (click)="guardar()"
+            >
+              @if (guardando()) {
+                <mat-spinner diameter="18" />
+              } @else {
+                Registrar devolución
+              }
+            </button>
+          </mat-dialog-actions>
         </div>
-
-        <div class="prestamo-devolucion-dialog__campo">
-          <label for="devolucion-ubicacion">Ubicación de devolución</label>
-          <p-select
-            id="devolucion-ubicacion"
-            formControlName="ubicacion_id"
-            [options]="lookups.ubicacionesDevolucion()"
-            optionLabel="nombre"
-            optionValue="id"
-            placeholder="Selecciona la ubicación"
-          />
-        </div>
-
-        <div class="prestamo-devolucion-dialog__campo">
-          <label for="devolucion-equipos">Equipos a devolver</label>
-          <p-multiselect
-            id="devolucion-equipos"
-            formControlName="equipo_ids"
-            [options]="opcionesEquiposDevolver()"
-            optionLabel="label"
-            optionValue="value"
-            display="chip"
-            placeholder="Selecciona al menos un equipo"
-          />
-        </div>
-
-        @for (equipoId of equiposSeleccionados(); track equipoId) {
-          <div class="prestamo-devolucion-dialog__campo">
-            <label [for]="'devolucion-novedad-' + equipoId">
-              Novedad de {{ lookups.nombreEquipo(equipoId) }} (opcional)
-            </label>
-            <p-select
-              [id]="'devolucion-novedad-' + equipoId"
-              [options]="lookups.opcionesNovedades()"
-              optionLabel="label"
-              optionValue="value"
-              [showClear]="true"
-              placeholder="Sin novedad"
-              [ngModel]="novedadDe(equipoId)"
-              [ngModelOptions]="{ standalone: true }"
-              (ngModelChange)="onNovedadChange(equipoId, $event)"
-            />
-          </div>
-        }
-
-        <footer class="prestamo-devolucion-dialog__acciones">
-          <p-button
-            type="button"
-            label="Cancelar"
-            severity="secondary"
-            [text]="true"
-            (onClick)="cancelar()"
-          />
-          <p-button
-            type="submit"
-            label="Registrar devolución"
-            [loading]="guardando()"
-            [disabled]="form.invalid"
-          />
-        </footer>
-      </form>
-    </p-dialog>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 32rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
+
     .prestamo-devolucion-dialog__resumen {
       display: grid;
       grid-template-columns: auto 1fr;
@@ -165,20 +208,7 @@ import type { DevolucionInput, Prestamo } from './prestamos.models';
     .prestamo-devolucion-dialog__form {
       display: flex;
       flex-direction: column;
-      gap: var(--space-4);
-    }
-
-    .prestamo-devolucion-dialog__campo {
-      display: flex;
-      flex-direction: column;
       gap: var(--space-2);
-    }
-
-    .prestamo-devolucion-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-2);
     }
   `,
 })
@@ -190,7 +220,7 @@ export class PrestamoDevolucionDialogComponent {
   protected readonly lookups = inject(PrestamosLookupsService);
   protected readonly detallesService = inject(PrestamoDetallesService);
   private readonly prestamosService = inject(PrestamosService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
   private readonly fb = inject(FormBuilder);
 
   protected readonly form = this.fb.nonNullable.group({
@@ -246,15 +276,15 @@ export class PrestamoDevolucionDialogComponent {
     });
   }
 
-  /** Novedad elegida para ese equipo, o `null` si no tiene — la forma que
-   * `p-select` con `[showClear]` espera para mostrarse vacío. */
-  protected novedadDe(equipoId: string): string | null {
-    return this.novedadesPorEquipo()[equipoId] ?? null;
+  /** Novedad elegida para ese equipo, o `''` si no tiene — la forma que el
+   * `mat-select` con la opción "Sin novedad" espera para mostrarse vacío. */
+  protected novedadDe(equipoId: string): string {
+    return this.novedadesPorEquipo()[equipoId] ?? '';
   }
 
-  /** `null` (el `showClear` del selector) equivale a "sin novedad": se quita
-   * la entrada del mapa en vez de guardar un valor vacío. */
-  protected onNovedadChange(equipoId: string, novedadId: string | null): void {
+  /** `''` (la opción "Sin novedad" del selector) equivale a "sin novedad": se
+   * quita la entrada del mapa en vez de guardar un valor vacío. */
+  protected onNovedadChange(equipoId: string, novedadId: string): void {
     this.novedadesPorEquipo.update((mapa) => {
       const siguiente = { ...mapa };
       if (novedadId) {
@@ -297,14 +327,13 @@ export class PrestamoDevolucionDialogComponent {
       onSuccess: () => {
         this.visible.set(false);
         this.guardado.emit();
-        this.messageService.add({ severity: 'success', summary: 'Devolución registrada' });
+        this.notificationService.success('Devolución registrada');
       },
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo registrar la devolución',
-          detail: extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo registrar la devolución',
+          extraerMensajeError(error, 'Verifica los datos e intenta de nuevo.'),
+        ),
     });
   }
 

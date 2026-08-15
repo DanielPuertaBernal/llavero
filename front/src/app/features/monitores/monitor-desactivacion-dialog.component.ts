@@ -1,9 +1,8 @@
 import { Component, computed, inject, input, model, output } from '@angular/core';
-import { MessageService } from 'primeng/api';
-import { ButtonModule } from 'primeng/button';
-import { DialogModule } from 'primeng/dialog';
-import { TagModule } from 'primeng/tag';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
 
+import { NotificationService } from '../../core/shared/notification.service';
 import { extraerMensajeError } from './monitores-error.util';
 import { MonitoresLookupsService } from './monitores-lookups.service';
 import { MonitoresService } from './monitores.service';
@@ -13,7 +12,7 @@ import { ETIQUETAS_DIA_SEMANA, type Monitor } from './monitores.models';
  * Diálogo de DESACTIVACIÓN de una monitoría
  * (`POST /api/monitores/{id}/desactivar` — ver back/monitores/controller.py).
  *
- * Nota de diseño — es un diálogo propio y no un `ConfirmationService.confirm`
+ * Nota de diseño — es un diálogo propio y no un `ConfirmService.confirmar`
  * genérico: el operador necesita ver QUÉ está desactivando (docente titular,
  * monitor delegado, materia, aula, día y horario) antes de confirmar, mismo
  * criterio que `ReservaCancelacionDialogComponent`.
@@ -32,88 +31,120 @@ import { ETIQUETAS_DIA_SEMANA, type Monitor } from './monitores.models';
  * ofrecer una acción que la propia fila ya declaró sin sentido (mismo
  * criterio que `puedeDesactivar` en `UsuariosListComponent` y `cancelable`
  * en `ReservaCancelacionDialogComponent`).
+ *
+ * Migración PrimeNG -> Angular Material: `p-dialog` -> panel propio con las
+ * directivas reales de `MatDialogModule`; `p-tag` -> badge propio;
+ * `MessageService` -> `NotificationService`.
  */
 @Component({
   selector: 'app-monitor-desactivacion-dialog',
   standalone: true,
-  imports: [DialogModule, ButtonModule, TagModule],
+  imports: [MatDialogModule, MatButtonModule],
   template: `
-    <p-dialog
-      [(visible)]="visible"
-      header="Desactivar monitoría"
-      [modal]="true"
-      [style]="{ width: '28rem' }"
-    >
-      @if (monitor(); as monitorActual) {
-        <dl class="monitor-desactivacion-dialog__resumen">
-          <dt>Docente titular</dt>
-          <dd>{{ lookups.nombrePersona(monitorActual.docente_titular_id) }}</dd>
-          <dt>Monitor delegado</dt>
-          <dd>{{ lookups.nombrePersona(monitorActual.monitor_delegado_id) }}</dd>
-          <dt>Materia</dt>
-          <dd>{{ monitorActual.materia }}</dd>
-          <dt>Aula</dt>
-          <dd>{{ monitorActual.aula ?? 'Sin aula fija' }}</dd>
-          <dt>Día</dt>
-          <dd>{{ diaLegible(monitorActual) }}</dd>
-          <dt>Horario</dt>
-          <dd>{{ monitorActual.horario ?? 'Sin horario fijo' }}</dd>
-          <dt>Estado</dt>
-          <dd>
-            <p-tag
-              [severity]="monitorActual.activo ? 'success' : 'danger'"
-              [value]="monitorActual.activo ? 'Activa' : 'Inactiva'"
-            />
-          </dd>
-        </dl>
+    @if (visible()) {
+      <div class="dialogo__overlay" (keydown.escape)="cerrar()">
+        <div class="dialogo__panel" role="dialog" aria-modal="true" aria-label="Desactivar monitoría">
+          <h2 mat-dialog-title>Desactivar monitoría</h2>
+          <mat-dialog-content>
+            @if (monitor(); as monitorActual) {
+              <dl class="monitor-desactivacion-dialog__resumen">
+                <dt>Docente titular</dt>
+                <dd>{{ lookups.nombrePersona(monitorActual.docente_titular_id) }}</dd>
+                <dt>Monitor delegado</dt>
+                <dd>{{ lookups.nombrePersona(monitorActual.monitor_delegado_id) }}</dd>
+                <dt>Materia</dt>
+                <dd>{{ monitorActual.materia }}</dd>
+                <dt>Aula</dt>
+                <dd>{{ monitorActual.aula ?? 'Sin aula fija' }}</dd>
+                <dt>Día</dt>
+                <dd>{{ diaLegible(monitorActual) }}</dd>
+                <dt>Horario</dt>
+                <dd>{{ monitorActual.horario ?? 'Sin horario fijo' }}</dd>
+                <dt>Estado</dt>
+                <dd>
+                  <span class="badge" [class.badge--exito]="monitorActual.activo" [class.badge--peligro]="!monitorActual.activo">
+                    {{ monitorActual.activo ? 'Activa' : 'Inactiva' }}
+                  </span>
+                </dd>
+              </dl>
 
-        @if (!desactivable()) {
-          <p role="alert">Esta monitoría ya está inactiva.</p>
-        } @else {
-          <p>
-            El monitor delegado perderá esta delegación de inmediato. Esta acción NO se puede
-            deshacer: el backend no ofrece forma de reactivarla.
-          </p>
-        }
-      }
+              @if (!desactivable()) {
+                <p role="alert">Esta monitoría ya está inactiva.</p>
+              } @else {
+                <p>
+                  El monitor delegado perderá esta delegación de inmediato. Esta acción NO se puede
+                  deshacer: el backend no ofrece forma de reactivarla.
+                </p>
+              }
+            }
+          </mat-dialog-content>
 
-      <footer class="monitor-desactivacion-dialog__acciones">
-        <p-button
-          type="button"
-          label="Volver"
-          severity="secondary"
-          [text]="true"
-          (onClick)="cerrar()"
-        />
-        <p-button
-          type="button"
-          label="Desactivar monitoría"
-          severity="danger"
-          [loading]="desactivando()"
-          [disabled]="!desactivable()"
-          (onClick)="confirmar()"
-          ariaLabel="Confirmar desactivación"
-        />
-      </footer>
-    </p-dialog>
+          <mat-dialog-actions align="end">
+            <button mat-button type="button" (click)="cerrar()">Volver</button>
+            <button
+              mat-raised-button
+              color="warn"
+              type="button"
+              [disabled]="!desactivable() || desactivando()"
+              (click)="confirmar()"
+              aria-label="Confirmar desactivación"
+            >
+              {{ desactivando() ? 'Desactivando...' : 'Desactivar monitoría' }}
+            </button>
+          </mat-dialog-actions>
+        </div>
+      </div>
+    }
   `,
   styles: `
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 10px 40px rgba(0, 0, 0, 0.2);
+      width: 28rem;
+      max-width: 90vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4, 1rem);
+    }
+
     .monitor-desactivacion-dialog__resumen {
       display: grid;
       grid-template-columns: auto 1fr;
-      gap: var(--space-2) var(--space-4);
-      margin: 0 0 var(--space-4);
+      gap: var(--space-2, 0.5rem) var(--space-4, 1rem);
+      margin: 0 0 var(--space-4, 1rem);
     }
 
     .monitor-desactivacion-dialog__resumen dd {
       margin: 0;
     }
 
-    .monitor-desactivacion-dialog__acciones {
-      display: flex;
-      justify-content: flex-end;
-      gap: var(--space-2);
-      margin-top: var(--space-4);
+    .badge {
+      display: inline-block;
+      padding: 0.15rem 0.75rem;
+      border-radius: 999px;
+      font-family: Poppins, sans-serif;
+      font-size: 0.75rem;
+      font-weight: 700;
+      color: #ffffff;
+    }
+
+    .badge--exito {
+      background: #008b50;
+    }
+
+    .badge--peligro {
+      background: #e28210;
     }
   `,
 })
@@ -124,7 +155,7 @@ export class MonitorDesactivacionDialogComponent {
 
   protected readonly lookups = inject(MonitoresLookupsService);
   private readonly monitoresService = inject(MonitoresService);
-  private readonly messageService = inject(MessageService);
+  private readonly notificationService = inject(NotificationService);
 
   protected readonly desactivando = computed(() => this.monitoresService.desactivar.isPending());
 
@@ -146,14 +177,13 @@ export class MonitorDesactivacionDialogComponent {
       onSuccess: () => {
         this.visible.set(false);
         this.desactivada.emit();
-        this.messageService.add({ severity: 'success', summary: 'Monitoría desactivada' });
+        this.notificationService.success('Monitoría desactivada');
       },
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo desactivar la monitoría',
-          detail: extraerMensajeError(error, 'Intenta de nuevo.'),
-        }),
+        this.notificationService.error(
+          'No se pudo desactivar la monitoría',
+          extraerMensajeError(error, 'Intenta de nuevo.'),
+        ),
     });
   }
 

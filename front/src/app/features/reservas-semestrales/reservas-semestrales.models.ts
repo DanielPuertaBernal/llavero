@@ -67,8 +67,8 @@ export const ETIQUETAS_DIA_SEMANA: Record<DiaSemana, string> = {
 };
 
 /**
- * Forma que consume `p-select` de PrimeNG (`optionLabel="label"`,
- * `optionValue="value"`). Igual patrón que `OpcionSelect` de
+ * Forma que consume `mat-select`/`mat-autocomplete` (`label` se muestra,
+ * `value` es lo que viaja). Igual patrón que `OpcionSelect` de
  * `features/reservas`, duplicado acá por la misma regla dura de no importar
  * TypeScript de otra feature (ver la nota de duplicación deliberada más
  * abajo).

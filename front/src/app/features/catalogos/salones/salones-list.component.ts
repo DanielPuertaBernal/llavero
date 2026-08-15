@@ -1,12 +1,12 @@
 import { Component, computed, inject, signal } from '@angular/core';
-import { ButtonModule } from 'primeng/button';
-import { ConfirmDialogModule } from 'primeng/confirmdialog';
-import { ConfirmationService, MessageService } from 'primeng/api';
-import { DialogModule } from 'primeng/dialog';
-import { InputTextModule } from 'primeng/inputtext';
-import { TableModule } from 'primeng/table';
-import { ToastModule } from 'primeng/toast';
+import { MatButtonModule } from '@angular/material/button';
+import { MatDialogModule } from '@angular/material/dialog';
+import { MatFormFieldModule } from '@angular/material/form-field';
+import { MatIconModule } from '@angular/material/icon';
+import { MatInputModule } from '@angular/material/input';
 
+import { ConfirmService } from '../../../core/shared/confirm.service';
+import { NotificationService } from '../../../core/shared/notification.service';
 import { extraerMensajeError } from '../catalogos-error.util';
 import type { Salon } from '../catalogos.models';
 import { BloquesService } from '../bloques/bloques.service';
@@ -32,43 +32,50 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
  * `bloque_id`/`tipo_silleteria_id` se resuelven a nombre en el cliente
  * (join contra las listas de bloques/tipos ya cargadas) porque `SalonOut`
  * solo trae los ids, no los nombres denormalizados.
+ *
+ * Migrado de PrimeNG a Angular Material: tabla HTML simple (sin sorting/
+ * paginación real), y los diálogos de "Bloques"/"Tipos de silletería" usan
+ * las directivas reales de `MatDialogModule` dentro de un overlay
+ * condicional, mismo criterio que `SalonFormDialogComponent`.
  */
 @Component({
   selector: 'app-salones-list',
   standalone: true,
   imports: [
-    TableModule,
-    ButtonModule,
-    InputTextModule,
-    DialogModule,
-    ToastModule,
-    ConfirmDialogModule,
+    MatButtonModule,
+    MatDialogModule,
+    MatFormFieldModule,
+    MatIconModule,
+    MatInputModule,
     SalonFormDialogComponent,
     BloquesManagerComponent,
     TiposSilleteriaManagerComponent,
   ],
-  providers: [ConfirmationService, MessageService],
   template: `
-    <p-toast />
-    <p-confirmdialog />
-
     <header class="salones-list__header">
-      <input
-        pInputText
-        type="text"
-        placeholder="Buscar salón por nombre..."
-        aria-label="Buscar salón por nombre"
-        (input)="onBusquedaChange($event)"
-      />
-      <div class="salones-list__acciones">
-        <p-button label="Bloques" icon="pi pi-building" severity="secondary" (onClick)="bloquesDialogVisible.set(true)" />
-        <p-button
-          label="Tipos de silletería"
-          icon="pi pi-list"
-          severity="secondary"
-          (onClick)="tiposDialogVisible.set(true)"
+      <mat-form-field subscriptSizing="dynamic" appearance="outline">
+        <mat-label>Buscar</mat-label>
+        <input
+          matInput
+          type="text"
+          placeholder="Buscar salón por nombre..."
+          aria-label="Buscar salón por nombre"
+          (input)="onBusquedaChange($event)"
         />
-        <p-button label="Nuevo salón" icon="pi pi-plus" (onClick)="abrirCrear()" />
+      </mat-form-field>
+      <div class="salones-list__acciones">
+        <button type="button" mat-stroked-button (click)="bloquesDialogVisible.set(true)">
+          <mat-icon>apartment</mat-icon>
+          Bloques
+        </button>
+        <button type="button" mat-stroked-button (click)="tiposDialogVisible.set(true)">
+          <mat-icon>list</mat-icon>
+          Tipos de silletería
+        </button>
+        <button type="button" mat-raised-button color="primary" (click)="abrirCrear()">
+          <mat-icon>add</mat-icon>
+          Nuevo salón
+        </button>
       </div>
     </header>
 
@@ -76,8 +83,8 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
       <p role="alert">No se pudieron cargar los salones. Intenta de nuevo.</p>
     }
 
-    <p-table [value]="salonesFiltrados()" [loading]="cargando()" dataKey="id">
-      <ng-template #header>
+    <table class="tabla-simple">
+      <thead>
         <tr>
           <th>Nombre</th>
           <th>Bloque</th>
@@ -86,32 +93,43 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
           <th>Mesas</th>
           <th></th>
         </tr>
-      </ng-template>
-      <ng-template #body let-salon>
-        <tr>
-          <td>{{ salon.nombre }}</td>
-          <td>{{ nombreBloque(salon.bloque_id) }}</td>
-          <td>{{ nombreTipoSilleteria(salon.tipo_silleteria_id) }}</td>
-          <td>{{ salon.cantidad_sillas }}</td>
-          <td>{{ salon.cantidad_mesas }}</td>
-          <td>
-            <p-button icon="pi pi-pencil" [text]="true" (onClick)="abrirEditar(salon)" [ariaLabel]="'Editar salón'" />
-            <p-button
-              icon="pi pi-trash"
-              severity="danger"
-              [text]="true"
-              (onClick)="confirmarEliminar(salon)"
-              [ariaLabel]="'Eliminar salón'"
-            />
-          </td>
-        </tr>
-      </ng-template>
-      <ng-template #emptymessage>
-        <tr>
-          <td colspan="6">No hay salones registrados.</td>
-        </tr>
-      </ng-template>
-    </p-table>
+      </thead>
+      <tbody>
+        @if (cargando()) {
+          <tr>
+            <td colspan="6" class="tabla-simple__estado-vacio">Cargando...</td>
+          </tr>
+        } @else if (salonesFiltrados().length === 0) {
+          <tr>
+            <td colspan="6" class="tabla-simple__estado-vacio">No hay salones registrados.</td>
+          </tr>
+        } @else {
+          @for (salon of salonesFiltrados(); track salon.id) {
+            <tr>
+              <td>{{ salon.nombre }}</td>
+              <td>{{ nombreBloque(salon.bloque_id) }}</td>
+              <td>{{ nombreTipoSilleteria(salon.tipo_silleteria_id) }}</td>
+              <td>{{ salon.cantidad_sillas }}</td>
+              <td>{{ salon.cantidad_mesas }}</td>
+              <td>
+                <button type="button" mat-icon-button (click)="abrirEditar(salon)" aria-label="Editar salón">
+                  <mat-icon>edit</mat-icon>
+                </button>
+                <button
+                  type="button"
+                  mat-icon-button
+                  class="boton-peligro"
+                  (click)="confirmarEliminar(salon)"
+                  aria-label="Eliminar salón"
+                >
+                  <mat-icon>delete</mat-icon>
+                </button>
+              </td>
+            </tr>
+          }
+        }
+      </tbody>
+    </table>
 
     <app-salon-form-dialog
       [(visible)]="formDialogVisible"
@@ -120,22 +138,50 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
       [tiposSilleteria]="tiposSilleteriaService.tiposSilleteria.data() ?? []"
     />
 
-    <p-dialog [(visible)]="bloquesDialogVisible" header="Bloques" [modal]="true" [style]="{ width: '32rem' }">
-      <app-bloques-manager />
-    </p-dialog>
+    @if (bloquesDialogVisible()) {
+      <div class="dialogo__overlay" (click)="bloquesDialogVisible.set(false)">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="bloques-dialogo-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="bloques-dialogo-titulo">Bloques</h2>
+          <mat-dialog-content>
+            <app-bloques-manager />
+          </mat-dialog-content>
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="bloquesDialogVisible.set(false)">Cerrar</button>
+          </mat-dialog-actions>
+        </div>
+      </div>
+    }
 
-    <p-dialog
-      [(visible)]="tiposDialogVisible"
-      header="Tipos de silletería"
-      [modal]="true"
-      [style]="{ width: '32rem' }"
-    >
-      <app-tipos-silleteria-manager />
-    </p-dialog>
+    @if (tiposDialogVisible()) {
+      <div class="dialogo__overlay" (click)="tiposDialogVisible.set(false)">
+        <div
+          class="dialogo__panel"
+          role="dialog"
+          aria-modal="true"
+          aria-labelledby="tipos-dialogo-titulo"
+          (click)="$event.stopPropagation()"
+        >
+          <h2 mat-dialog-title id="tipos-dialogo-titulo">Tipos de silletería</h2>
+          <mat-dialog-content>
+            <app-tipos-silleteria-manager />
+          </mat-dialog-content>
+          <mat-dialog-actions align="end">
+            <button type="button" mat-stroked-button (click)="tiposDialogVisible.set(false)">Cerrar</button>
+          </mat-dialog-actions>
+        </div>
+      </div>
+    }
   `,
   styles: `
     .salones-list__header {
       display: flex;
+      flex-wrap: wrap;
       align-items: center;
       justify-content: space-between;
       gap: var(--space-4);
@@ -147,14 +193,72 @@ import { TiposSilleteriaManagerComponent } from './tipos-silleteria-manager.comp
       align-items: center;
       gap: var(--space-2);
     }
+
+    .tabla-simple {
+      width: 100%;
+      border-collapse: collapse;
+      background: #ffffff;
+    }
+
+    .tabla-simple th {
+      background: #f5f7f6;
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 12px;
+      font-weight: 700;
+      color: #1a1a1a;
+      text-align: left;
+      padding: 10px;
+    }
+
+    .tabla-simple td {
+      border: 1px solid #e2e5e4;
+      font-family: Montserrat, sans-serif;
+      font-size: 13px;
+      color: #1a1a1a;
+      padding: 10px;
+    }
+
+    .tabla-simple__estado-vacio {
+      text-align: center;
+      font-family: Montserrat, sans-serif;
+      font-style: italic;
+      color: #6b7280;
+      padding: 24px;
+    }
+
+    .boton-peligro {
+      color: #e28210;
+    }
+
+    .dialogo__overlay {
+      position: fixed;
+      inset: 0;
+      background: rgba(26, 26, 26, 0.4);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      z-index: 1000;
+    }
+
+    .dialogo__panel {
+      background: #ffffff;
+      border-radius: 10px;
+      box-shadow: 0 12px 32px rgba(26, 26, 26, 0.24);
+      width: 32rem;
+      max-width: 92vw;
+      max-height: 90vh;
+      overflow-y: auto;
+      padding: var(--space-4);
+    }
   `,
 })
 export class SalonesListComponent {
   protected readonly salonesService = inject(SalonesService);
   protected readonly bloquesService = inject(BloquesService);
   protected readonly tiposSilleteriaService = inject(TiposSilleteriaService);
-  private readonly confirmationService = inject(ConfirmationService);
-  private readonly messageService = inject(MessageService);
+  private readonly confirmService = inject(ConfirmService);
+  private readonly notificationService = inject(NotificationService);
 
   protected readonly busqueda = signal('');
   protected readonly formDialogVisible = signal(false);
@@ -199,30 +303,32 @@ export class SalonesListComponent {
     this.formDialogVisible.set(true);
   }
 
-  protected confirmarEliminar(salon: Salon): void {
-    this.confirmationService.confirm({
-      header: 'Eliminar salón',
-      message: `¿Eliminar el salón "${salon.nombre}"? Esta acción no se puede deshacer.`,
-      acceptLabel: 'Eliminar',
-      rejectLabel: 'Cancelar',
-      accept: () => this.eliminar(salon),
+  protected async confirmarEliminar(salon: Salon): Promise<void> {
+    const confirmado = await this.confirmService.confirmar({
+      titulo: 'Eliminar salón',
+      mensaje: `¿Eliminar el salón "${salon.nombre}"? Esta acción no se puede deshacer.`,
+      peligro: true,
+      textoAceptar: 'Eliminar',
+      textoCancelar: 'Cancelar',
     });
+    if (confirmado) {
+      this.eliminar(salon);
+    }
   }
 
   private eliminar(salon: Salon): void {
     this.salonesService.eliminar.mutate(salon.id, {
-      onSuccess: () => this.messageService.add({ severity: 'success', summary: 'Salón eliminado' }),
+      onSuccess: () => this.notificationService.success('Salón eliminado'),
       onError: (error) =>
-        this.messageService.add({
-          severity: 'error',
-          summary: 'No se pudo eliminar el salón',
-          // Ver catalogos-error.util.ts: si el salón sigue protegido por
-          // llaves/reservas/programación/reservas_semestrales
-          // (`on_delete=PROTECT`), el backend devuelve un 400 con un
-          // mensaje claro — se muestra tal cual, sin chequeo previo del
-          // lado cliente.
-          detail: extraerMensajeError(error, 'Intenta de nuevo.'),
-        }),
+        // Ver catalogos-error.util.ts: si el salón sigue protegido por
+        // llaves/reservas/programación/reservas_semestrales
+        // (`on_delete=PROTECT`), el backend devuelve un 400 con un
+        // mensaje claro — se muestra tal cual, sin chequeo previo del
+        // lado cliente.
+        this.notificationService.error(
+          'No se pudo eliminar el salón',
+          extraerMensajeError(error, 'Intenta de nuevo.'),
+        ),
     });
   }
 }

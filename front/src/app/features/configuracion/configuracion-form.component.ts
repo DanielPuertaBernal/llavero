@@ -105,6 +105,27 @@ import type { ConfiguracionInput } from './configuracion.models';
       </form>
     }
   `,
+  styles: `
+    .configuracion-form__form {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-4);
+      margin-top: var(--space-4);
+    }
+
+    .configuracion-form__campo {
+      display: flex;
+      flex-direction: column;
+      gap: var(--space-2);
+    }
+
+    .configuracion-form__acciones {
+      display: flex;
+      justify-content: flex-end;
+      gap: var(--space-2);
+      margin-top: var(--space-2);
+    }
+  `,
 })
 export class ConfiguracionFormComponent {
   protected readonly lookups = inject(ConfiguracionLookupsService);

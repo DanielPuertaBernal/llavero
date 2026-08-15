@@ -165,8 +165,8 @@ export class UsuarioFormDialogComponent {
   // (`activo: bool = True`), porque crear un usuario ya desactivado es la
   // excepción, no lo normal.
   protected readonly form = this.fb.nonNullable.group({
-    nombre: ['', Validators.required],
-    email_institucional: ['', [Validators.required, Validators.email]],
+    nombre: ['', [Validators.required, Validators.maxLength(150)]],
+    email_institucional: ['', [Validators.required, Validators.email, Validators.maxLength(150)]],
     rol_id: ['', Validators.required],
     ubicacion_id: ['', Validators.required],
     activo: [true],

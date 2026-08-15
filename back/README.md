@@ -28,7 +28,7 @@ cp env.example .env
 
 > Nota: el archivo de ejemplo se llama `env.example` (sin el punto inicial) porque el entorno de desarrollo con el que se generó este scaffold bloquea la creación de archivos `.env*` como medida de seguridad. Renómbralo tú a `.env.example` si quieres seguir la convención habitual — el contenido es el mismo, y `.gitignore` ya ignora cualquiera de las dos variantes de nombre real (`.env`).
 
-Claves esperadas: `DEBUG`, `SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `ALLOWED_HOSTS`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, `FRONTEND_POST_LOGIN_REDIRECT_URL` (login federado Office 365, ver `auth/service.py`), `EMAIL_HOST`, `EMAIL_HOST_FALLBACK`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_TIMEOUT`, `DEFAULT_FROM_EMAIL` (relay SMTP institucional, ver `notificaciones/service.py`), `SCHEDULER_API_KEY` (clave del endpoint protegido `POST /api/scheduler/ejecutar-transiciones`, ver `scheduler/security.py` y la sección "Despliegue del scheduler externo" más abajo). Ver `env.example` para la lista completa con comentarios.
+Claves esperadas: `DEBUG`, `SECRET_KEY`, `DB_NAME`, `DB_USER`, `DB_PASSWORD`, `DB_HOST`, `DB_PORT`, `ALLOWED_HOSTS`, `AZURE_TENANT_ID`, `AZURE_CLIENT_ID`, `AZURE_CLIENT_SECRET`, `AZURE_REDIRECT_URI`, `FRONTEND_POST_LOGIN_REDIRECT_URL` (login federado Office 365, ver `auth/service.py`), `EMAIL_HOST`, `EMAIL_HOST_FALLBACK`, `EMAIL_PORT`, `EMAIL_USE_TLS`, `EMAIL_USE_SSL`, `EMAIL_HOST_USER`, `EMAIL_HOST_PASSWORD`, `EMAIL_TIMEOUT`, `DEFAULT_FROM_EMAIL` (relay SMTP institucional, ver `notificaciones/service.py`), `SCHEDULER_API_KEY` (clave del endpoint protegido `POST /api/scheduler/ejecutar-transiciones`, ver `scheduler/security.py` y la sección "Despliegue del scheduler externo" más abajo), `SUPERUSUARIO_EMAIL` (email del primer usuario admin, ver sección "Base de datos y migraciones" abajo). Ver `env.example` para la lista completa con comentarios.
 
 ## Base de datos y migraciones
 
@@ -39,6 +39,8 @@ python manage.py migrate
 ```
 
 La migración `catalogos/migrations/0002_seed_catalogos_iniciales.py` siembra los datos base del DDL (roles, tipos de persona, ubicaciones) automáticamente al migrar — no hace falta un comando aparte.
+
+La migración `usuarios/migrations/0002_seed_superusuario_inicial.py` crea, en el primer `migrate` sobre una base de datos nueva, un `Usuario` con rol `admin` y el email configurado en `SUPERUSUARIO_EMAIL` (si esa variable está vacía, no crea nada). Es indispensable para poder iniciar sesión la primera vez: el login de Office 365 solo *vincula* `oid_microsoft` a un `Usuario` que ya exista por `email_institucional` (ver `usuarios/model.py`), nunca crea cuentas nuevas por sí mismo.
 
 ## Tests
 

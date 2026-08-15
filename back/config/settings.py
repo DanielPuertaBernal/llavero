@@ -55,6 +55,13 @@ FRONTEND_POST_LOGIN_REDIRECT_URL = env("FRONTEND_POST_LOGIN_REDIRECT_URL")
 # que quede abierto sin autenticación.
 SCHEDULER_API_KEY = env("SCHEDULER_API_KEY", default="")
 
+# Email institucional del usuario admin sembrado por la data migration
+# `usuarios.0002_seed_superusuario_inicial` en el primer `migrate` sobre una
+# base de datos nueva (ver esa migración para el detalle). Default vacío
+# (mismo patrón que SCHEDULER_API_KEY/EMAIL_HOST_USER): si no se configura,
+# la migración simplemente no crea ningún usuario, no falla el migrate.
+SUPERUSUARIO_EMAIL = env("SUPERUSUARIO_EMAIL", default="")
+
 INSTALLED_APPS = [
     "django.contrib.auth",
     "django.contrib.contenttypes",
